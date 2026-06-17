@@ -16,6 +16,7 @@ const bebas = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://zoqo.vercel.app"),
   title: "ZOQO — Trade the next 5 minutes of Bitcoin",
   description:
     "ZOQO is a real-time prediction market for short-term Bitcoin moves. Bet Up or Down on rolling 5-minute markets.",
