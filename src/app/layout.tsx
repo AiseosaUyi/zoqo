@@ -26,7 +26,6 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${inter.variable} ${bebas.variable} h-full`}>
-      <head />
       <body className="min-h-full">{children}</body>
     </html>
   );
