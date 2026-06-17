@@ -1,26 +1,399 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   ZOQO Design Tokens — generated from src/lib/tokens.ts
+   10-step scales (50→900). Gray is the warm-neutral dashboard
+   family (de-blued from the Figma foundation ramp).
+   ============================================================ */
+@theme {
+  /* ---- Gray (single warm-neutral family; consistent R≥G≥B undertone) ---- */
+  --color-gray-50: #faf9f7;
+  --color-gray-100: #f4f2ee;
+  --color-gray-200: #e8e6e0;
+  --color-gray-300: #d6d3cb;
+  --color-gray-400: #b0aba1;
+  --color-gray-500: #78746b;
+  --color-gray-600: #5c584f;
+  --color-gray-700: #423f38;
+  --color-gray-800: #2a2823;
+  --color-gray-900: #16140f;
+
+  /* ---- Purple (Primary) ---- */
+  --color-purple-50: #efe9ff;
+  --color-purple-100: #dfd2ff;
+  --color-purple-200: #bfa5ff;
+  --color-purple-300: #a079ff;
+  --color-purple-400: #804cff;
+  --color-purple-500: #601fff;
+  --color-purple-600: #561ce6;
+  --color-purple-700: #4316b3;
+  --color-purple-800: #301080;
+  --color-purple-900: #130633;
+
+  /* ---- Blue ---- */
+  --color-blue-50: #e6edff;
+  --color-blue-100: #ccdaff;
+  --color-blue-200: #99b5ff;
+  --color-blue-300: #6691ff;
+  --color-blue-400: #336cff;
+  --color-blue-500: #0047ff;
+  --color-blue-600: #0039cc;
+  --color-blue-700: #002b99;
+  --color-blue-800: #001c66;
+  --color-blue-900: #000e33;
+
+  /* ---- Green (Success) ---- */
+  --color-green-50: #e9f7ef;
+  --color-green-100: #d4efdf;
+  --color-green-200: #a9dfbf;
+  --color-green-300: #7dcea0;
+  --color-green-400: #52be80;
+  --color-green-500: #27ae60;
+  --color-green-600: #1f8b4d;
+  --color-green-700: #17683a;
+  --color-green-800: #104626;
+  --color-green-900: #082313;
+
+  /* ---- Red (Error) ---- */
+  --color-red-50: #ffeae6;
+  --color-red-100: #ffd5cc;
+  --color-red-200: #ffab99;
+  --color-red-300: #ff8266;
+  --color-red-400: #ff5833;
+  --color-red-500: #ff2e00;
+  --color-red-600: #cc2500;
+  --color-red-700: #991c00;
+  --color-red-800: #661200;
+  --color-red-900: #330900;
+
+  /* ---- Orange (Secondary) ---- */
+  --color-orange-50: #fff1e6;
+  --color-orange-100: #ffe3cc;
+  --color-orange-200: #ffc799;
+  --color-orange-300: #ffab66;
+  --color-orange-400: #ff8f33;
+  --color-orange-500: #ff7300;
+  --color-orange-600: #e66800;
+  --color-orange-700: #b35100;
+  --color-orange-800: #803a00;
+  --color-orange-900: #331700;
+
+  /* ---- Yellow ---- */
+  --color-yellow-50: #fffbe6;
+  --color-yellow-100: #fff7cc;
+  --color-yellow-200: #ffef99;
+  --color-yellow-300: #ffe866;
+  --color-yellow-400: #ffe033;
+  --color-yellow-500: #ffd800;
+  --color-yellow-600: #ccad00;
+  --color-yellow-700: #998200;
+  --color-yellow-800: #665600;
+  --color-yellow-900: #332b00;
+
+  /* ---- Gold (Warning) ---- */
+  --color-gold-50: #fff7e8;
+  --color-gold-100: #ffe7b9;
+  --color-gold-200: #ffd78a;
+  --color-gold-300: #fec65b;
+  --color-gold-400: #feb62c;
+  --color-gold-500: #feae14;
+  --color-gold-600: #cb8b10;
+  --color-gold-700: #98680c;
+  --color-gold-800: #664608;
+  --color-gold-900: #332304;
+
+  /* ---- Brown (ZOQO addition) ---- */
+  --color-brown-50: #f7f0ea;
+  --color-brown-100: #ecdbcb;
+  --color-brown-200: #dbbe9e;
+  --color-brown-300: #c79d71;
+  --color-brown-400: #b07e4a;
+  --color-brown-500: #8f5e2e;
+  --color-brown-600: #744b25;
+  --color-brown-700: #58381c;
+  --color-brown-800: #3b2613;
+  --color-brown-900: #1f1409;
+
+  /* ---- Semantic surfaces & text — derived from the warm-neutral gray ---- */
+  --color-bg: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-muted: #f4f2ee; /* gray-100 */
+  --color-line: #e8e6e0; /* gray-200 */
+  --color-line-strong: #d6d3cb; /* gray-300 */
+  --color-ink: #16140f; /* gray-900 */
+  --color-sub: #78746b; /* gray-500 */
+
+  --color-brand: #601fff;
+  --color-brand-weak: #efe9ff;
+  --color-up: #27ae60;
+  --color-up-weak: #d4efdf;
+  --color-down: #ff2e00;
+  --color-down-weak: #ffd5cc;
+  --color-volume: #ccdaff;
+  --color-target: #ffd800;
+  --color-warning: #feae14;
+
+  /* ---- Radii ---- */
+  --radius-chip: 8px;
+  --radius-btn: 10px;
+  --radius-card: 16px;
+  --radius-pill: 999px;
+
+  /* ---- Fonts ---- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-bebas: var(--font-bebas), ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Elevation ---- */
+  /* Layered, warm-ink-tinted shadows: a tight contact shadow stacked with a
+     wider ambient one. rgba derived from the warm ink #16140f (22,20,15).
+     Exposed as `shadow-e1` … `shadow-e5` utilities by Tailwind v4. */
+  --shadow-e1: 0 1px 1px rgba(22, 20, 15, 0.04), 0 1px 2px rgba(22, 20, 15, 0.06);
+  --shadow-e2: 0 1px 2px rgba(22, 20, 15, 0.06), 0 4px 12px rgba(22, 20, 15, 0.06);
+  --shadow-e3: 0 2px 4px rgba(22, 20, 15, 0.06), 0 8px 20px rgba(22, 20, 15, 0.08);
+  --shadow-e4: 0 4px 8px rgba(22, 20, 15, 0.07), 0 16px 32px rgba(22, 20, 15, 0.10);
+  --shadow-e5: 0 8px 16px rgba(22, 20, 15, 0.08), 0 28px 56px rgba(22, 20, 15, 0.14);
+  /* Colored glows for CTAs and directional states. */
+  --shadow-brand: 0 6px 20px rgba(96, 31, 255, 0.28), 0 2px 6px rgba(96, 31, 255, 0.18);
+  --shadow-up: 0 6px 20px rgba(39, 174, 96, 0.26), 0 2px 6px rgba(39, 174, 96, 0.16);
+  --shadow-down: 0 6px 20px rgba(255, 46, 0, 0.24), 0 2px 6px rgba(255, 46, 0, 0.16);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  border-color: var(--color-line);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================
+   TYPOGRAPHY — ZOQO Design System
+   Inter: all UI text. Bebas Neue: numbers only.
+
+   Usage:
+     <h1 class="text-h1">Heading</h1>
+     <p class="text-body-2">Body text</p>
+     <span class="text-num-1">$45,230.89</span>
+   ============================================================ */
+
+/* Headings — Inter, H1 (80px) → H6 (21px) */
+.text-h1 {
+  font-family: var(--font-inter);
+  font-size: 80px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.text-h2 {
+  font-family: var(--font-inter);
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+.text-h3 {
+  font-family: var(--font-inter);
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.text-h4 {
+  font-family: var(--font-inter);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.text-h5 {
+  font-family: var(--font-inter);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.text-h6 {
+  font-family: var(--font-inter);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Body — Inter */
+.text-body-1 {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.text-body-2 {
+  font-family: var(--font-inter);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.text-body-3 {
+  font-family: var(--font-inter);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Labels & Captions — Inter */
+.text-label {
+  font-family: var(--font-inter);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.text-caption {
+  font-family: var(--font-inter);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+.text-caption-xs {
+  font-family: var(--font-inter);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+/* Numbers — Bebas Neue ONLY. Never use for prose. */
+.text-num-1 {
+  font-family: var(--font-bebas);
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.text-num-2 {
+  font-family: var(--font-bebas);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+}
+.text-num-3 {
+  font-family: var(--font-bebas);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+}
+.text-num-4 {
+  font-family: var(--font-bebas);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.005em;
+  font-variant-numeric: tabular-nums;
+}
+.text-num-5 {
+  font-family: var(--font-bebas);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tabular numbers utility for custom numeric contexts */
+.nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* thin scrollbars for inner panels */
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes zoqo-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(96, 31, 255, 0.45); }
+  70% { box-shadow: 0 0 0 6px rgba(96, 31, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(96, 31, 255, 0); }
+}
+.pulse { animation: zoqo-pulse 1.8s infinite; }
+
+/* Drag-to-pan strips: hide the scrollbar but keep the strip scrollable. */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Leading "now" dot on the live price line — soft breathing glow to the right. */
+@keyframes zoqo-now {
+  0%, 100% { r: 3.5; opacity: 1; }
+  50% { r: 4.5; opacity: 0.78; }
+}
+.now-dot { animation: zoqo-now 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes zoqo-now-ring {
+  0% { r: 4; opacity: 0.5; }
+  100% { r: 13; opacity: 0; }
+}
+.now-ring { animation: zoqo-now-ring 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .now-dot, .now-ring, .pulse { animation: none; }
+}
+
+/* Mobile bottom sheet: backdrop fade + panel slide-up. */
+@keyframes zoqo-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.fade-in { animation: zoqo-fade-in 0.2s ease-out; }
+@keyframes zoqo-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-up { animation: zoqo-sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .fade-in, .sheet-up, .pop, .flash { animation: none; }
+}
+
+@keyframes zoqo-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.pop { animation: zoqo-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes zoqo-flash {
+  0% { background-color: rgba(96, 31, 255, 0.10); }
+  100% { background-color: transparent; }
+}
+.flash { animation: zoqo-flash 0.9s ease-out; }
+
+/* Moving-gradient shimmer for skeleton loaders. */
+@keyframes zoqo-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Indeterminate linear progress: a sliding segment. */
+@keyframes zoqo-progress-indeterminate {
+  0% { left: -40%; right: 100%; }
+  60% { left: 100%; right: -90%; }
+  100% { left: 100%; right: -90%; }
+}
+
+/* Spinner dash rotation for the SVG circular spinner. */
+@keyframes zoqo-spinner-dash {
+  0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+  100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
 }
