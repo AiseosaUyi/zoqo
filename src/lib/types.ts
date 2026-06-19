@@ -127,6 +127,7 @@ export interface HistoryEntry {
   id: string;
   label: string;
   strike: number;
+  closePrice?: number; // actual BTC price at settlement (undefined for early sells)
   side: Side;
   shares: number;
   entryPrice: number; // cents

@@ -2,17 +2,14 @@
 import * as React from "react";
 import { MarketEngine } from "./engine";
 import { fetchHistory, useLiveBtc } from "./useBtc";
-import { mulberry32, type Rng } from "./math";
 import type {
   Candle, EngineSnapshot, HistoryEntry, Market, OpenOrder, Position, Side,
 } from "./types";
 
 const TICK_MS = 600;
-const DEPOSIT_AMOUNT = 50; // fake USD credited per deposit (capped at $50)
-const WALLET_KEY = "zoqo-wallet-v1";
+const DEPOSIT_AMOUNT = 50;
+const WALLET_KEY = "zoqo-wallet-v2";
 
-/** Escalating faucet cooldown (ms) required BEFORE the next deposit, given how
- *  many deposits are already done. 1st is free; then 1h, 2h, 3h, then daily. */
 export function depositCooldownMs(depositsDone: number): number {
   if (depositsDone <= 0) return 0;
   if (depositsDone === 1) return 1 * 3600_000;
@@ -29,11 +26,28 @@ export interface PlayStats {
 }
 const ZERO_STATS: PlayStats = { tradesPlaced: 0, wins: 0, losses: 0, bestPnl: 0 };
 
+/** Fired when a position settles — used for the toast and bot telemetry. */
+export interface SettlementResult {
+  id: string;
+  marketLabel: string;
+  strike: number;
+  closePrice: number; // actual BTC price at close
+  side: Side;
+  won: boolean;
+  pnl: number; // net profit/loss in USD
+  payout: number; // gross payout (0 if lost)
+  cost: number; // amount staked
+  settledAt: number;
+}
+
 interface WalletState {
   cash: number;
   depositCount: number;
   nextDepositAt: number;
   stats?: PlayStats;
+  positions?: Position[];
+  tradeHistory?: HistoryEntry[];
+  openOrders?: OpenOrder[];
 }
 
 export interface PricePoint {
@@ -56,16 +70,16 @@ interface ZoqoCtx {
   stats: PlayStats;
   openOrders: OpenOrder[];
   tradeHistory: HistoryEntry[];
-  // deposit faucet
+  settlements: SettlementResult[];
   depositCount: number;
-  nextDepositAt: number; // epoch ms; deposit allowed when now >= this
+  nextDepositAt: number;
   depositAmount: number;
-  deposit: () => boolean; // returns true if credited
-  grant: (amount: number) => void; // credit cash (e.g. daily streak bonus)
+  deposit: () => boolean;
+  grant: (amount: number) => void;
   cancelOrder: (id: string) => void;
+  dismissSettlement: (id: string) => void;
   placeLimitOrder: (marketId: string, side: Side, shares: number, limitPrice: number) => boolean;
   getMarket: (id: string) => Market | undefined;
-  /** current Up price (cents) for a market; No = 100 - yes */
   quote: (id: string) => { yes: number; no: number };
   buy: (marketId: string, side: Side, shares: number, price: number) => void;
   sell: (marketId: string, side: Side, shares?: number) => void;
@@ -83,7 +97,6 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
   const engineRef = React.useRef<MarketEngine | null>(null);
   const priceRef = React.useRef<number>(0);
   const seriesRef = React.useRef<PricePoint[]>([]);
-  // mirrors of state the sim loop reads without re-subscribing
   const cashRef = React.useRef(0);
   const ordersRef = React.useRef<OpenOrder[]>([]);
   const positionsRef = React.useRef<Position[]>([]);
@@ -98,14 +111,14 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
   const [depositCount, setDepositCount] = React.useState(0);
   const [nextDepositAt, setNextDepositAt] = React.useState(0);
   const [stats, setStats] = React.useState<PlayStats>(ZERO_STATS);
+  const [settlements, setSettlements] = React.useState<SettlementResult[]>([]);
   const walletLoaded = React.useRef(false);
 
-  // keep refs in sync so the interval loop reads current values
   cashRef.current = cash;
   ordersRef.current = openOrders;
   positionsRef.current = positions;
 
-  // load persisted wallet (cash + faucet state) after mount — avoids SSR mismatch
+  // Load persisted wallet (cash + faucet + real trade history) on mount.
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem(WALLET_KEY);
@@ -115,6 +128,9 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
         if (typeof w.depositCount === "number") setDepositCount(w.depositCount);
         if (typeof w.nextDepositAt === "number") setNextDepositAt(w.nextDepositAt);
         if (w.stats) setStats({ ...ZERO_STATS, ...w.stats });
+        if (Array.isArray(w.positions)) setPositions(w.positions);
+        if (Array.isArray(w.tradeHistory)) setTradeHistory(w.tradeHistory);
+        if (Array.isArray(w.openOrders)) setOpenOrders(w.openOrders);
       }
     } catch {
       /* ignore */
@@ -122,18 +138,27 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     walletLoaded.current = true;
   }, []);
 
-  // persist wallet whenever it changes (after initial load)
+  // Persist wallet (including real positions and history) whenever state changes.
   React.useEffect(() => {
     if (!walletLoaded.current) return;
     try {
+      const userOrders = openOrders.filter((o) => o.userPlaced);
       localStorage.setItem(
         WALLET_KEY,
-        JSON.stringify({ cash, depositCount, nextDepositAt, stats } satisfies WalletState),
+        JSON.stringify({
+          cash,
+          depositCount,
+          nextDepositAt,
+          stats,
+          positions,
+          tradeHistory: tradeHistory.slice(0, 200),
+          openOrders: userOrders,
+        } satisfies WalletState),
       );
     } catch {
       /* ignore */
     }
-  }, [cash, depositCount, nextDepositAt, stats]);
+  }, [cash, depositCount, nextDepositAt, stats, positions, tradeHistory, openOrders]);
 
   const grant = React.useCallback((amount: number) => {
     if (amount > 0) setCash((c) => c + amount);
@@ -150,7 +175,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
 
   const live = useLiveBtc(undefined, priceRef);
 
-  // bootstrap: fetch history → seed engine
+  // Bootstrap: fetch real BTC history → seed engine with real data.
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -158,20 +183,15 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       const now = Date.now();
       const seed = (now ^ Math.floor(performance.now() * 1000)) >>> 0;
-      const hist: Candle[] = candles.length
-        ? candles
-        : syntheticHistory(now); // never leave the chart empty
+      const hist: Candle[] = candles.length ? candles : syntheticHistory(now);
       if (!priceRef.current) priceRef.current = hist.at(-1)?.c ?? 64000;
       const engine = new MarketEngine({ history: hist, now, seed });
       engine.step(now, priceRef.current);
       engineRef.current = engine;
       seriesRef.current = hist.map((c) => ({ t: c.t, p: c.c }));
       setPriceSeries(seriesRef.current.slice());
-      const snap = engine.snapshot();
-      setSnapshot(snap);
-      const seeded = seedMockActivity(snap.markets, mulberry32((seed ^ 0x9e3779b9) >>> 0));
-      setOpenOrders(seeded.openOrders);
-      setTradeHistory(seeded.history);
+      setSnapshot(engine.snapshot());
+      // No fake seeds — start with only real user activity.
       setReady(true);
     })();
     return () => {
@@ -179,7 +199,31 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // simulation loop
+  // Once the engine is ready, clean up any persisted positions/orders whose
+  // markets have since expired and been pruned from the engine (> 6 h old).
+  // Refund the staked cost so the user isn't locked out of capital.
+  React.useEffect(() => {
+    if (!ready || !engineRef.current) return;
+    const engine = engineRef.current;
+
+    setPositions((prev) => {
+      const orphaned = prev.filter((p) => !engine.marketById(p.marketId));
+      if (orphaned.length === 0) return prev;
+      const refund = orphaned.reduce((s, p) => s + p.cost, 0);
+      if (refund > 0) setCash((c) => c + refund);
+      return prev.filter((p) => !!engine.marketById(p.marketId));
+    });
+
+    setOpenOrders((prev) => {
+      const orphaned = prev.filter((o) => o.userPlaced && !engine.marketById(o.marketId));
+      if (orphaned.length === 0) return prev;
+      const refund = orphaned.reduce((s, o) => s + o.shares * (o.limitPrice / 100), 0);
+      if (refund > 0) setCash((c) => c + refund);
+      return prev.filter((o) => !o.userPlaced || !!engine.marketById(o.marketId));
+    });
+  }, [ready]);
+
+  // Simulation loop — 600 ms ticks driven by the real BTC price.
   React.useEffect(() => {
     if (!ready) return;
     const id = setInterval(() => {
@@ -188,7 +232,6 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
       const now = Date.now();
       const price = priceRef.current || engine.lastPrice;
       engine.step(now, price);
-      // extend the live price line
       const series = seriesRef.current;
       const last = series.at(-1);
       if (!last || now - last.t > 800 || Math.abs(price - last.p) > 0.01) {
@@ -203,11 +246,11 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  /** Fill resting limit orders when price crosses, and settle positions whose
-   *  market has closed. Runs each tick off the ref mirrors. */
+  /** Fill resting limit orders and settle positions whose market has closed.
+   *  Runs each tick off the ref mirrors to avoid stale closures. */
   const processOrdersAndSettlement = React.useCallback(
     (engine: MarketEngine, now: number) => {
-      // 1) limit-order fills (user orders only; cash was reserved at placement)
+      // 1) limit-order fills
       const orders = ordersRef.current;
       const filled: OpenOrder[] = [];
       for (const o of orders) {
@@ -244,7 +287,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
         setStats((s) => ({ ...s, tradesPlaced: s.tradesPlaced + filled.length }));
       }
 
-      // 2) cancel + refund any resting user orders on a market that has closed
+      // 2) expire user orders on settled markets → refund reserved cash
       const expired = ordersRef.current.filter((o) => {
         const m = engine.marketById(o.marketId);
         return o.userPlaced && m && m.status === "settled";
@@ -256,7 +299,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
         setOpenOrders((prev) => prev.filter((o) => !ids.has(o.id)));
       }
 
-      // 3) settle positions whose market has closed → pay $1/winning share
+      // 3) settle positions whose market has closed — pay $1/winning share
       const poss = positionsRef.current;
       const toSettle = poss.filter((p) => {
         const m = engine.marketById(p.marketId);
@@ -265,6 +308,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
       if (toSettle.length) {
         let payout = 0;
         const hist: HistoryEntry[] = [];
+        const newSettlements: SettlementResult[] = [];
         for (const p of toSettle) {
           const m = engine.marketById(p.marketId)!;
           const won = p.side === "up" ? !!m.settledUp : !m.settledUp;
@@ -274,6 +318,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
             id: `settle-${p.marketId}-${p.side}-${p.openedAt}`,
             label: m.label,
             strike: m.strike,
+            closePrice: m.lastPrice,
             side: p.side,
             shares: p.shares,
             entryPrice: p.avgPrice,
@@ -282,11 +327,23 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
             result: won ? "won" : "lost",
             closedAt: m.closeTime,
           });
+          newSettlements.push({
+            id: `settle-${p.marketId}-${p.side}-${p.openedAt}`,
+            marketLabel: m.label,
+            strike: m.strike,
+            closePrice: m.lastPrice,
+            side: p.side,
+            won,
+            pnl: pay - p.cost,
+            payout: pay,
+            cost: p.cost,
+            settledAt: m.closeTime,
+          });
         }
         if (payout > 0) setCash((c) => c + payout);
         const keys = new Set(toSettle.map((p) => `${p.marketId}|${p.side}`));
         setPositions((prev) => prev.filter((p) => !keys.has(`${p.marketId}|${p.side}`)));
-        setTradeHistory((prev) => [...hist, ...prev].slice(0, 40));
+        setTradeHistory((prev) => [...hist, ...prev].slice(0, 200));
         const w = hist.filter((h) => h.result === "won").length;
         const best = Math.max(0, ...hist.map((h) => h.pnl));
         setStats((s) => ({
@@ -295,10 +352,17 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
           losses: s.losses + (hist.length - w),
           bestPnl: Math.max(s.bestPnl, best),
         }));
+        if (newSettlements.length > 0) {
+          setSettlements((prev) => [...newSettlements, ...prev].slice(0, 5));
+        }
       }
     },
     [],
   );
+
+  const dismissSettlement = React.useCallback((id: string) => {
+    setSettlements((prev) => prev.filter((s) => s.id !== id));
+  }, []);
 
   const cancelOrder = React.useCallback((id: string) => {
     setOpenOrders((prev) => {
@@ -314,7 +378,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
       if (shares <= 0 || cost > cashRef.current) return false;
       const m = engineRef.current?.marketById(marketId);
       if (!m) return false;
-      setCash((c) => c - cost); // reserve
+      setCash((c) => c - cost);
       setOpenOrders((prev) => [
         {
           id: `lim-${Date.now().toString(36)}-${prev.length}`,
@@ -359,14 +423,12 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
         if (i >= 0) {
           const ex = prev[i];
           const totalShares = ex.shares + shares;
-          const avg = (ex.cost + cost) / (totalShares * (1 / 100)) / 100; // weighted ¢
           const merged: Position = {
             ...ex,
             shares: totalShares,
             cost: ex.cost + cost,
             avgPrice: round1((ex.avgPrice * ex.shares + price * shares) / totalShares),
           };
-          void avg;
           const next = prev.slice();
           next[i] = merged;
           return next;
@@ -425,7 +487,6 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  // portfolio derivations
   const { portfolioValue, netPnl, exposure } = React.useMemo(() => {
     let posValue = 0;
     let cost = 0;
@@ -458,12 +519,14 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     stats,
     openOrders,
     tradeHistory,
+    settlements,
     depositCount,
     nextDepositAt,
     depositAmount: DEPOSIT_AMOUNT,
     deposit,
     grant,
     cancelOrder,
+    dismissSettlement,
     placeLimitOrder,
     getMarket,
     quote,
@@ -476,64 +539,6 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
-}
-
-/**
- * Seed believable "Open Trades" and "History" from the real market timeline, so
- * those tabs aren't empty on first load. Settled markets become resolved
- * history; live/upcoming markets get a couple of working limit orders.
- */
-function seedMockActivity(
-  markets: Market[],
-  rng: Rng,
-): { openOrders: OpenOrder[]; history: HistoryEntry[] } {
-  const settled = markets.filter((m) => m.status === "settled");
-  const openable = markets.filter((m) => m.status !== "settled");
-
-  const history: HistoryEntry[] = settled.flatMap((m) => {
-    const n = rng() < 0.7 ? 1 : 2;
-    return Array.from({ length: n }, (_, k) => {
-      const side: Side = rng() < 0.5 ? "up" : "down";
-      const won = side === "up" ? !!m.settledUp : !m.settledUp;
-      const shares = Math.round(40 + rng() * 900);
-      const entryPrice = round1(25 + rng() * 55);
-      const cost = shares * (entryPrice / 100);
-      const exitPrice = won ? 100 : 0;
-      return {
-        id: `seed-h-${m.id}-${k}`,
-        label: m.label,
-        strike: m.strike,
-        side,
-        shares,
-        entryPrice,
-        exitPrice,
-        pnl: won ? shares - cost : -cost,
-        result: (won ? "won" : "lost") as HistoryEntry["result"],
-        closedAt: m.closeTime,
-      };
-    });
-  });
-
-  const openOrders: OpenOrder[] = openable.slice(0, 3).map((m, i) => {
-    const side: Side = rng() < 0.5 ? "up" : "down";
-    const base = side === "up" ? m.yes : 100 - m.yes;
-    const filled = rng() < 0.4 ? Math.round(rng() * 60) : 0;
-    return {
-      id: `seed-o-${m.id}-${i}`,
-      marketId: m.id,
-      label: m.label,
-      strike: m.strike,
-      side,
-      shares: Math.round(100 + rng() * 1500),
-      limitPrice: round1(Math.max(1, base - (2 + rng() * 8))),
-      filledPct: filled,
-      placedAt: Date.now() - Math.round(rng() * 240_000),
-      status: (filled > 0 ? "partial" : "working") as OpenOrder["status"],
-    };
-  });
-
-  history.sort((a, b) => b.closedAt - a.closedAt);
-  return { openOrders, history: history.slice(0, 10) };
 }
 
 /** Fallback if every price source is unreachable — a gentle random walk. */
