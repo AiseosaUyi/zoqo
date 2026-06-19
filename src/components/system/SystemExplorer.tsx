@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
-import { Palette, Type, Box, Component, Download, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Palette, Type, Box, Component, Download, Sparkles, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { PALETTE, TYPE_SCALE } from "@/lib/tokens";
 import { Sidebar, type NavItem } from "./Sidebar";
@@ -68,7 +69,14 @@ export function SystemExplorer() {
           <Badge color="brand" variant="soft" size="sm">
             {activeLabel}
           </Badge>
-          <span className="ml-auto hidden text-[12px] text-sub sm:block">
+          <Link
+            href="/trade"
+            className="ml-auto flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[12.5px] font-medium text-sub transition-colors hover:bg-gray-50 hover:text-ink"
+          >
+            <TrendingUp size={14} className="text-purple-500" />
+            <span className="hidden sm:inline">Open Product</span>
+          </Link>
+          <span className="hidden text-[12px] text-sub lg:block">
             ZOQO Design System · v1
           </span>
         </header>

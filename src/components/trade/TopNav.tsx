@@ -30,7 +30,7 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
 
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:gap-3 sm:px-4">
-      <Link href="/" className="flex items-center gap-1.5">
+      <Link href="/trade" className="flex items-center gap-1.5">
         <span className="font-display text-[26px] font-black leading-none tracking-tight text-ink">
           ZOQO
         </span>
@@ -38,7 +38,7 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
 
       {showBack ? (
         <Link
-          href="/"
+          href="/trade"
           className="ml-2 inline-flex items-center gap-1 rounded-[8px] px-2 py-1 text-[13px] font-medium text-sub hover:bg-gray-100 hover:text-ink"
         >
           <ArrowLeft size={15} /> Back
@@ -88,7 +88,7 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
         <Link
           href="/system"
           title="Design system"
-          className="hidden h-8 w-8 place-items-center rounded-full hover:bg-gray-100 lg:grid"
+          className="grid h-8 w-8 place-items-center rounded-full hover:bg-gray-100"
         >
           <Palette size={17} className="text-sub" />
         </Link>

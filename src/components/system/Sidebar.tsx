@@ -1,5 +1,7 @@
 "use client";
 import * as React from "react";
+import Link from "next/link";
+import { TrendingUp } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export interface NavItem {
@@ -43,6 +45,15 @@ export function Sidebar({
           </a>
         ))}
       </nav>
+      <div className="border-t border-line px-3 py-3">
+        <Link
+          href="/trade"
+          className="flex items-center gap-2.5 rounded-[8px] px-3 py-2.5 text-[13px] font-medium text-sub transition-colors hover:bg-gray-50 hover:text-ink"
+        >
+          <TrendingUp size={15} className="text-purple-500" />
+          Open Product
+        </Link>
+      </div>
       <div className="border-t border-line px-6 py-4 text-[11px] leading-relaxed text-gray-400">
         Tokens are live-editable.
         <br />
