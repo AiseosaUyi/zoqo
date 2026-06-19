@@ -14,47 +14,59 @@ npm run build    # production build
 npm run lint     # eslint (flat config, eslint-config-next)
 ```
 
-There is **no test framework** configured — no `npm test`, no test files. Verify changes by running the app and exercising it in the browser.
+There is **no test framework** configured. Verify changes by running the app and exercising it in the browser.
 
 Path alias: `@/*` → `src/*`.
 
 ## What this is
 
-ZOQO is a **simulated** real-time Bitcoin prediction market ("bet Up or Down on the next 5 minutes"). It is play-money: there is no backend trading. A **real** BTC price feed drives a **client-side simulation** of rolling markets, order flow, odds, and an order book. Every session is seeded differently but behaves coherently.
+ZOQO is a real-time Bitcoin **prediction market**. Users bet Up or Down on whether BTC will be higher or lower at the end of a rolling window (5 / 10 / 15 / 30 / 60 min). It is play-money (no real trading), but **all market outcomes are driven by the real BTC price** — settlement direction, strike prices, and chart data are not synthetic. The Poisson retail tape, order book, and top holders are simulated ambient noise only; they do not affect the user's P&L.
+
+The app is designed for a **trading bot** to learn from: seeded fake trades were removed; positions, open orders, and trade history all persist to `localStorage` across sessions.
 
 ## Architecture (the parts that span files)
 
-The whole app is one client-side data pipeline. Understand this flow before changing trading behavior:
+The whole app is one client-side data pipeline:
 
 ```
 useBtc (real BTC price)  →  ZoqoProvider (store.tsx, ticks @600ms)  →  MarketEngine (engine.ts)  →  EngineSnapshot  →  React components
 ```
 
-- **`src/lib/useBtc.ts`** — gets live BTC price. Tries WebSockets (Binance → Coinbase → Bitstamp) and **falls back to polling `/api/btc/price`** when sockets are blocked. The API route (`src/app/api/btc/*`) proxies Bitstamp/CoinGecko server-side. **In many local/sandboxed environments Binance & Coinbase are DNS-blocked, so the working sources are Bitstamp/CoinGecko via the poll fallback** — a console warning about failed WS connections is expected, not a bug.
+- **`src/lib/useBtc.ts`** — live BTC price via WebSockets (Binance → Coinbase → Bitstamp fallback chain), then polls `/api/btc/price` when sockets are blocked. **In many local/sandboxed environments Binance & Coinbase are DNS-blocked**; the poll fallback (Bitstamp/CoinGecko via the API route) is the normal path locally. WS warnings in the console are expected, not bugs.
 
-- **`src/lib/engine.ts`** (`MarketEngine`) — the simulation. From the real price it synthesizes: rolling markets per duration (`DURATIONS_MIN = [5,10,15,30,60]`), implied YES odds (Bachelier/normal approximation of price-vs-strike, nudged by order-flow imbalance), a Poisson retail trade tape with occasional whale spikes, volume buckets, and an order book. Markets are generated `N_PAST`(12) back + live + `N_FUTURE`(1) ahead per duration; pruned after ~6h. `step(now, price)` advances everything; `snapshot()` returns an immutable `EngineSnapshot`. **Settled markets freeze their `lastPrice`/`changePct`/`settledUp` at settlement — do not recompute them against the live price** (a past bug did this and made settled columns show the current price).
+- **`src/lib/engine.ts`** (`MarketEngine`) — the simulation layer. From the real BTC price it synthesizes: rolling markets per duration (`DURATIONS_MIN = [5,10,15,30,60]`), implied YES odds (Bachelier/normal approximation anchored to real price vs. strike), a Poisson retail tape with whale spikes, volume buckets, and an order book. Markets are seeded `N_PAST`(12) back + live + `N_FUTURE`(1) ahead per duration; pruned after ~6 h. `step(now, price)` advances everything; `snapshot()` returns an immutable `EngineSnapshot`. **Settled markets freeze `lastPrice`/`changePct`/`settledUp` at close — never recompute them against the live price** (doing so is a past bug that made settled columns show the current price).
 
-- **`src/lib/store.tsx`** (`ZoqoProvider` + `useZoqo`) — the single source of app state. Owns the engine instance, runs the 600ms tick loop, holds the price series, and manages the **wallet** (cash, positions, open orders, trade history, deposit faucet) persisted to `localStorage` (`zoqo-wallet-v1`). All trading actions (`buy`, `sell`, `placeLimitOrder`, `quote`, `getMarket`, `deposit`) live here. Components read everything via `useZoqo()`; they never touch the engine directly.
+- **`src/lib/store.tsx`** (`ZoqoProvider` + `useZoqo`) — single source of app state. Owns the engine, runs the 600 ms tick loop, manages the **wallet** (cash, positions, open orders, trade history, deposit faucet, settlement results). Persists all user data to `localStorage` at key **`zoqo-wallet-v2`** (positions, tradeHistory up to 200 entries, userPlaced openOrders). On boot, orphaned positions/orders for markets pruned from the engine are automatically refunded. Settlement fires a `SettlementResult` into the `settlements` queue (consumed by `SettlementToast`). No fake data is seeded — history starts empty.
 
-- **`src/lib/types.ts`** — the domain model shared by engine, store, and UI (`Market`, `Position`, `Trade`, `Spike`, `OrderBook`, `EngineSnapshot`, etc.). Read this first when working on trading features. Note `HistoryEntry` has no `marketId` — join it to a market by `label` + `strike`.
+- **`src/lib/types.ts`** — domain model shared by engine, store, and UI. Read this first when working on trading features. Key notes: `HistoryEntry` has no `marketId` — join to a market by `label + strike`; it does include `closePrice` (real BTC price at settlement). `SettlementResult` (exported from `store.tsx`) carries the full settlement breakdown for the toast.
 
 ## Routes
 
-- `src/app/(app)/` — the trading UI (wrapped by `ZoqoProvider` + `ProfileProvider` in its layout).
-  - `page.tsx` — the **multi-market** view: a draggable timeline of market columns above an aligned price chart.
-  - `market/[id]/page.tsx` — the single-market deep view.
-- `src/app/system/page.tsx` — a live, editable, exportable **design-system explorer** (`/system`). It reads the same tokens as the product and can override CSS variables at runtime.
+```
+/          →  redirects to /system  (next.config.ts, default landing)
+/system    →  design-system explorer (live-editable tokens, export)
+/trade     →  multi-market trading UI  ← this is the product
+/market/[id] → single-market deep view
+```
+
+`(app)/layout.tsx` wraps `/trade` and `/market/*` with `ZoqoProvider`, `ProfileProvider`, and `SettlementToast`. The `/` → `/system` redirect in `next.config.ts` is intentional; the product lives at `/trade` so navigating to it never loops.
 
 ## The multi-market timeline (non-obvious coupling)
 
-The market-column **header** (`MarketColumns.tsx`) and the price **chart** (`MarketChart.tsx`) are separate full-width siblings that must line up to the pixel. They share one time→x mapping via **`src/lib/chartGeo.ts`** (`timeToX`, `padLeftFor`, `PAD_RIGHT`). `page.tsx` owns the view window + pan offset and passes the same `{width, padL, padR, t0, t1}` geometry to both. If you change padding/domain on one, change it via `chartGeo` so both stay aligned. The chart clips drawing to the plot and renders a hatched "NOT YET TRADED" future zone right of "now".
+`MarketColumns.tsx` (column headers) and `MarketChart.tsx` (price chart) are separate full-width siblings that **must align to the pixel**. They share one time→x mapping via **`src/lib/chartGeo.ts`** (`timeToX`, `padLeftFor`, `PAD_RIGHT`). The trade page owns the view window + pan offset and passes the same `{width, padL, padR, t0, t1}` geometry to both. If you change padding or domain on one, change it through `chartGeo` so both stay aligned. The chart clips to the plot area and renders a hatched "NOT YET TRADED" zone right of "now".
 
 ## Design system & styling
 
-- **Tailwind v4** (`@import "tailwindcss"` + `@theme` in `globals.css`). Tokens originate in **`src/lib/tokens.ts`** and are mirrored as CSS variables in `globals.css`. **Use token classes / `var(--color-*)`, never raw hex** (raw hex only inside a token definition).
-- Fonts: **Inter** (UI), **Bebas Neue** + **Satoshi** (display — `font-display`). Don't add font families.
-- UI primitives are a **barrel export** at `@/components/ui` (Button, SegmentedControl, Badge, etc.) — import from there, reuse before adding. Icons: **lucide-react** (no emoji, no `<img>` for icons). Class merging: `cn()` from `src/lib/cn.ts`. Motion: CSS keyframes in `globals.css` (respect `prefers-reduced-motion`).
+- **Tailwind v4** (`@import "tailwindcss"` + `@theme` in `globals.css`). Tokens originate in **`src/lib/tokens.ts`** and are mirrored as CSS variables in `globals.css`. **Use token classes / `var(--color-*)`, never raw hex** — raw hex only inside a token definition.
+- Fonts: **Inter** (all UI text), **Bebas Neue** (numbers only — prices, balances, counts), **Satoshi** (`font-display` for wordmark). Don't add font families.
+- UI primitives barrel-exported from `@/components/ui` — import from there, reuse before adding new ones. Icons: **lucide-react** only. Class merging: `cn()` from `src/lib/cn.ts`. Motion: CSS keyframes in `globals.css` (respect `prefers-reduced-motion`).
+- The `/system` page is a live explorer of these tokens and components. It can override CSS variables at runtime to preview theme changes.
 
 ## Responsive model
 
-Single breakpoint divider at **`lg` (1024px)**. `≥lg`: main chart + a right rail (`RightRail` = TradeCard + order book). `<lg`: single column — the order book stacks under the chart and trading happens through `MobileTradeBar` (a sticky bottom Up/Down bar that opens a slide-up sheet hosting the shared `TradeCard`). The market-duration selector is in the nav on `lg+` and in a page-level row on mobile.
+Single breakpoint at **`lg` (1024px)**. `≥lg`: full chart + right rail (`RightRail` = TradeCard + order book). `<lg`: single column — order book stacks under the chart, trading via `MobileTradeBar` (sticky bottom bar opening a slide-up sheet with the shared `TradeCard`). The market-duration selector lives in TopNav at `lg+` and in a page-level row on mobile.
+
+## Favicon / branding
+
+- `src/app/icon.svg` — purple `#601FFF` rounded square + white Z lettermark. Next.js serves it as `<link rel="icon" type="image/svg+xml">`.
+- `src/app/favicon.ico` — generated from `icon.svg` via `sharp` (two PNG-compressed frames: 16 × 16 and 32 × 32). Regenerate with the inline Node.js script in the commit history if the SVG changes.
