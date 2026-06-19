@@ -1,14 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <defs>
-    <radialGradient id="g" cx="30%" cy="22%" r="65%">
-      <stop offset="0%" stop-color="#601FFF" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#601FFF" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <!-- Warm dark background, matching OG image -->
-  <rect width="32" height="32" rx="6" fill="#16140F"/>
-  <!-- Purple brand glow, top-left — mirrors OG image composition -->
-  <rect width="32" height="32" rx="6" fill="url(#g)"/>
+  <!-- Purple brand background -->
+  <rect width="32" height="32" rx="6" fill="#601FFF"/>
   <!-- Z lettermark: top bar → diagonal → bottom bar -->
   <path d="M7.5,10.5 L24.5,10.5 L7.5,21.5 L24.5,21.5"
         fill="none"
