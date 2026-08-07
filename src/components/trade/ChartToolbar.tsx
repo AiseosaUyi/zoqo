@@ -1,8 +1,7 @@
 "use client";
 import * as React from "react";
 import { LineChart } from "lucide-react";
-import { Select } from "@/components/ui";
-import { cn } from "@/lib/cn";
+import { Select, SegmentedControl } from "@/components/ui";
 import { TIMEFRAMES } from "@/lib/timeframe";
 
 const QUICK = TIMEFRAMES.slice(0, 2); // 1m, 5m
@@ -26,22 +25,12 @@ export function ChartToolbar({
     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
         <LineChart size={14} className="text-sub" />
-        <div className="inline-flex items-center gap-1 rounded-[10px] bg-muted p-1">
-          {QUICK.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => onTf(t.key)}
-              className={cn(
-                "h-6 rounded-[7px] px-2.5 text-[12px] font-medium transition-colors",
-                tf === t.key
-                  ? "bg-white text-ink shadow-[0_1px_2px_rgba(14,17,19,0.10)]"
-                  : "text-sub hover:text-ink",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          data={QUICK.map((t) => ({ value: t.key, label: t.label }))}
+          value={tf}
+          onChange={onTf}
+          size="xs"
+        />
         <Select
           data={MORE.map((t) => ({ value: t.key, label: t.label }))}
           value={inMore ? tf : null}

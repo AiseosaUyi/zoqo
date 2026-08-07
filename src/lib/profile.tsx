@@ -15,6 +15,7 @@ export interface LeaderRow {
 
 interface ProfileState {
   handle: string | null;
+  email: string | null;
   avatarSeed: string;
   streak: number;
   bestStreak: number;
@@ -23,9 +24,41 @@ interface ProfileState {
   createdAt: number;
 }
 
+export type AuthStep = "email" | "otp" | "rewards";
+
 interface ProfileCtx {
   ready: boolean;
   handle: string | null;
+  email: string | null;
+  signedIn: boolean;
+  authOpen: boolean;
+  authStep: AuthStep;
+  setAuthStep: (s: AuthStep) => void;
+  openAuth: () => void;
+  closeAuth: () => void;
+  /** Returns true (and does nothing) if already signed in. Otherwise opens the
+   *  auth modal and, once the flow completes, calls onSuccess for you — so
+   *  callers can just do `if (!requireAuth(submit)) return;` at the top of
+   *  a gated action. */
+  requireAuth: (onSuccess?: () => void) => boolean;
+  /** Inline error surfaced by whichever step is active (invalid email format,
+   *  invalid referral code). Cleared automatically on step change / retry. */
+  authError: string | null;
+  setAuthError: (e: string | null) => void;
+  /** Validates format, stores the email, and (mocked) "sends" a 6-digit code —
+   *  starts the resend countdown and advances to the "otp" step. */
+  submitEmail: (email: string) => void;
+  /** Epoch ms when "Resend code" becomes available again. */
+  otpDeadline: number | null;
+  /** Mock-accepts any 6-digit code: derives a handle from the email, credits
+   *  the signup bonus once, flips signedIn, and advances to "rewards". */
+  confirmOtp: (code: string) => void;
+  /** Resets the resend countdown (mocked — no email is actually re-sent). */
+  resendOtp: () => void;
+  /** Any non-empty code except "000000" is accepted (mirrors the invalid-code
+   *  screenshot); an empty code is the "Skip" path. Either way, on success
+   *  this closes the modal and runs the action queued via requireAuth. */
+  claimRewards: (code?: string) => void;
   avatarSeed: string;
   level: number;
   xp: number;
@@ -48,6 +81,9 @@ interface ProfileCtx {
 }
 
 const XP_PER = 150;
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
+/** Mocked resend countdown — 02:59, matching the Figma reference. */
+const OTP_COUNTDOWN_MS = 179_000;
 
 const Ctx = React.createContext<ProfileCtx | null>(null);
 
@@ -60,6 +96,18 @@ export function useProfile() {
 const dayStr = (d: Date) => d.toDateString();
 const bonusFor = (streak: number) => 10 + Math.min(streak, 10) * 5; // $15 → $60
 
+/** Turns an email local-part into a display handle, e.g. "j.doe_99" → "J Doe". */
+function handleFromEmail(email: string | null): string {
+  const local = (email ?? "trader").split("@")[0];
+  const words = local
+    .replace(/[0-9]+/g, " ")
+    .split(/[._-]+/)
+    .map((w) => w.trim())
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1));
+  return words.join(" ") || "Trader";
+}
+
 const LEADER_NAMES = [
   "WhaleByte", "0xMoby", "Leviathan", "Ava B.", "Kai R.", "DeepPockets",
   "Nia P.", "OrcaCap", "Rio M.", "Poseidon", "Yuki T.", "Sol K.",
@@ -70,6 +118,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { portfolioValue, netPnl, exposure, grant, stats } = useZoqo();
   const [p, setP] = React.useState<ProfileState>({
     handle: null,
+    email: null,
     avatarSeed: "trader",
     streak: 0,
     bestStreak: 0,
@@ -136,6 +185,95 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     return credited;
   }, [grant]);
 
+  // ---- auth / onboarding ----
+  const SIGNUP_BONUS = 50;
+  // Handle is only assigned once the OTP step mock-verifies — that's the
+  // moment the user is considered signed in, mirroring the Figma flow where
+  // step 3 (rewards) happens *after* the account already exists.
+  const signedIn = ready && p.handle !== null;
+  const [authOpen, setAuthOpen] = React.useState(false);
+  const [authStep, setAuthStep] = React.useState<AuthStep>("email");
+  const [authError, setAuthError] = React.useState<string | null>(null);
+  const [otpDeadline, setOtpDeadline] = React.useState<number | null>(null);
+  const pendingAction = React.useRef<(() => void) | null>(null);
+  const credited = React.useRef(false); // guards against double-granting the signup bonus
+
+  // While !signedIn, handle is always null, so the only steps a reopen can
+  // resume into are "email" (nothing submitted yet) or "otp" (email sent,
+  // not yet confirmed). "rewards" only happens live, right after confirmOtp.
+  const stepFor = React.useCallback(
+    (email: string | null): AuthStep => (email === null ? "email" : "otp"),
+    [],
+  );
+
+  const openAuth = React.useCallback(() => {
+    pendingAction.current = null;
+    setAuthError(null);
+    setAuthStep(stepFor(p.email));
+    setAuthOpen(true);
+  }, [p.email, stepFor]);
+
+  const closeAuth = React.useCallback(() => {
+    setAuthOpen(false);
+    setAuthError(null);
+    pendingAction.current = null;
+  }, []);
+
+  const requireAuth = React.useCallback(
+    (onSuccess?: () => void): boolean => {
+      if (signedIn) return true;
+      pendingAction.current = onSuccess ?? null;
+      setAuthError(null);
+      setAuthStep(stepFor(p.email));
+      setAuthOpen(true);
+      return false;
+    },
+    [signedIn, p.email, stepFor],
+  );
+
+  const submitEmail = React.useCallback((email: string) => {
+    const clean = email.trim();
+    if (!EMAIL_RE.test(clean)) {
+      setAuthError("Please enter a valid email address");
+      return;
+    }
+    setAuthError(null);
+    setP((prev) => ({ ...prev, email: clean, createdAt: prev.createdAt || Date.now() }));
+    setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
+    setAuthStep("otp");
+  }, []);
+
+  const resendOtp = React.useCallback(() => {
+    setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
+  }, []);
+
+  const confirmOtp = React.useCallback(
+    (code: string) => {
+      if (!/^\d{6}$/.test(code)) return; // mock-accepts any 6 digits
+      setHandle(handleFromEmail(p.email));
+      if (!credited.current) {
+        credited.current = true;
+        grant(SIGNUP_BONUS);
+      }
+      setAuthError(null);
+      setAuthStep("rewards");
+    },
+    [p.email, setHandle, grant],
+  );
+
+  const claimRewards = React.useCallback((code?: string) => {
+    const clean = (code ?? "").trim();
+    if (clean && clean === "000000") {
+      setAuthError("The code you entered is invalid, please double check");
+      return;
+    }
+    setAuthError(null);
+    setAuthOpen(false);
+    const cb = pendingAction.current;
+    pendingAction.current = null;
+    if (cb) cb();
+  }, []);
+
   // XP from real activity: daily claims, trades placed, and wins
   const xp = p.claims * 25 + stats.tradesPlaced * 5 + stats.wins * 15;
   const level = 1 + Math.floor(xp / XP_PER);
@@ -180,6 +318,21 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const value: ProfileCtx = {
     ready,
     handle: p.handle,
+    email: p.email,
+    signedIn,
+    authOpen,
+    authStep,
+    setAuthStep,
+    openAuth,
+    closeAuth,
+    requireAuth,
+    authError,
+    setAuthError,
+    submitEmail,
+    otpDeadline,
+    confirmOtp,
+    resendOtp,
+    claimRewards,
     avatarSeed: p.avatarSeed,
     level,
     xp,

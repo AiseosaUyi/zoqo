@@ -223,7 +223,7 @@ export default function MultiMarketPage() {
           )}
         </main>
         {ready && tradingId && (
-          <aside className="hidden shrink-0 lg:block lg:w-[332px] lg:border-l">
+          <aside className="hidden shrink-0 lg:block lg:w-[560px] lg:border-l">
             <RightRail marketId={tradingId} side={side} onSideChange={setSide} />
           </aside>
         )}
