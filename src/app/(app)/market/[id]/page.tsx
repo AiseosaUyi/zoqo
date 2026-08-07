@@ -136,7 +136,7 @@ export default function SingleMarketPage() {
             )}
           </main>
         {ready && market && (
-          <aside className="hidden w-[332px] shrink-0 xl:block xl:border-l">
+          <aside className="hidden w-[560px] shrink-0 xl:block xl:border-l">
             <RightRail marketId={id} side={side} onSideChange={setSide} />
           </aside>
         )}

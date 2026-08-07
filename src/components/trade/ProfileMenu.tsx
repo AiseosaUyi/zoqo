@@ -1,17 +1,16 @@
 "use client";
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, Crown, Flame, Gift, Sparkles, Trophy, X } from "lucide-react";
-import { Avatar, Badge, Button, Input } from "@/components/ui";
+import Link from "next/link";
+import { Check, ChevronDown, Crown, Flame, Gift, Sparkles, Trophy, User, X } from "lucide-react";
+import { Avatar, Badge, Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { usd, usdCompact, pct } from "@/lib/format";
 import { useProfile } from "@/lib/profile";
 import { useZoqo } from "@/lib/store";
 
-const SUGGESTIONS = ["SatoshiSurfer", "MoonOrBust", "GreenCandle", "DiamondPaws", "VegaVibes"];
-
 export function ProfileMenu() {
-  const { ready, handle, avatarSeed, level, streak, canClaimToday, dailyBonus, setHandle, claimDaily, myRank, justLeveledTo } =
+  const { ready, handle, avatarSeed, level, streak, canClaimToday, dailyBonus, claimDaily, myRank, justLeveledTo } =
     useProfile();
   const [open, setOpen] = React.useState(false);
   const [board, setBoard] = React.useState(false);
@@ -26,7 +25,6 @@ export function ProfileMenu() {
   }, []);
 
   if (!ready) return <Avatar name="You" size="md" />;
-  const needsOnboarding = handle === null;
 
   return (
     <div ref={rootRef} className="relative">
@@ -36,7 +34,7 @@ export function ProfileMenu() {
       >
         <Avatar name={avatarSeed} size="md" />
         <div className="hidden flex-col items-start leading-none sm:flex">
-          <span className="text-[12px] font-bold text-ink">{handle ?? "Sign in"}</span>
+          <span className="text-[12px] font-bold text-ink">{handle}</span>
           <span className="text-[10px] text-sub">Lv {level}</span>
         </div>
         {streak > 0 && (
@@ -47,7 +45,7 @@ export function ProfileMenu() {
         <ChevronDown size={14} className="text-sub" />
       </button>
 
-      {open && !needsOnboarding && (
+      {open && (
         <ProfilePopover
           onClose={() => setOpen(false)}
           onLeaderboard={() => {
@@ -57,7 +55,6 @@ export function ProfileMenu() {
         />
       )}
 
-      {needsOnboarding && <Onboarding suggestions={SUGGESTIONS} onSet={setHandle} />}
       {board && <Leaderboard onClose={() => setBoard(false)} myRank={myRank} />}
       {justLeveledTo != null && <LevelUpToast level={justLeveledTo} />}
 
@@ -179,9 +176,16 @@ function ProfilePopover({ onClose, onLeaderboard }: { onClose: () => void; onLea
             {canClaimToday ? `Claim daily ${usd(dailyBonus)}` : "Daily claimed — come back tomorrow"}
           </Button>
         )}
+        <Link
+          href="/profile"
+          onClick={onClose}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border py-2 text-[12px] font-semibold hover:bg-gray-50"
+        >
+          <User size={14} className="text-sub" /> View Profile
+        </Link>
         <button
           onClick={onLeaderboard}
-          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[10px] border py-2 text-[12px] font-semibold hover:bg-gray-50"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border py-2 text-[12px] font-semibold hover:bg-gray-50"
         >
           <Trophy size={14} className="text-gold-600" /> View leaderboard
         </button>
@@ -203,57 +207,6 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "up
         {value}
       </div>
     </div>
-  );
-}
-
-function Onboarding({ suggestions, onSet }: { suggestions: string[]; onSet: (h: string) => void }) {
-  const [val, setVal] = React.useState("");
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="fixed inset-0 z-50 grid place-items-center bg-gray-900/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-[400px] overflow-hidden rounded-[20px] border bg-surface shadow-[0_24px_64px_rgba(22,20,15,0.25)]">
-        <div className="bg-gradient-to-br from-purple-500 to-purple-700 px-6 py-7 text-white">
-          <h2 className="font-display text-[26px] font-black leading-none">Welcome to ZOQO</h2>
-          <p className="mt-2 text-[13px] text-white/85">
-            Pick a handle. You start with a $50 faucet, a daily streak bonus, and a spot on the leaderboard.
-          </p>
-        </div>
-        <div className="p-5">
-          <label className="text-[12px] font-semibold text-sub">Your handle</label>
-          <Input
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            placeholder="e.g. GreenCandle"
-            size="lg"
-            className="mt-1.5"
-          />
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {suggestions.map((s) => (
-              <button
-                key={s}
-                onClick={() => setVal(s)}
-                className="rounded-full border px-2.5 py-1 text-[11px] font-medium text-sub hover:bg-gray-50"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <Button
-            color="brand"
-            size="lg"
-            fullWidth
-            className="mt-4"
-            onClick={() => onSet(val || suggestions[0])}
-          >
-            Start trading
-          </Button>
-          <p className="mt-2 text-center text-[10.5px] text-sub">
-            Play money. No sign-up, no real funds — your progress saves on this device.
-          </p>
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }
 

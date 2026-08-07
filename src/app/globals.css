@@ -135,7 +135,7 @@
 
   /* ---- Radii ---- */
   --radius-chip: 8px;
-  --radius-btn: 10px;
+  --radius-btn: 999px;
   --radius-card: 16px;
   --radius-pill: 999px;
 

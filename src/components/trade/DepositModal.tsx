@@ -2,8 +2,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, Lock, X } from "lucide-react";
-import { Button } from "@/components/ui";
-import { cn } from "@/lib/cn";
+import { Button, SegmentedControl } from "@/components/ui";
 import { usd } from "@/lib/format";
 import { depositCooldownMs, useZoqo } from "@/lib/store";
 
@@ -106,20 +105,15 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
         ) : (
           <div className="px-5 py-4">
             {/* currency tabs */}
-            <div className="mb-4 grid grid-cols-4 gap-2">
-              {COINS.map((c) => (
-                <button
-                  key={c.key}
-                  onClick={() => setCoin(c.key)}
-                  className={cn(
-                    "rounded-[10px] border py-2 text-[12px] font-bold transition-colors",
-                    coin === c.key ? "border-purple-500 bg-purple-50 text-purple-700" : "hover:bg-gray-50",
-                  )}
-                >
-                  {c.key}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              data={COINS.map((c) => ({ value: c.key, label: c.key }))}
+              value={coin}
+              onChange={setCoin}
+              size="md"
+              color="brand"
+              fullWidth
+              className="mb-4"
+            />
 
             {/* amount */}
             <div className="mb-4 flex items-center justify-between rounded-[12px] bg-muted px-4 py-3">
@@ -137,7 +131,7 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
                 </div>
                 <button
                   onClick={copy}
-                  className="mt-2 inline-flex items-center gap-1.5 self-start rounded-[8px] border px-2.5 py-1.5 text-[12px] font-semibold hover:bg-gray-50"
+                  className="mt-2 inline-flex items-center gap-1.5 self-start rounded-full border px-3 py-1.5 text-[12px] font-semibold hover:bg-gray-50"
                 >
                   {copied ? <Check size={13} className="text-green-600" /> : <Copy size={13} />}
                   {copied ? "Copied" : "Copy address"}

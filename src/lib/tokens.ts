@@ -165,7 +165,7 @@ export const SEMANTIC = {
 export const RADII = {
   none: "0px",
   chip: "8px",
-  btn: "10px",
+  btn: "999px", // all CTAs are fully rounded (pill)
   card: "16px",
   pill: "999px",
 };

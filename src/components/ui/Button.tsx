@@ -7,11 +7,11 @@ export type ButtonColor =
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const SIZES: Record<ButtonSize, string> = {
-  xs: "h-7 px-2.5 text-[12px] gap-1 rounded-[8px]",
-  sm: "h-8 px-3 text-[13px] gap-1.5 rounded-[8px]",
-  md: "h-10 px-4 text-[14px] gap-2 rounded-[10px]",
-  lg: "h-12 px-5 text-[15px] gap-2 rounded-[12px]",
-  xl: "h-14 px-6 text-[16px] gap-2.5 rounded-[14px]",
+  xs: "h-7 px-3 text-[12px] gap-1 rounded-full",
+  sm: "h-8 px-3.5 text-[13px] gap-1.5 rounded-full",
+  md: "h-10 px-4.5 text-[14px] gap-2 rounded-full",
+  lg: "h-12 px-5.5 text-[15px] gap-2 rounded-full",
+  xl: "h-14 px-6.5 text-[16px] gap-2.5 rounded-full",
 };
 
 // [solid, soft, outline, ghost] classes per color

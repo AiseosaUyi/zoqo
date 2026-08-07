@@ -1,14 +1,16 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, ChevronDown, Lock, Palette, Plus, Sparkles } from "lucide-react";
-import { SegmentedControl, Badge } from "@/components/ui";
-import { usd } from "@/lib/format";
+import { ArrowLeft, ChevronDown, Gift, Palette, Sparkles } from "lucide-react";
+import { SegmentedControl } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
-import { cn } from "@/lib/cn";
+import { useProfile } from "@/lib/profile";
+import { useAutomations } from "@/lib/automations";
+import { useDepositCooldown } from "@/lib/useDepositCooldown";
 import { MARKET_DURATIONS } from "@/lib/timeframe";
 import { DepositModal } from "./DepositModal";
 import { ProfileMenu } from "./ProfileMenu";
+import { HeaderAuthButtons, HeaderBell, HeaderDepositButton, HeaderLogo, HeaderNav, HeaderStats } from "./HeaderChrome";
 
 export interface TopNavProps {
   showBack?: boolean;
@@ -17,24 +19,17 @@ export interface TopNavProps {
 }
 
 export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
-  const { portfolioValue, cash, connected, source, btc, nextDepositAt } = useZoqo();
+  const { portfolioValue, cash, btc, nextDepositAt, settlements } = useZoqo();
+  const { ready, signedIn, openAuth } = useProfile();
+  const { automations } = useAutomations();
+  const activeAutomations = automations.filter((a) => a.enabled).length;
   const [depositOpen, setDepositOpen] = React.useState(false);
-  const [now, setNow] = React.useState(0); // 0 until mounted → no SSR/client drift
-  React.useEffect(() => {
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const locked = now > 0 && now < nextDepositAt;
-  const remainingH = Math.ceil((nextDepositAt - now) / 3600_000);
+  const { locked, remainingH } = useDepositCooldown(nextDepositAt);
+  const unread = settlements.length;
 
   return (
-    <header className="sticky top-0 z-30 flex h-[60px] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:gap-3 sm:px-4">
-      <Link href="/trade" className="flex items-center gap-1.5">
-        <span className="font-display text-[26px] font-black leading-none tracking-tight text-ink">
-          ZOQO
-        </span>
-      </Link>
+    <header className="sticky top-0 z-30 flex h-[60px] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:gap-3 sm:px-4 relative">
+      <HeaderLogo />
 
       {showBack ? (
         <Link
@@ -60,58 +55,62 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
         size="sm"
         className="ml-1 hidden lg:inline-flex"
       />
-      <span className="hidden text-[11px] text-sub lg:inline">market</span>
 
-      <Badge color="up" variant="dot" className="ml-1 hidden md:inline-flex">
-        {connected ? "Live" : "Connecting"} · {source}
-      </Badge>
+      {/* Market / Automations — true center of the header (absolute, not
+          flex-centered-in-leftover-space) so it lands in the same spot
+          regardless of how wide the left/right content is on any given page.
+          "Market" is always the active section here since TopNav only
+          renders on /trade & /market/*. */}
+      <HeaderNav
+        activeAutomations={activeAutomations}
+        active="market"
+        visibleFrom="lg"
+        className="absolute left-1/2 -translate-x-1/2"
+      />
 
       <div className="ml-auto flex items-center gap-3">
-        <button
-          onClick={() => setDepositOpen(true)}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
-            locked
-              ? "bg-gold-100 text-gold-800 hover:bg-gold-200"
-              : "bg-green-500 text-white hover:bg-green-600",
-          )}
-        >
-          {locked ? <Lock size={13} /> : <Plus size={14} />}
-          {locked ? `Deposit in ${remainingH}h` : "Deposit"}
-        </button>
+        {ready && (
+          <Link
+            href="/referrals"
+            title="Rewards & referrals"
+            className="grid h-8 w-8 place-items-center rounded-full bg-gold-100 hover:bg-gold-200"
+          >
+            <Gift size={16} className="text-gold-700" />
+          </Link>
+        )}
 
-        <div className="hidden items-center gap-5 sm:flex">
-          <Stat label="Portfolio" value={usd(portfolioValue)} />
-          <Stat label="Cash" value={usd(cash)} />
-        </div>
+        {ready && signedIn && (
+          <>
+            <HeaderDepositButton locked={locked} remainingH={remainingH} onClick={() => setDepositOpen(true)} />
+            <HeaderStats portfolioValue={portfolioValue} cash={cash} />
+          </>
+        )}
 
-        <Link
-          href="/system"
-          title="Design system"
-          className="grid h-8 w-8 place-items-center rounded-full hover:bg-gray-100"
-        >
-          <Palette size={17} className="text-sub" />
-        </Link>
-        <button className="hidden h-8 w-8 place-items-center rounded-full hover:bg-gray-100 lg:grid">
-          <Bell size={17} className="text-sub" />
-        </button>
-        <ProfileMenu />
-        <button className="hidden items-center gap-1 rounded-full bg-gray-900 px-3 py-1.5 text-[12px] font-bold text-white sm:inline-flex">
-          <Sparkles size={13} /> AI
-        </button>
+        {ready && (
+          <Link
+            href="/system"
+            title="Design system"
+            className="grid h-8 w-8 place-items-center rounded-full hover:bg-gray-100"
+          >
+            <Palette size={17} className="text-sub" />
+          </Link>
+        )}
+
+        {ready && (signedIn ? (
+          <>
+            <HeaderBell unread={unread} />
+            <ProfileMenu />
+            <button className="hidden items-center gap-1 rounded-full bg-gray-900 px-3 py-1.5 text-[12px] font-bold text-white sm:inline-flex">
+              <Sparkles size={13} /> AI
+            </button>
+          </>
+        ) : (
+          <HeaderAuthButtons onOpenAuth={openAuth} />
+        ))}
       </div>
       {/* live BTC ticker tucked for accessibility */}
       <span className="sr-only">BTC {btc ?? "—"}</span>
-      <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />
+      {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col items-end leading-none">
-      <span className="text-[11px] text-sub">{label}</span>
-      <span className="mt-1 text-[14px] font-bold text-ink nums">{value}</span>
-    </div>
   );
 }

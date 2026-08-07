@@ -538,5 +538,8 @@ function niceTicks(min: number, max: number, count: number): number[] {
   const start = Math.ceil(min / step) * step;
   const out: number[] = [];
   for (let t = start; t <= max + 1e-6; t += step) out.push(Math.round(t));
-  return out;
+  // Rounding can collapse two distinct raw ticks onto the same integer when
+  // the visible price range is tight (e.g. a quiet market), which produced
+  // duplicate React keys downstream — dedupe here, at the source.
+  return Array.from(new Set(out));
 }

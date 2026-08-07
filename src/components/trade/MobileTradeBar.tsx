@@ -6,6 +6,7 @@ import { TradeCard } from "./TradeCard";
 import { SettlementPanel } from "./SettlementPanel";
 import { cents } from "@/lib/format";
 import { useZoqo } from "@/lib/store";
+import { useProfile } from "@/lib/profile";
 import { cn } from "@/lib/cn";
 import type { Side } from "@/lib/types";
 
@@ -21,12 +22,14 @@ export function MobileTradeBar({
   onSideChange: (s: Side) => void;
 }) {
   const { quote, getMarket } = useZoqo();
+  const { requireAuth } = useProfile();
   const [open, setOpen] = React.useState(false);
   const q = quote(marketId);
   const m = getMarket(marketId);
   const settled = m?.status === "settled";
 
   const openWith = (s: Side) => {
+    if (!requireAuth(() => openWith(s))) return;
     onSideChange(s);
     setOpen(true);
   };
@@ -39,7 +42,7 @@ export function MobileTradeBar({
           {settled ? (
             <button
               onClick={() => setOpen(true)}
-              className="w-full rounded-[12px] border bg-surface py-3 text-[14px] font-bold text-ink transition-colors active:bg-gray-50"
+              className="w-full rounded-full border bg-surface py-3 text-[14px] font-bold text-ink transition-colors active:bg-gray-50"
             >
               Round settled — view result
             </button>
@@ -98,7 +101,7 @@ function BarButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center justify-center gap-2 rounded-[12px] py-3 text-white transition-colors disabled:opacity-50",
+        "flex items-center justify-center gap-2 rounded-full py-3 text-white transition-colors disabled:opacity-50",
         up ? "bg-green-500 active:bg-green-600" : "bg-red-500 active:bg-red-600",
       )}
     >
