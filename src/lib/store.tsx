@@ -76,6 +76,10 @@ interface ZoqoCtx {
   depositAmount: number;
   deposit: () => boolean;
   grant: (amount: number) => void;
+  /** Add or subtract cash directly — used by the Terminal's position engine
+   *  (terminalStore.tsx) so paper-traded positions share this same wallet
+   *  rather than keeping a second, disconnected cash balance. Clamped at 0. */
+  adjustCash: (delta: number) => void;
   cancelOrder: (id: string) => void;
   dismissSettlement: (id: string) => void;
   placeLimitOrder: (marketId: string, side: Side, shares: number, limitPrice: number) => boolean;
@@ -162,6 +166,10 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
 
   const grant = React.useCallback((amount: number) => {
     if (amount > 0) setCash((c) => c + amount);
+  }, []);
+
+  const adjustCash = React.useCallback((delta: number) => {
+    setCash((c) => Math.max(0, c + delta));
   }, []);
 
   const deposit = React.useCallback((): boolean => {
@@ -525,6 +533,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     depositAmount: DEPOSIT_AMOUNT,
     deposit,
     grant,
+    adjustCash,
     cancelOrder,
     dismissSettlement,
     placeLimitOrder,

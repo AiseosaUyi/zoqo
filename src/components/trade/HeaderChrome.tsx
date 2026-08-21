@@ -30,7 +30,7 @@ export function HeaderNav({
   /** which section this header's page belongs to, if either — bolds that
    *  link. Profile/Referrals pages pass neither, since they're not part of
    *  the Market/Automations pair the nav switches between. */
-  active?: "market" | "automations";
+  active?: "market" | "terminal" | "learn" | "leaderboard" | "automations";
   /** breakpoint the nav appears at — TopNav's crowded left side (BTC/duration
    *  selector) needs the extra room of `lg`; the lighter headers fit at `sm`. */
   visibleFrom?: "sm" | "lg";
@@ -48,7 +48,25 @@ export function HeaderNav({
         href="/trade"
         className={cn(active === "market" ? "font-bold text-ink" : "text-sub hover:text-ink")}
       >
-        Market
+        Predict
+      </Link>
+      <Link
+        href="/terminal"
+        className={cn(active === "terminal" ? "font-bold text-ink" : "text-sub hover:text-ink")}
+      >
+        Terminal
+      </Link>
+      <Link
+        href="/learn"
+        className={cn(active === "learn" ? "font-bold text-ink" : "text-sub hover:text-ink")}
+      >
+        Learn
+      </Link>
+      <Link
+        href="/leaderboard"
+        className={cn(active === "leaderboard" ? "font-bold text-ink" : "text-sub hover:text-ink")}
+      >
+        Leaderboard
       </Link>
       <Link
         href="/automations"
