@@ -10,7 +10,7 @@ export const metadata = { title: "Terminal — ZOQO" };
 export default function TerminalPage() {
   return (
     <>
-      <AppHeader active="terminal" />
+      <AppHeader />
       <TerminalShell />
     </>
   );

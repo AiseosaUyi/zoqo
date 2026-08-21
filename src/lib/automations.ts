@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useLocalStorageState } from "./useLocalStorageState";
 
 const KEY = "zoqo-automations-v1";
 
@@ -24,41 +25,32 @@ interface StoredState {
   automations: Automation[];
 }
 
+const EMPTY_STATE: StoredState = { automations: [] };
+
+function mergeAutomations(parsed: unknown, def: StoredState): StoredState {
+  const p = parsed as Partial<StoredState> | null;
+  return p && Array.isArray(p.automations) ? { automations: p.automations } : def;
+}
+
 function genId(): string {
   return `auto_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Local, persisted list of mocked automations. Follows the same hydration
- *  idiom as ProfileProvider / ZoqoProvider: load once in an effect, write on
- *  every change, guard the first write with a ref so we never clobber
- *  localStorage with the empty initial state before hydration runs. */
+/** Local, persisted list of mocked automations — useLocalStorageState reads
+ *  once (SSR-safe) and writes on every change, no separate load/persist
+ *  effects needed. */
 export function useAutomations() {
-  const [automations, setAutomations] = React.useState<Automation[]>([]);
-  const [ready, setReady] = React.useState(false);
-  const loaded = React.useRef(false);
+  const [stored, setStored, ready] = useLocalStorageState(KEY, EMPTY_STATE, mergeAutomations);
+  const automations = stored.automations;
 
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as StoredState;
-        if (Array.isArray(parsed.automations)) setAutomations(parsed.automations);
-      }
-    } catch {
-      /* ignore corrupt/blocked storage */
-    }
-    loaded.current = true;
-    setReady(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (!loaded.current) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify({ automations } satisfies StoredState));
-    } catch {
-      /* ignore quota/blocked storage */
-    }
-  }, [automations]);
+  const setAutomations = React.useCallback(
+    (updater: Automation[] | ((prev: Automation[]) => Automation[])) => {
+      setStored((prev) => ({
+        automations: typeof updater === "function" ? updater(prev.automations) : updater,
+      }));
+    },
+    [setStored],
+  );
 
   const create = React.useCallback(
     (input: Omit<Automation, "id" | "createdAt" | "enabled">) => {
@@ -71,16 +63,22 @@ export function useAutomations() {
       setAutomations((prev) => [automation, ...prev]);
       return automation;
     },
-    [],
+    [setAutomations],
   );
 
-  const toggle = React.useCallback((id: string) => {
-    setAutomations((prev) => prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a)));
-  }, []);
+  const toggle = React.useCallback(
+    (id: string) => {
+      setAutomations((prev) => prev.map((a) => (a.id === id ? { ...a, enabled: !a.enabled } : a)));
+    },
+    [setAutomations],
+  );
 
-  const remove = React.useCallback((id: string) => {
-    setAutomations((prev) => prev.filter((a) => a.id !== id));
-  }, []);
+  const remove = React.useCallback(
+    (id: string) => {
+      setAutomations((prev) => prev.filter((a) => a.id !== id));
+    },
+    [setAutomations],
+  );
 
   return { ready, automations, create, toggle, remove };
 }

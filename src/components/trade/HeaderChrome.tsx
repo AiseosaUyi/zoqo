@@ -1,18 +1,54 @@
 "use client";
+import * as React from "react";
 import Link from "next/link";
-import { Bell, Lock, Plus } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
+import { Bell, Bot, Gift, GraduationCap, Lock, Menu, Plus, Target, Terminal as TerminalIcon, Trophy, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
 
-/** Shared pieces of the app's four header variants (TopNav, AutomationsHeader,
- *  ProfileTopNav, ReferralsTopNav) — each page still composes its own layout
- *  (TopNav carries the BTC/duration selector, ProfileTopNav carries the
- *  claim-daily gift button, etc), but the bits that were being hand-copied
- *  identically four times — and drifting each time — live here once. */
+/** Shared pieces of the app's five header variants (TopNav, AppHeader,
+ *  AutomationsHeader, ProfileTopNav, ReferralsTopNav) — each page still
+ *  composes its own layout (TopNav carries the BTC/duration selector,
+ *  ProfileTopNav carries the claim-daily gift button, etc), but the bits
+ *  that were being hand-copied identically across headers — and drifting
+ *  each time — live here once. This also owns the primary nav's route list
+ *  and the mobile nav drawer, so every header gets real mobile navigation
+ *  and correct active-link state for free instead of re-implementing it. */
+
+const NAV_ITEMS = [
+  { key: "market", href: "/trade", label: "Predict", icon: Target },
+  { key: "terminal", href: "/terminal", label: "Terminal", icon: TerminalIcon },
+  { key: "learn", href: "/learn", label: "Learn", icon: GraduationCap },
+  { key: "leaderboard", href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { key: "automations", href: "/automations", label: "Automations", icon: Bot },
+] as const;
+
+/** Single source of truth for which nav item the current route belongs to.
+ *  Previously every header had to be handed an `active` prop by its caller —
+ *  ProfileTopNav and ReferralsTopNav both forgot to, so neither ever
+ *  highlighted anything. Deriving it from the URL means that class of bug
+ *  can't happen again. /trade and every /market/* deep link both count as
+ *  "market" (matches the old TopNav-only comment saying the same). */
+function useActiveNavKey(): (typeof NAV_ITEMS)[number]["key"] | null {
+  const pathname = usePathname();
+  return React.useMemo(() => {
+    if (pathname === "/trade" || pathname.startsWith("/market")) return "market";
+    const hit = NAV_ITEMS.find((i) => i.key !== "market" && pathname.startsWith(i.href));
+    return hit?.key ?? null;
+  }, [pathname]);
+}
+
+/** The one focus-visible treatment every interactive header element uses —
+ *  matches the ring already standard on Button/Radio/Accordion/etc, applied
+ *  here because header nav links and icon buttons were the one part of the
+ *  app with no keyboard focus indication at all. */
+const NAV_FOCUS =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-1 rounded-[8px]";
 
 export function HeaderLogo() {
   return (
-    <Link href="/trade" className="flex items-center gap-1.5">
+    <Link href="/trade" className={cn("flex items-center gap-1.5", NAV_FOCUS)}>
       <span className="font-display text-[26px] font-black leading-none tracking-tight text-ink">
         ZOQO
       </span>
@@ -22,20 +58,16 @@ export function HeaderLogo() {
 
 export function HeaderNav({
   activeAutomations,
-  active,
   visibleFrom = "sm",
   className,
 }: {
   activeAutomations: number;
-  /** which section this header's page belongs to, if either — bolds that
-   *  link. Profile/Referrals pages pass neither, since they're not part of
-   *  the Market/Automations pair the nav switches between. */
-  active?: "market" | "terminal" | "learn" | "leaderboard" | "automations";
   /** breakpoint the nav appears at — TopNav's crowded left side (BTC/duration
    *  selector) needs the extra room of `lg`; the lighter headers fit at `sm`. */
   visibleFrom?: "sm" | "lg";
   className?: string;
 }) {
+  const active = useActiveNavKey();
   return (
     <nav
       className={cn(
@@ -44,45 +76,172 @@ export function HeaderNav({
         className,
       )}
     >
-      <Link
-        href="/trade"
-        className={cn(active === "market" ? "font-bold text-ink" : "text-sub hover:text-ink")}
-      >
-        Predict
-      </Link>
-      <Link
-        href="/terminal"
-        className={cn(active === "terminal" ? "font-bold text-ink" : "text-sub hover:text-ink")}
-      >
-        Terminal
-      </Link>
-      <Link
-        href="/learn"
-        className={cn(active === "learn" ? "font-bold text-ink" : "text-sub hover:text-ink")}
-      >
-        Learn
-      </Link>
-      <Link
-        href="/leaderboard"
-        className={cn(active === "leaderboard" ? "font-bold text-ink" : "text-sub hover:text-ink")}
-      >
-        Leaderboard
-      </Link>
-      <Link
-        href="/automations"
-        className={cn(
-          "inline-flex items-center gap-1.5",
-          active === "automations" ? "font-bold text-ink" : "text-sub hover:text-ink",
-        )}
-      >
-        Automations
-        {activeAutomations > 0 && (
-          <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-            {activeAutomations}
-          </span>
-        )}
-      </Link>
+      {NAV_ITEMS.map((item) => {
+        const isActive = active === item.key;
+        return (
+          <Link
+            key={item.key}
+            href={item.href}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-0.5 py-0.5",
+              NAV_FOCUS,
+              isActive ? "font-bold text-ink" : "text-sub hover:text-ink",
+            )}
+          >
+            {item.label}
+            {item.key === "automations" && activeAutomations > 0 && (
+              <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {activeAutomations}
+              </span>
+            )}
+          </Link>
+        );
+      })}
     </nav>
+  );
+}
+
+/** Hamburger trigger for the mobile nav drawer. `breakpoint` should match
+ *  the paired HeaderNav's `visibleFrom` so exactly one of the two is ever
+ *  visible at a given width. */
+export function HeaderMobileNavTrigger({
+  onClick,
+  breakpoint = "sm",
+}: {
+  onClick: () => void;
+  breakpoint?: "sm" | "lg";
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Open navigation menu"
+      className={cn(
+        "grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-gray-100",
+        breakpoint === "lg" ? "lg:hidden" : "sm:hidden",
+        NAV_FOCUS,
+      )}
+    >
+      <Menu size={18} className="text-sub" />
+    </button>
+  );
+}
+
+/** The mobile nav drawer itself — the fix for a real, confirmed gap: below
+ *  its header's nav breakpoint, a user previously had no way to reach
+ *  Terminal/Learn/Leaderboard/Automations/Referrals at all (Predict was only
+ *  reachable via the logo). Every header renders one of these paired with
+ *  its trigger; state is owned by the calling header (same pattern as
+ *  DepositModal's `open`/`onClose`). */
+export function HeaderMobileNav({
+  open,
+  onClose,
+  activeAutomations,
+  signedIn,
+  portfolioValue,
+  cash,
+  onOpenAuth,
+}: {
+  open: boolean;
+  onClose: () => void;
+  activeAutomations: number;
+  signedIn: boolean;
+  portfolioValue?: number;
+  cash?: number;
+  onOpenAuth?: () => void;
+}) {
+  const active = useActiveNavKey();
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Navigation menu">
+      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="animate-in slide-in-from-left fade-in absolute inset-y-0 left-0 flex w-[280px] max-w-[85vw] flex-col overflow-y-auto border-r bg-surface shadow-[0_24px_64px_rgba(14,17,19,0.25)] duration-200">
+        <div className="flex items-center justify-between border-b px-4 py-3.5">
+          <HeaderLogo />
+          <button
+            onClick={onClose}
+            aria-label="Close navigation menu"
+            className={cn("grid h-8 w-8 place-items-center rounded-full hover:bg-gray-100", NAV_FOCUS)}
+          >
+            <X size={18} className="text-sub" />
+          </button>
+        </div>
+
+        {signedIn && portfolioValue != null && cash != null && (
+          <div className="grid grid-cols-2 gap-px border-b bg-line">
+            <div className="bg-surface px-4 py-3">
+              <div className="text-[11px] text-sub">Portfolio</div>
+              <div className="mt-0.5 text-[15px] font-bold text-ink nums">{usd(portfolioValue)}</div>
+            </div>
+            <div className="bg-surface px-4 py-3">
+              <div className="text-[11px] text-sub">Cash</div>
+              <div className="mt-0.5 text-[15px] font-bold text-ink nums">{usd(cash)}</div>
+            </div>
+          </div>
+        )}
+
+        <nav className="flex flex-col gap-1 p-3">
+          {NAV_ITEMS.map((item) => {
+            const isActive = active === item.key;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                onClick={onClose}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold",
+                  NAV_FOCUS,
+                  isActive ? "bg-purple-50 text-purple-700" : "text-ink hover:bg-gray-100",
+                )}
+              >
+                <Icon size={17} className={isActive ? "text-purple-600" : "text-sub"} />
+                {item.label}
+                {item.key === "automations" && activeAutomations > 0 && (
+                  <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {activeAutomations}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto border-t p-3">
+          {signedIn ? (
+            <Link
+              href="/referrals"
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
+                NAV_FOCUS,
+              )}
+            >
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-gold-100 text-gold-700">
+                <Gift size={14} />
+              </span>
+              Rewards & referrals
+            </Link>
+          ) : (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenAuth?.();
+              }}
+              className={cn(
+                "w-full rounded-full bg-purple-500 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-purple-600",
+                NAV_FOCUS,
+              )}
+            >
+              Log in / Sign up
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -113,6 +272,7 @@ export function HeaderDepositButton({
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition-colors",
+        NAV_FOCUS,
         locked
           ? "bg-gold-100 text-gold-800 hover:bg-gold-200"
           : "bg-green-500 text-white hover:bg-green-600",
@@ -126,10 +286,16 @@ export function HeaderDepositButton({
 
 export function HeaderBell({ unread }: { unread: number }) {
   return (
-    <button className="relative hidden h-8 w-8 place-items-center rounded-full hover:bg-gray-100 lg:grid">
+    <button
+      aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+      className={cn("relative hidden h-8 w-8 place-items-center rounded-full hover:bg-gray-100 lg:grid", NAV_FOCUS)}
+    >
       <Bell size={17} className="text-sub" />
       {unread > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+        <span
+          aria-hidden="true"
+          className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-[9px] font-bold text-white"
+        >
           {unread}
         </span>
       )}
@@ -142,13 +308,19 @@ export function HeaderAuthButtons({ onOpenAuth }: { onOpenAuth: () => void }) {
     <>
       <button
         onClick={onOpenAuth}
-        className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-sub hover:bg-gray-100 hover:text-ink"
+        className={cn(
+          "rounded-full px-3 py-1.5 text-[13px] font-semibold text-sub hover:bg-gray-100 hover:text-ink",
+          NAV_FOCUS,
+        )}
       >
         Log in
       </button>
       <button
         onClick={onOpenAuth}
-        className="inline-flex items-center gap-1.5 rounded-full bg-purple-500 px-4 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-purple-600"
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full bg-purple-500 px-4 py-1.5 text-[12px] font-bold text-white transition-colors hover:bg-purple-600",
+          NAV_FOCUS,
+        )}
       >
         Sign up
       </button>

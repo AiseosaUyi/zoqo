@@ -2,7 +2,7 @@
 import * as React from "react";
 import { Card, Progress, Badge } from "@/components/ui";
 import { SKILLS, useAcademy } from "@/lib/academy";
-import { SignalSpot } from "@/components/learn/SignalSpot";
+import { SignalSpot, SIGNAL_SPOT_LESSON_ID } from "@/components/learn/SignalSpot";
 import { AppHeader } from "@/components/trade/AppHeader";
 import { Flame, Zap, Lock } from "lucide-react";
 
@@ -16,7 +16,7 @@ export default function LearnPage() {
 
   return (
     <>
-      <AppHeader active="learn" />
+      <AppHeader />
       <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -43,14 +43,16 @@ export default function LearnPage() {
           >
             ← Back to skill tree
           </button>
-          <SignalSpot onDone={() => {}} />
+          <SignalSpot onDone={() => setActiveLesson(null)} />
         </Card>
       ) : (
         <div className="flex flex-col gap-3">
           {SKILLS.map((s, idx) => {
-            // only Foundations' first lesson is playable in this pass; the
-            // rest of the tree is a content shell (see TERMINAL_SPEC.md §6).
-            const lessonDone = completedLessons.includes("signal-spot-1") && idx === 0;
+            // Only Foundations (skill 0) is playable in this pass — its one
+            // lesson (SIGNAL_SPOT_LESSON_ID) now carries a full 8-question
+            // bank with real rendered charts. The rest of the tree is an
+            // honest content roadmap, not a mock (see TERMINAL_SPEC.md §6).
+            const lessonDone = idx === 0 && completedLessons.includes(SIGNAL_SPOT_LESSON_ID);
             return (
               <Card key={s.id} className="flex items-center justify-between p-4">
                 <div className="flex-1">
@@ -65,14 +67,17 @@ export default function LearnPage() {
                 </div>
                 {idx === 0 ? (
                   <button
-                    onClick={() => setActiveLesson("signal-spot-1")}
+                    onClick={() => setActiveLesson(SIGNAL_SPOT_LESSON_ID)}
                     className="ml-4 rounded-full bg-purple-500 px-4 py-2 text-[12.5px] font-bold text-white hover:bg-purple-600"
                   >
                     {lessonDone ? "Practice again" : "Start"}
                   </button>
                 ) : (
-                  <div className="ml-4 flex items-center gap-1.5 text-[12px] font-semibold text-sub">
-                    <Lock size={14} /> Coming soon
+                  <div className="ml-4 flex flex-col items-end gap-0.5">
+                    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-sub">
+                      <Lock size={14} /> In development
+                    </div>
+                    <span className="text-[11px] text-sub/70">{s.lessonCount} lessons planned</span>
                   </div>
                 )}
               </Card>

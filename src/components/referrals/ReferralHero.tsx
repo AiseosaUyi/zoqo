@@ -51,6 +51,7 @@ export function ReferralHero({ data }: { data: ReferralData }) {
           <div className="mt-1 text-[34px] font-black leading-none nums">
             {usd(data.totalEarnedAllTime)}
           </div>
+          <div className="mt-0.5 text-[10px] text-white/55">Simulated for this demo</div>
           <div className="mt-3 flex items-center gap-4 sm:justify-end">
             <div>
               <div className="text-[15px] font-bold nums">{usd(data.totalEarnedReferrals)}</div>

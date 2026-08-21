@@ -3,6 +3,7 @@ import * as React from "react";
 import { useZoqo } from "@/lib/store";
 import { TerminalProvider, useTerminal } from "@/lib/terminalStore";
 import { useAssetPrice } from "@/lib/useAssetPrice";
+import { useTicker } from "@/lib/useTicker";
 import { ASSETS, DEFAULT_ASSET_ID } from "@/lib/assets";
 import { Watchlist } from "./Watchlist";
 import { OrderTicket } from "./OrderTicket";
@@ -10,7 +11,19 @@ import { PositionsPanel } from "./PositionsPanel";
 import { TerminalChart } from "./TerminalChart";
 import { usd, signedUsd } from "@/lib/format";
 
-const MAX_TICKS = 500;
+// A time-window cap, not a tick-count cap. TerminalChart buckets ticks into
+// 60s candles (bucketToCandles); a count cap like the old MAX_TICKS=500 caps
+// the buffer's real time span at just seconds for a fast-trading asset like
+// BTC (multiple ticks/sec), collapsing everything into a single degenerate
+// candle that fitContent() then stretches to fill the whole panel — the
+// "solid block" bug. Keeping a 60-minute window instead guarantees up to ~60
+// real 1-minute candles regardless of an asset's trade frequency, so slow
+// tickers (forex/gold) still get a populated chart and fast tickers (BTC)
+// don't degenerate to one bucket. Only the currently-selected asset accrues
+// ticks (see the price-change check below), so this doesn't grow unbounded
+// across the whole watchlist — worst case is one asset's buffer at BTC's
+// tick rate over an hour, which is small.
+const TICK_WINDOW_MS = 60 * 60 * 1000;
 
 /** Multi-asset trading terminal — desktop: watchlist / chart / order ticket
  *  three-column layout with a positions panel underneath, mirroring the
@@ -30,8 +43,7 @@ function TerminalInner() {
   const { cash } = useZoqo();
   const { openPosition, markToMarket } = useTerminal();
   const [assetId, setAssetId] = React.useState(DEFAULT_ASSET_ID);
-  const [, setTickVersion] = React.useState(0);
-  const ticksByAsset = React.useRef<Record<string, { t: number; p: number }[]>>({});
+  const [ticksByAsset, setTicksByAsset] = React.useState<Record<string, { t: number; p: number }[]>>({});
 
   // Subscribe to every asset's live price at once (cheap — a handful of
   // symbols) so the watchlist and mark-to-market P&L stay live regardless
@@ -43,16 +55,26 @@ function TerminalInner() {
   }
 
   const activePrice = prices[assetId]?.price ?? null;
+  // useTicker instead of Date.now() for the tick timestamp below — it's
+  // read via useSyncExternalStore (render-pure), whereas Date.now() called
+  // directly in the render body is flagged as impure. 250ms is well under
+  // real price-update cadence, so no precision loss the chart would show
+  // (it buckets ticks into coarser candles anyway).
+  const nowMs = useTicker(250);
 
-  React.useEffect(() => {
-    if (!activePrice) return;
-    const arr = ticksByAsset.current[assetId] ?? [];
-    arr.push({ t: Date.now(), p: activePrice });
-    if (arr.length > MAX_TICKS) arr.shift();
-    ticksByAsset.current[assetId] = arr;
-    // force a render so the chart picks up the new tick
-    setTickVersion((v) => v + 1);
-  }, [assetId, activePrice]);
+  // Append a tick whenever the active asset's live price actually changes —
+  // React's "adjust state during render" pattern (comparing against state
+  // tracking the last-seen price), not an effect, so there's no setState
+  // call outside a handler/callback.
+  const [lastTick, setLastTick] = React.useState<{ assetId: string; price: number } | null>(null);
+  if (activePrice != null && (!lastTick || lastTick.assetId !== assetId || lastTick.price !== activePrice)) {
+    setLastTick({ assetId, price: activePrice });
+    setTicksByAsset((prev) => {
+      const cutoff = nowMs - TICK_WINDOW_MS;
+      const arr = [...(prev[assetId] ?? []), { t: nowMs, p: activePrice }].filter((tk) => tk.t >= cutoff);
+      return { ...prev, [assetId]: arr };
+    });
+  }
 
   const priceMap: Record<string, number | null> = {};
   for (const a of ASSETS) priceMap[a.id] = prices[a.id]?.price ?? null;
@@ -81,7 +103,7 @@ function TerminalInner() {
 
         <div className="flex flex-col overflow-hidden">
           <div className="min-h-[280px] flex-1">
-            <TerminalChart assetId={assetId} ticks={ticksByAsset.current[assetId] ?? []} />
+            <TerminalChart assetId={assetId} ticks={ticksByAsset[assetId] ?? []} />
           </div>
           <div className="h-[220px] border-t border-line">
             <PositionsPanel prices={priceMap} />

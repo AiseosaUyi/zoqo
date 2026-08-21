@@ -3,6 +3,7 @@ import * as React from "react";
 import { PALETTE, SHADES, SURFACES, paletteToTs, type ColorMeta } from "@/lib/tokens";
 import { CodeBlock, Section } from "./primitives";
 import { SegmentedControl } from "@/components/ui";
+import { useHasMounted } from "@/lib/useLocalStorageState";
 
 /** Read the currently-applied value of a color token (reflecting live edits). */
 function liveHex(token: string, fallback: string): string {
@@ -49,12 +50,17 @@ type Format = "CSS" | "TS" | "JSON";
 
 export function ExportSection() {
   const [format, setFormat] = React.useState<Format>("CSS");
-  // Re-read on mount and whenever the user re-opens; a tick lets edits flush.
+  // `tick` is a manual invalidation signal for currentPalette()'s untracked
+  // DOM read — bumped by the format switch and the "Refresh" button below.
+  // `mounted` (useHasMounted) covers the mount-time re-read that used to be
+  // a setState-in-effect: it flips from false to true exactly once after
+  // hydration via useSyncExternalStore, which is enough to invalidate this
+  // memo without a manual effect.
   const [tick, setTick] = React.useState(0);
+  const mounted = useHasMounted();
 
-  const palette = React.useMemo(() => currentPalette(), [tick]);
-  // touch tick on mount so SSR fallback is replaced by live values
-  React.useEffect(() => setTick((t) => t + 1), []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const palette = React.useMemo(() => currentPalette(), [tick, mounted]);
 
   const code = React.useMemo(() => {
     if (format === "CSS") return buildCss(palette);

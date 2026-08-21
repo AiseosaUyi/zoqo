@@ -71,7 +71,8 @@ One gap between docs and code worth knowing: `TYPOGRAPHY.md` documents utility c
 
 ## Components
 
-- **`@/components/ui`** barrel: `Button`, `Card`, `Badge`, `Tag`, `SegmentedControl`, `Select`, `Input`, `Textarea`, `Checkbox`, `Radio`, `Switch`, `Tabs`, `Accordion`, `Avatar`, `Alert`, `Progress`, `Skeleton`, `Spinner`, `Stat`, `Tooltip`. Reuse one of these — or extend it — before hand-rolling a look-alike. `ChartToolbar`'s timeframe toggle and `DepositModal`'s coin picker used to be bespoke reimplementations of `SegmentedControl`; both were converted to the real component, which is the standard to hold new code to.
+- **`@/components/ui`** barrel: `Button`, `Card`, `Badge`, `Tag`, `SegmentedControl`, `Select`, `Input`, `Textarea`, `Checkbox`, `Radio`, `Switch`, `Tabs`, `Accordion`, `Avatar`, `Alert`, `Progress`, `Skeleton`, `Spinner`, `Stat`, `Tooltip`, `EmptyState`. Reuse one of these — or extend it — before hand-rolling a look-alike. `ChartToolbar`'s timeframe toggle and `DepositModal`'s coin picker used to be bespoke reimplementations of `SegmentedControl`; both were converted to the real component, which is the standard to hold new code to.
+- **`EmptyState`** — icon-in-circle + title + description + up to two `Button` actions, dashed-border container. The real "you have nothing here yet" affordance (e.g. zero Automations) — write copy with actual personality, never "No items found."
 - **`Button`** — `variant` (`solid`/`soft`/`outline`/`ghost`) × `color` (`brand`/`up`/`down`/`gray`/`orange`/`blue`/`gold`) × `size` (`xs`–`xl`), all pill-radius.
 - **Icons:** lucide-react exclusively, no emoji, no raster icons.
 - **Class merging:** `cn()` (`src/lib/cn.ts`, `clsx` + `tailwind-merge`).

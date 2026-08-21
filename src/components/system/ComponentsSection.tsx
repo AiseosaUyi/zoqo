@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Rocket, Star } from "lucide-react";
+import { Bot, Rocket, Star } from "lucide-react";
 import {
   Accordion,
   Alert,
@@ -9,6 +9,7 @@ import {
   Button,
   Card,
   Checkbox,
+  EmptyState,
   Input,
   RadioGroup,
   SegmentedControl,
@@ -655,6 +656,40 @@ function AccordionPlayground() {
   );
 }
 
+function EmptyStatePlayground() {
+  const [withSecondary, setWithSecondary] = React.useState(true);
+  const code = `<EmptyState
+  icon={Bot}
+  title="No automations yet"
+  description="Start from a template above, or build your own rule from scratch."
+  action={{ label: "Create automation", onClick: onCreate }}${
+    withSecondary ? '\n  secondaryAction={{ label: "Browse templates", onClick: onBrowse }}' : ""
+  }
+/>`;
+  return (
+    <Playground
+      title="EmptyState"
+      preview={
+        <div className="w-full max-w-[440px]">
+          <EmptyState
+            icon={Bot}
+            title="No automations yet"
+            description="Start from a template above, or build your own rule from scratch."
+            action={{ label: "Create automation", onClick: () => {} }}
+            secondaryAction={withSecondary ? { label: "Browse templates", onClick: () => {} } : undefined}
+          />
+        </div>
+      }
+      controls={
+        <ControlRow label="secondaryAction">
+          <Switch checked={withSecondary} onChange={setWithSecondary} size="sm" />
+        </ControlRow>
+      }
+      code={code}
+    />
+  );
+}
+
 export function ComponentsSection() {
   return (
     <Section
@@ -682,6 +717,7 @@ export function ComponentsSection() {
         <TooltipPlayground />
         <CardPlayground />
         <StatPlayground />
+        <EmptyStatePlayground />
       </div>
     </Section>
   );

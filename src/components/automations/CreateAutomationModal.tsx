@@ -5,24 +5,44 @@ import { Bot, Check, X } from "lucide-react";
 import { Button, Input, Tag } from "@/components/ui";
 import { useProfile } from "@/lib/profile";
 import type { Automation } from "@/lib/automations";
-import type { AutomationTemplate } from "./data";
+import type { AutomationParam, AutomationTemplate } from "./data";
 
 const BLANK_TEMPLATE: Pick<
   AutomationTemplate,
-  "category" | "rule" | "cooldownLabel" | "executionsLabel"
+  "category" | "rule" | "ruleTemplate" | "params" | "cooldownLabel" | "executionsLabel"
 > & { title: string; key: string } = {
   key: "custom",
   category: "Custom",
   title: "Custom Automation",
-  rule: '"Define your own trigger and action from the builder."',
+  rule: '"Define your own trigger and action — starting amount $25."',
+  ruleTemplate: '"Define your own trigger and action — starting amount {amount}."',
+  params: [{ key: "amount", label: "Trade amount", default: 25, prefix: "$", min: 5, max: 500, step: 5 }],
   cooldownLabel: "Cooldown 5m",
   executionsLabel: "10 Executions",
 };
 
-/** Confirm/name a mocked automation and add it to the locally-persisted
- *  list. There is no execution engine behind this — see the disclosure copy
- *  below — creating one just writes a record via useAutomations(). Follows
- *  the same createPortal / fixed-overlay / bg-surface shape as DepositModal. */
+function formatParam(p: AutomationParam, value: number) {
+  return `${p.prefix ?? ""}${value}${p.suffix ?? ""}`;
+}
+
+function interpolateRule(ruleTemplate: string, params: AutomationParam[], values: Record<string, number>) {
+  return params.reduce(
+    (acc, p) => acc.replaceAll(`{${p.key}}`, formatParam(p, values[p.key] ?? p.default)),
+    ruleTemplate,
+  );
+}
+
+function defaultValues(params: AutomationParam[]): Record<string, number> {
+  return Object.fromEntries(params.map((p) => [p.key, p.default]));
+}
+
+/** Confirm/name/configure a mocked automation and add it to the
+ *  locally-persisted list. There is no execution engine behind this — see
+ *  the disclosure copy below — creating one just writes a record via
+ *  useAutomations(). The rule shown and saved reflects whatever the user
+ *  actually set the template's parameters to, not just its default text.
+ *  Follows the same createPortal / fixed-overlay / bg-surface shape as
+ *  DepositModal. */
 export function CreateAutomationModal({
   open,
   onClose,
@@ -37,34 +57,50 @@ export function CreateAutomationModal({
   const { signedIn, requireAuth } = useProfile();
   const source = template ?? BLANK_TEMPLATE;
   const [name, setName] = React.useState(source.title);
+  const [values, setValues] = React.useState<Record<string, number>>(() => defaultValues(source.params));
   const [created, setCreated] = React.useState(false);
   const [pending, setPending] = React.useState(false);
 
-  React.useEffect(() => {
-    if (open) {
-      setName(source.title);
-      setCreated(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, template]);
+  // Reset the form each time the modal is (re)opened for a template — own
+  // local state, so this uses React's "adjust state during render" pattern
+  // instead of an effect, gated on a ref of the last (open, template) pair
+  // it already reset for.
+  const [resetFor, setResetFor] = React.useState<{ open: boolean; template: AutomationTemplate | null } | null>(
+    null,
+  );
+  if (open && (!resetFor || !resetFor.open || resetFor.template !== template)) {
+    setResetFor({ open, template });
+    setName(source.title);
+    setValues(defaultValues(source.params));
+    setCreated(false);
+  } else if (!open && resetFor?.open) {
+    setResetFor({ open, template });
+  }
+
+  const previewRule = interpolateRule(source.ruleTemplate, source.params, values);
 
   const submit = React.useCallback(() => {
     onCreate({
       name: name.trim() || source.title,
       templateKey: source.key,
       category: source.category,
-      rule: source.rule,
+      rule: interpolateRule(source.ruleTemplate, source.params, values),
       cooldownLabel: source.cooldownLabel,
       executionsLabel: source.executionsLabel,
     });
     setCreated(true);
-  }, [name, onCreate, source]);
+  }, [name, onCreate, source, values]);
 
   React.useEffect(() => {
+    // submit() calls onCreate(), which writes to the automations list owned
+    // by a different component (useAutomations() in the parent) — needs an
+    // effect for the same reason as TradeCard's retryTrade.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (pending && signedIn) {
       setPending(false);
       submit();
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [pending, signedIn, submit]);
 
   if (!open || typeof document === "undefined") return null;
@@ -125,8 +161,31 @@ export function CreateAutomationModal({
               maxLength={40}
             />
 
+            {source.params.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {source.params.map((p) => (
+                  <div key={p.key} className={source.params.length === 1 ? "col-span-2" : ""}>
+                    <label className="block text-[12px] font-semibold text-sub">{p.label}</label>
+                    <Input
+                      type="number"
+                      value={values[p.key] ?? p.default}
+                      onChange={(e) =>
+                        setValues((v) => ({ ...v, [p.key]: e.target.value === "" ? 0 : Number(e.target.value) }))
+                      }
+                      min={p.min}
+                      max={p.max}
+                      step={p.step}
+                      leftSection={p.prefix}
+                      rightSection={p.suffix}
+                      className="mt-1.5"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="mt-4 rounded-[12px] border bg-muted px-4 py-3">
-              <p className="text-[11.5px] italic leading-snug text-sub">{source.rule}</p>
+              <p className="text-[11.5px] italic leading-snug text-sub">{previewRule}</p>
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 <Tag color="brand" size="sm">
                   {source.category}

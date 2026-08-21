@@ -36,3 +36,5 @@ export { Tag } from "./Tag";
 export type { TagProps, TagColor, TagSize } from "./Tag";
 export { Accordion } from "./Accordion";
 export type { AccordionProps, AccordionItem } from "./Accordion";
+export { EmptyState } from "./EmptyState";
+export type { EmptyStateProps, EmptyStateAction } from "./EmptyState";

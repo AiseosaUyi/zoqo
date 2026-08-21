@@ -1,5 +1,7 @@
 "use client";
 import * as React from "react";
+import { useLocalStorageState } from "./useLocalStorageState";
+import { useTicker } from "./useTicker";
 
 /** Zoqo Academy — the Duolingo-style learning system (TERMINAL_SPEC.md §6).
  *  This is a first, working slice: one skill tree, real hearts/XP/streak
@@ -47,39 +49,46 @@ const INITIAL: AcademyState = {
   completedLessons: [],
 };
 
+interface AcademyCtx {
+  xp: number;
+  hearts: number;
+  maxHearts: number;
+  streak: number;
+  completedLessons: string[];
+  loseHeart: () => void;
+  completeLesson: (lessonId: string, xpEarned: number) => void;
+}
+
+const Ctx = React.createContext<AcademyCtx | null>(null);
+
+/** Reads the shared academy state — must be used within AcademyProvider so
+ *  that a lesson's completeLesson() and the skill-tree header showing
+ *  xp/streak are the same React state, not two independent hook instances
+ *  that silently diverge (the bug this replaced: the header stayed frozen
+ *  at "0 XP" after finishing a lesson because each useAcademy() call used to
+ *  own its own local useState). */
 export function useAcademy() {
-  const [state, setState] = React.useState<AcademyState>(INITIAL);
-  const loaded = React.useRef(false);
+  const c = React.useContext(Ctx);
+  if (!c) throw new Error("useAcademy must be used within AcademyProvider");
+  return c;
+}
 
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setState({ ...INITIAL, ...JSON.parse(raw) });
-    } catch {
-      /* ignore */
-    }
-    loaded.current = true;
-  }, []);
+export function AcademyProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useLocalStorageState(KEY, INITIAL);
 
-  React.useEffect(() => {
-    if (!loaded.current) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      /* ignore */
-    }
-  }, [state]);
-
-  // Passive heart refill.
+  // Passive heart refill — ticks "now" periodically instead of reading
+  // Date.now() straight in a memo, so the count is both render-pure and
+  // actually updates live as time passes.
+  const now = useTicker(30_000);
   const heartsAvailable = React.useMemo(() => {
-    if (state.hearts >= MAX_HEARTS) return MAX_HEARTS;
-    const refilled = Math.floor((Date.now() - state.lastHeartLostAt) / HEART_REFILL_MS);
+    if (state.hearts >= MAX_HEARTS || now === 0) return state.hearts;
+    const refilled = Math.floor((now - state.lastHeartLostAt) / HEART_REFILL_MS);
     return Math.min(MAX_HEARTS, state.hearts + refilled);
-  }, [state.hearts, state.lastHeartLostAt]);
+  }, [state.hearts, state.lastHeartLostAt, now]);
 
   const loseHeart = React.useCallback(() => {
     setState((s) => ({ ...s, hearts: Math.max(0, s.hearts - 1), lastHeartLostAt: Date.now() }));
-  }, []);
+  }, [setState]);
 
   const completeLesson = React.useCallback((lessonId: string, xpEarned: number) => {
     setState((s) => {
@@ -95,15 +104,21 @@ export function useAcademy() {
           : [...s.completedLessons, lessonId],
       };
     });
-  }, []);
+  }, [setState]);
 
-  return {
-    xp: state.xp,
-    hearts: heartsAvailable,
-    maxHearts: MAX_HEARTS,
-    streak: state.streak,
-    completedLessons: state.completedLessons,
-    loseHeart,
-    completeLesson,
-  };
+  return React.createElement(
+    Ctx.Provider,
+    {
+      value: {
+        xp: state.xp,
+        hearts: heartsAvailable,
+        maxHearts: MAX_HEARTS,
+        streak: state.streak,
+        completedLessons: state.completedLessons,
+        loseHeart,
+        completeLesson,
+      },
+    },
+    children,
+  );
 }

@@ -21,7 +21,11 @@ export function SettlementToast() {
 
   return (
     // Stack of toasts, newest on top; fixed above mobile trade bar (bottom-20) on small screens
-    <div className="fixed bottom-24 right-3 z-50 flex w-72 flex-col gap-2 lg:bottom-5 lg:right-5">
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-24 right-3 z-50 flex w-72 flex-col gap-2 lg:bottom-5 lg:right-5"
+    >
       {settlements.slice(0, 3).map((s) => (
         <Toast key={s.id} s={s} onDismiss={dismissSettlement} />
       ))}

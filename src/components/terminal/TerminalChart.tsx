@@ -52,12 +52,31 @@ export function TerminalChart({ assetId, ticks }: { assetId: string; ticks: Tick
     };
   }, []);
 
-  // Re-bucket to 1m candles whenever the tick stream grows, and push to the
-  // series. Cheap enough at this data volume (a few hundred ticks) to just
-  // recompute rather than maintain incremental state.
+  // Price-axis precision follows the active asset (assets.ts's `decimals` —
+  // BTC/gold are 2dp, most FX 4-5dp, JPY pairs 3dp). Re-applied whenever the
+  // asset changes, independent of the tick effect below.
   React.useEffect(() => {
     const series = seriesRef.current;
-    if (!series || ticks.length === 0) return;
+    if (!series) return;
+    const decimals = asset?.decimals ?? 2;
+    series.applyOptions({
+      priceFormat: { type: "price", precision: decimals, minMove: 1 / 10 ** decimals },
+    });
+  }, [asset]);
+
+  // Re-bucket to 1m candles whenever the tick stream grows, and push to the
+  // series. Cheap enough at this data volume (a few hundred ticks) to just
+  // recompute rather than maintain incremental state. When there are no
+  // ticks yet (e.g. just switched to an asset with no accumulated buffer),
+  // clear the series instead of skipping the update — otherwise the
+  // previous asset's candles keep rendering under the new asset's label.
+  React.useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    if (ticks.length === 0) {
+      series.setData([]);
+      return;
+    }
     const candles = bucketToCandles(ticks, 60_000);
     series.setData(candles);
     chartRef.current?.timeScale().fitContent();

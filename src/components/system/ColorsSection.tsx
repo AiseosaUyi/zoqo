@@ -51,9 +51,16 @@ function Swatch({
   const token = `${scaleKey}-${shade}`;
   const hex = override ?? defaultHex;
   const textColor = readableOn(hex);
+  // Keep the editable draft in sync with the resolved hex (default or
+  // override) whenever it changes externally — React's "adjust state during
+  // render" pattern (comparing against state tracking the last-seen hex)
+  // instead of an effect, since this is own local state.
   const [draft, setDraft] = React.useState(hex);
-
-  React.useEffect(() => setDraft(hex), [hex]);
+  const [lastHex, setLastHex] = React.useState(hex);
+  if (hex !== lastHex) {
+    setLastHex(hex);
+    setDraft(hex);
+  }
 
   const commit = (v: string) => {
     const n = normalizeHex(v);

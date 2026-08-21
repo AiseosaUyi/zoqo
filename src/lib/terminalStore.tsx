@@ -2,6 +2,7 @@
 import * as React from "react";
 import { useZoqo } from "./store";
 import { ASSET_BY_ID } from "./assets";
+import { useLocalStorageState } from "./useLocalStorageState";
 
 /** A held position in the position-based Terminal (distinct from the
  *  prediction market's `Position` in types.ts, which is a share of a
@@ -32,6 +33,12 @@ export interface TerminalHistoryEntry {
 
 const POSITIONS_KEY = "zoqo-terminal-positions-v1";
 const HISTORY_KEY = "zoqo-terminal-history-v1";
+const EMPTY_POSITIONS: TerminalPosition[] = [];
+const EMPTY_HISTORY: TerminalHistoryEntry[] = [];
+
+function mergeArray<T>(parsed: unknown, def: T[]): T[] {
+  return Array.isArray(parsed) ? (parsed as T[]) : def;
+}
 
 interface TerminalCtx {
   positions: TerminalPosition[];
@@ -70,39 +77,8 @@ export function useTerminal() {
  */
 export function TerminalProvider({ children }: { children: React.ReactNode }) {
   const { adjustCash, cash } = useZoqo();
-  const [positions, setPositions] = React.useState<TerminalPosition[]>([]);
-  const [history, setHistory] = React.useState<TerminalHistoryEntry[]>([]);
-  const loaded = React.useRef(false);
-
-  React.useEffect(() => {
-    try {
-      const p = localStorage.getItem(POSITIONS_KEY);
-      if (p) setPositions(JSON.parse(p));
-      const h = localStorage.getItem(HISTORY_KEY);
-      if (h) setHistory(JSON.parse(h));
-    } catch {
-      /* ignore */
-    }
-    loaded.current = true;
-  }, []);
-
-  React.useEffect(() => {
-    if (!loaded.current) return;
-    try {
-      localStorage.setItem(POSITIONS_KEY, JSON.stringify(positions));
-    } catch {
-      /* ignore */
-    }
-  }, [positions]);
-
-  React.useEffect(() => {
-    if (!loaded.current) return;
-    try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 200)));
-    } catch {
-      /* ignore */
-    }
-  }, [history]);
+  const [positions, setPositions] = useLocalStorageState(POSITIONS_KEY, EMPTY_POSITIONS, mergeArray);
+  const [history, setHistory] = useLocalStorageState(HISTORY_KEY, EMPTY_HISTORY, mergeArray);
 
   const openPosition = React.useCallback(
     (
@@ -131,7 +107,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
       ]);
       return true;
     },
-    [cash, adjustCash],
+    [cash, adjustCash, setPositions],
   );
 
   const closePosition = React.useCallback(
@@ -160,7 +136,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
             closedAt: Date.now(),
           },
           ...h,
-        ]);
+        ].slice(0, 200));
         const remaining = pos.qty - closeQty;
         const next = prev.slice();
         if (remaining <= 0) next.splice(i, 1);
@@ -168,7 +144,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
     },
-    [adjustCash],
+    [adjustCash, setHistory, setPositions],
   );
 
   const markToMarket = React.useCallback(

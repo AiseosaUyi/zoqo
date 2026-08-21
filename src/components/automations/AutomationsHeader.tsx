@@ -13,6 +13,8 @@ import {
   HeaderBell,
   HeaderDepositButton,
   HeaderLogo,
+  HeaderMobileNav,
+  HeaderMobileNavTrigger,
   HeaderNav,
   HeaderStats,
 } from "@/components/trade/HeaderChrome";
@@ -20,22 +22,25 @@ import {
 /** Header for the /automations landing page — shares its logo/nav/deposit/
  *  stats/bell/auth chrome with TopNav via @/components/trade/HeaderChrome,
  *  but stays its own component since TopNav's props are shaped around the
- *  trade page's market-duration selector. */
+ *  trade page's market-duration selector. Mobile nav is the same shared
+ *  drawer every header uses now, rather than this page's own 2-link row. */
 export function AutomationsHeader() {
   const { portfolioValue, cash, nextDepositAt, settlements } = useZoqo();
   const { ready, signedIn, openAuth } = useProfile();
   const { automations } = useAutomations();
   const activeAutomations = automations.filter((a) => a.enabled).length;
   const [depositOpen, setDepositOpen] = React.useState(false);
+  const [navOpen, setNavOpen] = React.useState(false);
   const { locked, remainingH } = useDepositCooldown(nextDepositAt);
   const unread = settlements.length;
 
   return (
     <header className="sticky top-0 z-30 border-b bg-surface/90 backdrop-blur-md">
       <div className="flex h-[60px] items-center gap-2 px-3 sm:gap-3 sm:px-4">
+        <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
         <HeaderLogo />
 
-        <HeaderNav activeAutomations={activeAutomations} active="automations" className="ml-2" />
+        <HeaderNav activeAutomations={activeAutomations} className="ml-2" />
 
         <div className="ml-auto flex items-center gap-3">
           {ready && signedIn && (
@@ -56,21 +61,15 @@ export function AutomationsHeader() {
         </div>
       </div>
 
-      {/* mobile nav (hidden on sm+, where HeaderNav takes over) */}
-      <div className="flex items-center gap-4 border-t px-3 py-2.5 text-[13.5px] font-medium sm:hidden">
-        <Link href="/trade" className="text-sub">
-          Market
-        </Link>
-        <Link href="/automations" className="inline-flex items-center gap-1.5 font-bold text-ink">
-          Automations
-          {activeAutomations > 0 && (
-            <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              {activeAutomations}
-            </span>
-          )}
-        </Link>
-      </div>
-
+      <HeaderMobileNav
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        activeAutomations={activeAutomations}
+        signedIn={!!signedIn}
+        portfolioValue={signedIn ? portfolioValue : undefined}
+        cash={signedIn ? cash : undefined}
+        onOpenAuth={openAuth}
+      />
       {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>
   );

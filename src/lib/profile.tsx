@@ -2,6 +2,8 @@
 import * as React from "react";
 import { useZoqo } from "./store";
 import { mulberry32 } from "./math";
+import { useLocalStorageState, useHasMounted } from "./useLocalStorageState";
+import { useTicker } from "./useTicker";
 
 const KEY = "zoqo-profile-v1";
 
@@ -80,6 +82,17 @@ interface ProfileCtx {
   myRank: number;
 }
 
+const INITIAL_PROFILE: ProfileState = {
+  handle: null,
+  email: null,
+  avatarSeed: "trader",
+  streak: 0,
+  bestStreak: 0,
+  lastClaimDay: null,
+  claims: 0,
+  createdAt: 0,
+};
+
 const XP_PER = 150;
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 /** Mocked resend countdown — 02:59, matching the Figma reference. */
@@ -116,42 +129,16 @@ const LEADER_NAMES = [
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { portfolioValue, netPnl, exposure, grant, stats } = useZoqo();
-  const [p, setP] = React.useState<ProfileState>({
-    handle: null,
-    email: null,
-    avatarSeed: "trader",
-    streak: 0,
-    bestStreak: 0,
-    lastClaimDay: null,
-    claims: 0,
-    createdAt: 0,
-  });
-  const [ready, setReady] = React.useState(false);
-  const loaded = React.useRef(false);
+  const [p, setP] = useLocalStorageState(KEY, INITIAL_PROFILE);
+  const ready = useHasMounted();
+  // Real wall-clock day, ticking hourly instead of calling `new Date()`
+  // straight in render — keeps today/yesterday render-pure while still
+  // rolling over on its own if a session is left open across midnight.
+  const nowMs = useTicker(3600_000);
 
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setP((prev) => ({ ...prev, ...(JSON.parse(raw) as ProfileState) }));
-    } catch {
-      /* ignore */
-    }
-    loaded.current = true;
-    setReady(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (!loaded.current) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(p));
-    } catch {
-      /* ignore */
-    }
-  }, [p]);
-
-  const today = dayStr(new Date());
+  const today = dayStr(new Date(nowMs));
   const canClaimToday = ready && p.lastClaimDay !== today;
-  const yesterday = dayStr(new Date(Date.now() - 86_400_000));
+  const yesterday = dayStr(new Date(nowMs - 86_400_000));
   const projectedStreak = p.lastClaimDay === yesterday ? p.streak + 1 : 1;
   const dailyBonus = bonusFor(projectedStreak);
 
@@ -163,7 +150,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       avatarSeed: clean,
       createdAt: prev.createdAt || Date.now(),
     }));
-  }, []);
+  }, [setP]);
 
   const claimDaily = React.useCallback((): number => {
     const t = dayStr(new Date());
@@ -183,7 +170,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     });
     if (credited > 0) grant(credited);
     return credited;
-  }, [grant]);
+  }, [grant, setP]);
 
   // ---- auth / onboarding ----
   const SIGNUP_BONUS = 50;
@@ -241,7 +228,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     setP((prev) => ({ ...prev, email: clean, createdAt: prev.createdAt || Date.now() }));
     setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
     setAuthStep("otp");
-  }, []);
+  }, [setP]);
 
   const resendOtp = React.useCallback(() => {
     setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);

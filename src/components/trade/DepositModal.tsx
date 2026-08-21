@@ -5,6 +5,7 @@ import { Check, Copy, Lock, X } from "lucide-react";
 import { Button, SegmentedControl } from "@/components/ui";
 import { usd } from "@/lib/format";
 import { depositCooldownMs, useZoqo } from "@/lib/store";
+import { useTicker } from "@/lib/useTicker";
 
 interface Coin {
   key: string;
@@ -34,24 +35,24 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
   const [coin, setCoin] = React.useState("BTC");
   const [copied, setCopied] = React.useState(false);
   const [credited, setCredited] = React.useState(false);
-  const [now, setNow] = React.useState(() => Date.now());
+  const now = useTicker(1000);
 
-  React.useEffect(() => {
-    if (!open) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [open]);
-
-  // reset transient state when reopened
-  React.useEffect(() => {
-    if (open) setCredited(false);
-  }, [open]);
+  // Reset transient state each time the modal is reopened — own local
+  // state, so this uses React's "adjust state during render" pattern
+  // instead of an effect, gated on state tracking the last-seen `open`.
+  const [resetForOpen, setResetForOpen] = React.useState(false);
+  if (open && !resetForOpen) {
+    setResetForOpen(true);
+    setCredited(false);
+  } else if (!open && resetForOpen) {
+    setResetForOpen(false);
+  }
 
   if (!open || typeof document === "undefined") return null;
 
   const active = COINS.find((c) => c.key === coin)!;
-  const locked = now < nextDepositAt;
-  const remaining = nextDepositAt - now;
+  const locked = now > 0 && now < nextDepositAt;
+  const remaining = now > 0 ? nextDepositAt - now : 0;
   // wait until the next deposit = the cooldown just applied for the current count
   const nextWaitLabel = labelFor(depositCooldownMs(depositCount));
 

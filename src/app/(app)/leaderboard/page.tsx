@@ -32,15 +32,17 @@ export default function LeaderboardPage() {
 
   return (
     <>
-      <AppHeader active="leaderboard" />
+      <AppHeader />
       <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-2 flex items-center gap-2">
         <Trophy size={22} className="text-gold-600" />
         <h1 className="font-display text-[24px] font-black text-ink">Leaderboard</h1>
+        <Badge color="gray" size="sm">Demo data</Badge>
       </div>
       <p className="mb-5 text-[13px] text-sub">
-        Ranked by paper P&amp;L or Academy XP. Friend groups (private boards you can share an
-        invite code for) need real accounts — coming with the Phase 2 backend, see the handoff.
+        Your rank and P&amp;L are real. Other traders&apos; balances are simulated for this demo —
+        friend groups (private boards you can share an invite code for) need real accounts,
+        coming with the Phase 2 backend, see the handoff.
       </p>
 
       <div className="mb-4 flex items-center justify-between">

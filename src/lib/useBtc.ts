@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Candle } from "./types";
 import { DEFAULT_TF, TF_BY_KEY } from "./timeframe";
 
@@ -15,20 +15,22 @@ interface SeriesPoint {
  */
 export function useChartSeries(timeframe: string, liveSeries: SeriesPoint[]) {
   const tf = TF_BY_KEY[timeframe] ?? TF_BY_KEY[DEFAULT_TF];
-  const [longSeries, setLongSeries] = useState<SeriesPoint[]>([]);
-  const [loading, setLoading] = useState(false);
+  // `loading` is derived by comparing the timeframe the displayed series was
+  // actually fetched for against the current one, instead of a separate
+  // flag flipped synchronously at the top of the effect — no setState call
+  // in the effect body outside the async .then()/.catch() callbacks.
+  const [result, setResult] = useState<{ key: string; series: SeriesPoint[] }>({ key: "", series: [] });
 
   useEffect(() => {
     if (tf.live) return;
     let cancelled = false;
-    setLoading(true);
     fetchHistory(tf.interval, tf.limit)
       .then(({ candles }) => {
         if (cancelled) return;
-        setLongSeries(candles.map((c) => ({ t: c.t, p: c.c })));
+        setResult({ key: tf.key, series: candles.map((c) => ({ t: c.t, p: c.c })) });
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch(() => {
+        if (!cancelled) setResult({ key: tf.key, series: [] });
       });
     return () => {
       cancelled = true;
@@ -36,10 +38,10 @@ export function useChartSeries(timeframe: string, liveSeries: SeriesPoint[]) {
   }, [tf.key, tf.live, tf.interval, tf.limit]);
 
   return {
-    series: tf.live ? liveSeries : longSeries,
+    series: tf.live ? liveSeries : result.series,
     rangeMs: tf.ms,
     bands: tf.bands,
-    loading: tf.live ? false : loading,
+    loading: !tf.live && result.key !== tf.key,
   };
 }
 

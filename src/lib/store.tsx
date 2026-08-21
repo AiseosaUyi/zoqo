@@ -2,6 +2,7 @@
 import * as React from "react";
 import { MarketEngine } from "./engine";
 import { fetchHistory, useLiveBtc } from "./useBtc";
+import { useLocalStorageState } from "./useLocalStorageState";
 import type {
   Candle, EngineSnapshot, HistoryEntry, Market, OpenOrder, Position, Side,
 } from "./types";
@@ -116,35 +117,63 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
   const [nextDepositAt, setNextDepositAt] = React.useState(0);
   const [stats, setStats] = React.useState<PlayStats>(ZERO_STATS);
   const [settlements, setSettlements] = React.useState<SettlementResult[]>([]);
-  const walletLoaded = React.useRef(false);
+  // Render-safe fallback for `btc` before the live feed connects — mirrors
+  // priceRef's bootstrap seed (real last-close from history) into state so
+  // rendering never reads a ref directly (see the bootstrap effect below,
+  // which sets both together in the same batch).
+  const [seedPrice, setSeedPrice] = React.useState<number | null>(null);
 
-  cashRef.current = cash;
-  ordersRef.current = openOrders;
-  positionsRef.current = positions;
+  // Read the persisted wallet blob (SSR-safe: null on the server and the
+  // client's first hydration-matching render, the real value right after).
+  // Applied to the individual useState fields below via React's documented
+  // "adjust state during render" pattern — a conditional setState call in
+  // the render body, gated by comparing against state tracking what's
+  // already been applied — instead of a setState-in-effect. See
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes.
+  //
+  // walletLoaded comes from THIS SAME hook call, not a separate
+  // useHasMounted() — two independent useSyncExternalStore hooks aren't
+  // guaranteed to resolve from their SSR default to their real client value
+  // on the same render pass. A previous version gated the persist effect
+  // below on a separately-resolving "mounted" flag; on some loads that flag
+  // flipped true before persistedWallet resolved to the real saved wallet,
+  // so the persist effect fired once with the still-default cash=0 and
+  // permanently clobbered the real balance. Keeping both on one snapshot
+  // rules that out.
+  const [persistedWallet, , walletLoaded] = useLocalStorageState<WalletState | null>(
+    WALLET_KEY,
+    null,
+    (parsed) => parsed as WalletState,
+  );
+  const [appliedWallet, setAppliedWallet] = React.useState<WalletState | null>(null);
+  if (persistedWallet && appliedWallet !== persistedWallet) {
+    setAppliedWallet(persistedWallet);
+    const w = persistedWallet;
+    if (typeof w.cash === "number") setCash(w.cash);
+    if (typeof w.depositCount === "number") setDepositCount(w.depositCount);
+    if (typeof w.nextDepositAt === "number") setNextDepositAt(w.nextDepositAt);
+    if (w.stats) setStats({ ...ZERO_STATS, ...w.stats });
+    if (Array.isArray(w.positions)) setPositions(w.positions);
+    if (Array.isArray(w.tradeHistory)) setTradeHistory(w.tradeHistory);
+    if (Array.isArray(w.openOrders)) setOpenOrders(w.openOrders);
+  }
 
-  // Load persisted wallet (cash + faucet + real trade history) on mount.
+  // Keep the ref mirrors in sync so the tick interval (a stable closure set
+  // up once, see the simulation-loop effect below) always reads current
+  // cash/orders/positions instead of a stale snapshot from when it started.
   React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(WALLET_KEY);
-      if (raw) {
-        const w: WalletState = JSON.parse(raw);
-        if (typeof w.cash === "number") setCash(w.cash);
-        if (typeof w.depositCount === "number") setDepositCount(w.depositCount);
-        if (typeof w.nextDepositAt === "number") setNextDepositAt(w.nextDepositAt);
-        if (w.stats) setStats({ ...ZERO_STATS, ...w.stats });
-        if (Array.isArray(w.positions)) setPositions(w.positions);
-        if (Array.isArray(w.tradeHistory)) setTradeHistory(w.tradeHistory);
-        if (Array.isArray(w.openOrders)) setOpenOrders(w.openOrders);
-      }
-    } catch {
-      /* ignore */
-    }
-    walletLoaded.current = true;
-  }, []);
+    cashRef.current = cash;
+  }, [cash]);
+  React.useEffect(() => {
+    ordersRef.current = openOrders;
+  }, [openOrders]);
+  React.useEffect(() => {
+    positionsRef.current = positions;
+  }, [positions]);
 
   // Persist wallet (including real positions and history) whenever state changes.
   React.useEffect(() => {
-    if (!walletLoaded.current) return;
+    if (!walletLoaded) return;
     try {
       const userOrders = openOrders.filter((o) => o.userPlaced);
       localStorage.setItem(
@@ -162,7 +191,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     } catch {
       /* ignore */
     }
-  }, [cash, depositCount, nextDepositAt, stats, positions, tradeHistory, openOrders]);
+  }, [walletLoaded, cash, depositCount, nextDepositAt, stats, positions, tradeHistory, openOrders]);
 
   const grant = React.useCallback((amount: number) => {
     if (amount > 0) setCash((c) => c + amount);
@@ -193,6 +222,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
       const seed = (now ^ Math.floor(performance.now() * 1000)) >>> 0;
       const hist: Candle[] = candles.length ? candles : syntheticHistory(now);
       if (!priceRef.current) priceRef.current = hist.at(-1)?.c ?? 64000;
+      setSeedPrice(priceRef.current);
       const engine = new MarketEngine({ history: hist, now, seed });
       engine.step(now, priceRef.current);
       engineRef.current = engine;
@@ -231,31 +261,11 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     });
   }, [ready]);
 
-  // Simulation loop — 600 ms ticks driven by the real BTC price.
-  React.useEffect(() => {
-    if (!ready) return;
-    const id = setInterval(() => {
-      const engine = engineRef.current;
-      if (!engine) return;
-      const now = Date.now();
-      const price = priceRef.current || engine.lastPrice;
-      engine.step(now, price);
-      const series = seriesRef.current;
-      const last = series.at(-1);
-      if (!last || now - last.t > 800 || Math.abs(price - last.p) > 0.01) {
-        series.push({ t: now, p: price });
-        if (series.length > 420) series.shift();
-      }
-      setPriceSeries(series.slice());
-      setSnapshot(engine.snapshot());
-      processOrdersAndSettlement(engine, now);
-    }, TICK_MS);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready]);
-
   /** Fill resting limit orders and settle positions whose market has closed.
-   *  Runs each tick off the ref mirrors to avoid stale closures. */
+   *  Runs each tick off the ref mirrors to avoid stale closures. Declared
+   *  before the simulation-loop effect below (which calls it) so its source
+   *  order matches evaluation order — a `[]`-deps useCallback, so hoisting
+   *  it here is a pure reordering with no behavior change. */
   const processOrdersAndSettlement = React.useCallback(
     (engine: MarketEngine, now: number) => {
       // 1) limit-order fills
@@ -367,6 +377,29 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+
+  // Simulation loop — 600 ms ticks driven by the real BTC price.
+  React.useEffect(() => {
+    if (!ready) return;
+    const id = setInterval(() => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const now = Date.now();
+      const price = priceRef.current || engine.lastPrice;
+      engine.step(now, price);
+      const series = seriesRef.current;
+      const last = series.at(-1);
+      if (!last || now - last.t > 800 || Math.abs(price - last.p) > 0.01) {
+        series.push({ t: now, p: price });
+        if (series.length > 420) series.shift();
+      }
+      setPriceSeries(series.slice());
+      setSnapshot(engine.snapshot());
+      processOrdersAndSettlement(engine, now);
+    }, TICK_MS);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   const dismissSettlement = React.useCallback((id: string) => {
     setSettlements((prev) => prev.filter((s) => s.id !== id));
@@ -496,10 +529,15 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
   );
 
   const { portfolioValue, netPnl, exposure } = React.useMemo(() => {
+    // Reads from `snapshot` (the tick-synced state), not the live engine
+    // ref — same underlying data at the same tick (snapshot().markets is
+    // built from the same map marketById reads), but state-safe during
+    // render instead of reaching into a ref.
+    const marketMap = new Map(snapshot?.markets.map((m) => [m.id, m]) ?? []);
     let posValue = 0;
     let cost = 0;
     for (const p of positions) {
-      const m = engineRef.current?.marketById(p.marketId);
+      const m = marketMap.get(p.marketId);
       const yes = m ? m.yes : p.avgPrice;
       const px = p.side === "up" ? yes : 100 - yes;
       posValue += p.shares * (px / 100);
@@ -516,7 +554,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     ready,
     source: live.source,
     connected: live.connected,
-    btc: live.price ?? (priceRef.current || null),
+    btc: live.price ?? seedPrice,
     snapshot,
     priceSeries,
     cash,

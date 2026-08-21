@@ -5,6 +5,7 @@ import { CheckCircle2, DollarSign, Gift, Sparkles, TrendingUp } from "lucide-rea
 import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { useProfile } from "@/lib/profile";
+import { useTicker } from "@/lib/useTicker";
 
 /** The single onboarding wizard: email → confirm email (OTP) → welcome
  *  rewards. Mounted once at the app layout and driven entirely by
@@ -103,8 +104,8 @@ function EmailStep() {
   );
 }
 
-const secondsUntil = (deadline: number | null) =>
-  deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 0;
+const secondsUntil = (deadline: number | null, now: number) =>
+  deadline ? Math.max(0, Math.ceil((deadline - now) / 1000)) : 0;
 
 const formatMmSs = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -114,13 +115,8 @@ function OtpStep() {
   const [digits, setDigits] = React.useState<string[]>(Array(6).fill(""));
   const [verified, setVerified] = React.useState(false);
   const inputsRef = React.useRef<(HTMLInputElement | null)[]>([]);
-  const [secondsLeft, setSecondsLeft] = React.useState(() => secondsUntil(otpDeadline));
-
-  React.useEffect(() => {
-    setSecondsLeft(secondsUntil(otpDeadline));
-    const id = setInterval(() => setSecondsLeft(secondsUntil(otpDeadline)), 1000);
-    return () => clearInterval(id);
-  }, [otpDeadline]);
+  const now = useTicker(1000);
+  const secondsLeft = now > 0 ? secondsUntil(otpDeadline, now) : 0;
 
   const code = digits.join("");
   // `verified` is intentionally NOT a dependency here — flipping it re-renders

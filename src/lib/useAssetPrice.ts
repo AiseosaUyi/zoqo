@@ -105,14 +105,13 @@ function subscribeCrypto(
   const startPolling = () => {
     if (pollTimer) return;
     const poll = async () => {
-      // Direct Binance REST poll fallback — no key required, CORS-open,
-      // used only when neither exchange's WebSocket connected.
+      // Server-side poll fallback, same role /api/btc/price plays for
+      // useBtc.ts — routes through the server so it stays reachable even
+      // when Binance/Coinbase are DNS-blocked client-side (see CLAUDE.md).
       try {
-        const r = await fetch(
-          `https://api.binance.com/api/v3/ticker/price?symbol=${asset.ws?.binance.replace("@trade", "").toUpperCase()}`,
-        );
+        const r = await fetch(`/api/crypto/${asset.id}`, { cache: "no-store" });
         const j = await r.json();
-        if (j.price > 0) set(Number(j.price), "binance (poll)", true);
+        if (j.price > 0) set(j.price, `${j.source} (poll)`, true);
       } catch {
         /* keep last */
       }
@@ -138,6 +137,15 @@ function subscribeCrypto(
           parse: (m: unknown) => {
             const d = m as { type?: string; price?: string };
             return d.type === "ticker" && d.price ? Number(d.price) : null;
+          },
+        },
+        {
+          name: "bitstamp",
+          url: "wss://ws.bitstamp.net",
+          sub: { event: "bts:subscribe", data: { channel: `live_trades_${asset.id}` } },
+          parse: (m: unknown) => {
+            const d = m as { event?: string; data?: { price?: number } };
+            return d.event === "trade" && d.data?.price ? Number(d.data.price) : null;
           },
         },
       ]
