@@ -14,6 +14,7 @@ import {
   RadioGroup,
   SegmentedControl,
   Select as UISelect,
+  Slider,
   Stat,
   Switch,
   Tabs,
@@ -690,6 +691,41 @@ function EmptyStatePlayground() {
   );
 }
 
+function SliderPlayground() {
+  const [value, setValue] = React.useState(50);
+  const code = `<Slider
+  value={${value}}
+  onChange={setValue}
+  min={0}
+  max={100}
+  label="Entry price"
+  formatValue={(v) => \`$\${v}\`}
+/>`;
+  return (
+    <Playground
+      title="Slider"
+      preview={
+        <div className="w-full max-w-[320px]">
+          <Slider
+            value={value}
+            onChange={setValue}
+            min={0}
+            max={100}
+            label="Entry price"
+            formatValue={(v) => `$${v}`}
+          />
+        </div>
+      }
+      controls={
+        <ControlRow label="value">
+          <span className="text-[12px] text-sub nums">{value}</span>
+        </ControlRow>
+      }
+      code={code}
+    />
+  );
+}
+
 export function ComponentsSection() {
   return (
     <Section
@@ -718,6 +754,7 @@ export function ComponentsSection() {
         <CardPlayground />
         <StatPlayground />
         <EmptyStatePlayground />
+        <SliderPlayground />
       </div>
     </Section>
   );

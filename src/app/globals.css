@@ -378,6 +378,20 @@ body {
 }
 .flash { animation: zoqo-flash 0.9s ease-out; }
 
+/* Academy's Pattern Pop lesson: candidate patterns float bottom-to-top and
+   fade out near the top, "balloon" style — the miss condition is the timer
+   in PatternPopPlayer.tsx, not this animation itself, so reduced-motion
+   users still get the same time limit, just without the visual float. */
+@keyframes zoqo-float-up {
+  0% { bottom: 0; opacity: 1; }
+  85% { opacity: 1; }
+  100% { bottom: 100%; opacity: 0; }
+}
+.pattern-pop-float { animation-name: zoqo-float-up; animation-timing-function: linear; animation-fill-mode: forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .pattern-pop-float { animation: none; }
+}
+
 /* Moving-gradient shimmer for skeleton loaders. */
 @keyframes zoqo-shimmer {
   0% { background-position: 200% 0; }
