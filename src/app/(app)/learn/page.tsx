@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, Progress, Badge } from "@/components/ui";
 import { SKILLS, useAcademy } from "@/lib/academy";
 import { LESSONS_BY_SKILL, type Lesson, type SkillId } from "@/lib/lessons";
@@ -21,13 +22,14 @@ function findLessonById(lessonId: string): Lesson | undefined {
 // Resuming from a Mock Trade lesson's deep-link into /terminal (see
 // MockTradePlayer/mockTrade.ts) — the terminal sends the user back here
 // with ?resumeLesson=id rather than relying on any in-memory state
-// surviving the round trip through a different route. Read once via a lazy
-// useState initializer (guarded for SSR/static prerendering, same pattern
-// TerminalShell uses) rather than an effect + setState, which this repo's
-// React Compiler lint rules flag.
-function readResumeLesson(): Lesson | null {
-  if (typeof window === "undefined") return null;
-  const resumeId = new URLSearchParams(window.location.search).get("resumeLesson");
+// surviving the round trip through a different route. Takes the id as a
+// parameter (from useSearchParams(), read in the component) rather than
+// parsing window.location.search itself — a real browser test (Playwright)
+// found window.location.search lags behind Next.js's router-managed
+// useSearchParams() during a client-side transition, which made this
+// silently find nothing on the very first render after navigating back
+// here (the identical bug, and fix, as TerminalShell's mockLesson handling).
+function resolveResumeLesson(resumeId: string | null): Lesson | null {
   return resumeId ? (findLessonById(resumeId) ?? null) : null;
 }
 
@@ -38,17 +40,31 @@ function readResumeLesson(): Lesson | null {
  *  "in development" slots, so the tree is always accurate to what's
  *  actually playable right now, not a promise. */
 export default function LearnPage() {
+  return (
+    <Suspense>
+      <LearnPageContent />
+    </Suspense>
+  );
+}
+
+function LearnPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeLessonParam = searchParams.get("resumeLesson");
   const { xp, streak, completedLessons } = useAcademy();
-  const [expanded, setExpanded] = React.useState<SkillId | null>(() => readResumeLesson()?.skillId ?? null);
-  const [activeLesson, setActiveLesson] = React.useState<Lesson | null>(readResumeLesson);
+  const [expanded, setExpanded] = React.useState<SkillId | null>(
+    () => resolveResumeLesson(resumeLessonParam)?.skillId ?? null,
+  );
+  const [activeLesson, setActiveLesson] = React.useState<Lesson | null>(() =>
+    resolveResumeLesson(resumeLessonParam),
+  );
 
   // Strip ?resumeLesson= from the URL once consumed above, so a refresh
   // doesn't re-trigger the same resume. Navigation only, no local setState,
   // so this effect is exempt from the set-state-in-effect concern.
   React.useEffect(() => {
-    if (window.location.search.includes("resumeLesson")) router.replace("/learn");
-  }, [router]);
+    if (resumeLessonParam) router.replace("/learn");
+  }, [resumeLessonParam, router]);
 
   return (
     <>

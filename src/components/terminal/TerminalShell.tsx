@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { TerminalProvider, useTerminal } from "@/lib/terminalStore";
@@ -37,15 +37,16 @@ import {
 const MAX_CANDLES = 24 * 60;
 const SEED_CANDLES = 8 * 60;
 
-// Read once, lazily, inside a useState initializer rather than an effect —
-// this repo's React Compiler lint rules (react-hooks/set-state-in-effect,
-// see CLAUDE.md) flag calling setState synchronously inside an effect body,
-// and a lazy initializer is the correct "read an external system once at
-// mount" shape besides. Guarded for SSR/static prerendering, where
-// `window` doesn't exist yet — the real read only ever resolves client-side.
-function readActiveMockFromUrl(): MockTradePending | null {
-  if (typeof window === "undefined") return null;
-  const lessonId = new URLSearchParams(window.location.search).get("mockLesson");
+// Resolves a pending Mock Trade against sessionStorage for a given lesson
+// id. Deliberately takes the id as a parameter rather than reading
+// `window.location.search` itself — a real browser test (Playwright) showed
+// `window.location.search` lags behind Next.js's own router-managed
+// `useSearchParams()` during a client-side transition (the URL bar/history
+// entry updates before `window.location` reflects it), so a fresh mount's
+// very first render could observe the *old* URL and silently find nothing
+// even though the target route genuinely has ?mockLesson=. useSearchParams()
+// is the reliable source; this function only does the sessionStorage half.
+function resolvePendingMockTrade(lessonId: string | null): MockTradePending | null {
   if (!lessonId) return null;
   const pending = getPendingMockTrade();
   return pending && pending.lessonId === lessonId ? pending : null;
@@ -67,18 +68,40 @@ export function TerminalShell() {
 
 function TerminalInner() {
   const router = useRouter();
+  // Academy's Mock Trade lesson (spec §6) deep-links here with ?mockLesson=id
+  // and a matching sessionStorage record (mockTrade.ts) — useSearchParams()
+  // is the one reliable source for that id, both on a fresh mount and when
+  // navigating back here a second time without remounting (see
+  // resolvePendingMockTrade's comment for why window.location.search isn't).
+  const searchParams = useSearchParams();
+  const mockLessonParam = searchParams.get("mockLesson");
   const { cash } = useZoqo();
   const { openPosition, markToMarket, checkStops } = useTerminal();
-  // Academy's Mock Trade lesson (spec §6) deep-links here with ?mockLesson=id
-  // and a matching sessionStorage record (mockTrade.ts) — read once via a
-  // lazy initializer (see readActiveMockFromUrl above) rather than
-  // useSearchParams(), so this component doesn't force a Suspense boundary
-  // onto an otherwise-static page just for a param only the Academy
-  // hand-off ever sets.
-  const [activeMock, setActiveMock] = React.useState<MockTradePending | null>(readActiveMockFromUrl);
+  const [activeMock, setActiveMock] = React.useState<MockTradePending | null>(() =>
+    resolvePendingMockTrade(mockLessonParam),
+  );
   const [mockGraded, setMockGraded] = React.useState(false);
-  const [assetId, setAssetId] = React.useState(() => readActiveMockFromUrl()?.assetId ?? DEFAULT_ASSET_ID);
+  const [assetId, setAssetId] = React.useState(
+    () => resolvePendingMockTrade(mockLessonParam)?.assetId ?? DEFAULT_ASSET_ID,
+  );
   const [candlesByAsset, setCandlesByAsset] = React.useState<Record<string, Candle[]>>({});
+
+  // React's "adjust state during render" pattern (see store.tsx's
+  // persistedWallet/appliedWallet for the same shape) rather than an
+  // effect — appliedMockLessonParam starts equal to the current param so
+  // this only fires on a genuine *change* (a second ?mockLesson= navigation
+  // without remounting), not redundantly on first mount, which the lazy
+  // initializers above already cover.
+  const [appliedMockLessonParam, setAppliedMockLessonParam] = React.useState(mockLessonParam);
+  if (mockLessonParam && mockLessonParam !== appliedMockLessonParam) {
+    setAppliedMockLessonParam(mockLessonParam);
+    const pending = resolvePendingMockTrade(mockLessonParam);
+    if (pending) {
+      setActiveMock(pending);
+      setAssetId(pending.assetId);
+      setMockGraded(false);
+    }
+  }
 
   const [toast, setToast] = React.useState<{ id: number; text: string; tone: "up" | "down" } | null>(null);
   const toastIdRef = React.useRef(0);

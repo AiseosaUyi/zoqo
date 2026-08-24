@@ -39,6 +39,11 @@ export const DRAWING_TOOLS = [
   { type: "brush", label: "Brush", Icon: Pencil },
 ] as const;
 
+/** Desktop-only (`lg:flex`, hidden below it) — on a phone-width viewport
+ *  this 36px-wide strip was eating enough of the already-narrow chart area
+ *  to make candles unreadable (confirmed visually), and drawing tools are a
+ *  power-user desktop feature real trading apps don't surface on mobile
+ *  anyway. */
 export function DrawingToolbar({
   activeTool,
   onSelectTool,
@@ -55,7 +60,7 @@ export function DrawingToolbar({
   onClearAll: () => void;
 }) {
   return (
-    <div className="flex w-9 shrink-0 flex-col items-center gap-1 border-r border-line bg-surface py-2">
+    <div className="hidden w-9 shrink-0 flex-col items-center gap-1 border-r border-line bg-surface py-2 lg:flex">
       <ToolButton
         label="Cursor (Esc)"
         active={activeTool === null}
