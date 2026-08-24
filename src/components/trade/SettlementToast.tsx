@@ -20,11 +20,16 @@ export function SettlementToast() {
   if (settlements.length === 0) return null;
 
   return (
-    // Stack of toasts, newest on top; fixed above mobile trade bar (bottom-20) on small screens
+    // Stack of toasts, newest on top. ZoqoProvider (and its settlement queue)
+    // is mounted app-wide, so a prediction-market position can settle while
+    // the user is anywhere, not just on /trade — the mobile offset has to
+    // clear the tallest fixed bottom stack across every route, which is
+    // /terminal's five-tab nav (56px) + MobileTerminalBar (64px), not just
+    // /trade's own MobileTradeBar.
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-24 right-3 z-50 flex w-72 flex-col gap-2 lg:bottom-5 lg:right-5"
+      className="fixed bottom-36 right-3 z-50 flex w-72 flex-col gap-2 lg:bottom-5 lg:right-5"
     >
       {settlements.slice(0, 3).map((s) => (
         <Toast key={s.id} s={s} onDismiss={dismissSettlement} />

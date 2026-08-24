@@ -8,6 +8,7 @@ import { LessonRunner } from "@/components/learn/LessonRunner";
 import { AppHeader } from "@/components/trade/AppHeader";
 import { Flame, Zap, Lock, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { MOBILE_NAV_SAFE_PADDING } from "@/components/trade/MobileBottomNav";
 
 function findLessonById(lessonId: string): Lesson | undefined {
   for (const lessons of Object.values(LESSONS_BY_SKILL)) {
@@ -52,7 +53,7 @@ export default function LearnPage() {
   return (
     <>
       <AppHeader />
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className={cn("mx-auto max-w-3xl px-4 pt-8 lg:pb-8", MOBILE_NAV_SAFE_PADDING)}>
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="font-display text-[24px] font-black text-ink">Zoqo Academy</h1>

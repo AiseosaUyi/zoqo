@@ -14,15 +14,20 @@ export function OrderTicket({
   price,
   cash,
   onSubmit,
+  initialSide = "long",
 }: {
   assetId: string;
   price: number | null;
   cash: number;
   onSubmit: (side: "long" | "short", qty: number, stopLoss?: number, takeProfit?: number) => boolean;
+  /** Pre-selects a side — used by MobileTerminalBar, whose Long/Short
+   *  buttons should open the sheet already on the tapped side rather than
+   *  always defaulting to long. */
+  initialSide?: "long" | "short";
 }) {
   const asset = ASSET_BY_ID[assetId];
   const decimals = asset?.decimals ?? 2;
-  const [side, setSide] = React.useState<"long" | "short">("long");
+  const [side, setSide] = React.useState<"long" | "short">(initialSide);
   const [amountUsd, setAmountUsd] = React.useState(100);
   const [useSlTp, setUseSlTp] = React.useState(false);
   const [slPct, setSlPct] = React.useState(2);

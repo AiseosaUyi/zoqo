@@ -10,13 +10,15 @@ import { ReferralStatRow } from "@/components/referrals/ReferralStatRow";
 import { EarnWaysCards } from "@/components/referrals/EarnWaysCards";
 import { EarningTierLadder } from "@/components/referrals/EarningTierLadder";
 import { ActivityLists } from "@/components/referrals/ActivityLists";
+import { MOBILE_NAV_SAFE_PADDING } from "@/components/trade/MobileBottomNav";
+import { cn } from "@/lib/cn";
 
 export default function ReferralsPage() {
   const { ready, signedIn, openAuth } = useProfile();
   const data = useReferralData();
 
   return (
-    <div className="min-h-screen">
+    <div className={cn("min-h-screen", MOBILE_NAV_SAFE_PADDING)}>
       <ReferralsTopNav />
 
       {!ready && (

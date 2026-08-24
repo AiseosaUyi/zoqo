@@ -11,6 +11,9 @@ import { Watchlist } from "./Watchlist";
 import { OrderTicket } from "./OrderTicket";
 import { PositionsPanel } from "./PositionsPanel";
 import { TerminalChart } from "./TerminalChart";
+import { MobileAssetCarousel } from "./MobileAssetCarousel";
+import { MobileTerminalBar, MOBILE_TERMINAL_CONTENT_SAFE_PADDING } from "./MobileTerminalBar";
+import { cn } from "@/lib/cn";
 import { usd, signedUsd, price as formatPrice } from "@/lib/format";
 import { seedCandles1m, upsertTick, type Candle } from "@/lib/candles";
 import {
@@ -230,7 +233,19 @@ function TerminalInner() {
         </div>
       </div>
 
-      <div className="grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_1fr_280px]">
+      {/* Mobile: swipeable symbol strip above the chart (TERMINAL_SPEC.md §5 —
+          "a swipeable horizontal carousel, not a dropdown"). Hidden at lg+,
+          where the Watchlist sidebar already covers symbol switching. */}
+      <div className="border-b border-line lg:hidden">
+        <MobileAssetCarousel activeId={assetId} onSelect={setAssetId} prices={prices} />
+      </div>
+
+      <div
+        className={cn(
+          "grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_1fr_280px]",
+          MOBILE_TERMINAL_CONTENT_SAFE_PADDING,
+        )}
+      >
         <div className="hidden border-r border-line lg:block">
           <Watchlist activeId={assetId} onSelect={setAssetId} prices={prices} />
         </div>
@@ -254,21 +269,10 @@ function TerminalInner() {
         </div>
       </div>
 
-      {/* Mobile: symbol picker + ticket surface below the chart, single column. */}
-      <div className="border-t border-line p-3 lg:hidden">
-        <select
-          value={assetId}
-          onChange={(e) => setAssetId(e.target.value)}
-          className="mb-3 h-10 w-full rounded-chip border border-line px-3 text-[13px] font-semibold"
-        >
-          {ASSETS.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.symbol} — {a.label}
-            </option>
-          ))}
-        </select>
-        <OrderTicket assetId={assetId} price={activePrice} cash={cash} onSubmit={submitOrder} />
-      </div>
+      {/* Mobile: sticky Long/Short bar + slide-up order ticket sheet, docked
+          above the five-tab bottom nav — generalized from MobileTradeBar's
+          pattern (src/components/trade/MobileTradeBar.tsx). */}
+      <MobileTerminalBar assetId={assetId} price={activePrice} cash={cash} onSubmit={submitOrder} />
     </div>
   );
 }

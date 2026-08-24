@@ -16,7 +16,7 @@ import { usd } from "@/lib/format";
  *  and the mobile nav drawer, so every header gets real mobile navigation
  *  and correct active-link state for free instead of re-implementing it. */
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { key: "market", href: "/trade", label: "Predict", icon: Target },
   { key: "terminal", href: "/terminal", label: "Terminal", icon: TerminalIcon },
   { key: "learn", href: "/learn", label: "Learn", icon: GraduationCap },
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
  *  highlighted anything. Deriving it from the URL means that class of bug
  *  can't happen again. /trade and every /market/* deep link both count as
  *  "market" (matches the old TopNav-only comment saying the same). */
-function useActiveNavKey(): (typeof NAV_ITEMS)[number]["key"] | null {
+export function useActiveNavKey(): (typeof NAV_ITEMS)[number]["key"] | null {
   const pathname = usePathname();
   return React.useMemo(() => {
     if (pathname === "/trade" || pathname.startsWith("/market")) return "market";
