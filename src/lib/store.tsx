@@ -3,6 +3,8 @@ import * as React from "react";
 import { MarketEngine } from "./engine";
 import { fetchHistory, useLiveBtc } from "./useBtc";
 import { useLocalStorageState } from "./useLocalStorageState";
+import { BACKEND_ENABLED, getDataStore } from "./getDataStore";
+import { createClient } from "./supabase/client";
 import type {
   Candle, EngineSnapshot, HistoryEntry, Market, OpenOrder, Position, Side,
 } from "./types";
@@ -146,9 +148,7 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     (parsed) => parsed as WalletState,
   );
   const [appliedWallet, setAppliedWallet] = React.useState<WalletState | null>(null);
-  if (persistedWallet && appliedWallet !== persistedWallet) {
-    setAppliedWallet(persistedWallet);
-    const w = persistedWallet;
+  const applyWallet = React.useCallback((w: WalletState) => {
     if (typeof w.cash === "number") setCash(w.cash);
     if (typeof w.depositCount === "number") setDepositCount(w.depositCount);
     if (typeof w.nextDepositAt === "number") setNextDepositAt(w.nextDepositAt);
@@ -156,7 +156,39 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
     if (Array.isArray(w.positions)) setPositions(w.positions);
     if (Array.isArray(w.tradeHistory)) setTradeHistory(w.tradeHistory);
     if (Array.isArray(w.openOrders)) setOpenOrders(w.openOrders);
+  }, []);
+  if (persistedWallet && appliedWallet !== persistedWallet) {
+    setAppliedWallet(persistedWallet);
+    applyWallet(persistedWallet);
   }
+
+  // Real Supabase Auth session (Phase B) — tracked independently here
+  // rather than via useProfile(), since ZoqoProvider sits *outside*
+  // ProfileProvider in (app)/layout.tsx (ProfileProvider itself calls
+  // useZoqo(), so the dependency can't run the other way). Inert unless
+  // NEXT_PUBLIC_BACKEND_ENABLED is "1".
+  const [signedIn, setSignedIn] = React.useState(false);
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED) return;
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => setSignedIn(!!session));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Overlay the remote wallet once per sign-in — same shape as the
+  // persistedWallet apply above, just async (a real fetch can't resolve
+  // during render the way a synchronous localStorage read can).
+  const remoteWalletAppliedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !signedIn || remoteWalletAppliedRef.current) return;
+    remoteWalletAppliedRef.current = true;
+    getDataStore()
+      .getWallet()
+      .then((remote) => {
+        if (remote) applyWallet(remote);
+      });
+  }, [signedIn, applyWallet]);
 
   // Keep the ref mirrors in sync so the tick interval (a stable closure set
   // up once, see the simulation-loop effect below) always reads current
@@ -174,24 +206,26 @@ export function ZoqoProvider({ children }: { children: React.ReactNode }) {
   // Persist wallet (including real positions and history) whenever state changes.
   React.useEffect(() => {
     if (!walletLoaded) return;
+    const userOrders = openOrders.filter((o) => o.userPlaced);
+    const wallet: WalletState = {
+      cash,
+      depositCount,
+      nextDepositAt,
+      stats,
+      positions,
+      tradeHistory: tradeHistory.slice(0, 200),
+      openOrders: userOrders,
+    };
     try {
-      const userOrders = openOrders.filter((o) => o.userPlaced);
-      localStorage.setItem(
-        WALLET_KEY,
-        JSON.stringify({
-          cash,
-          depositCount,
-          nextDepositAt,
-          stats,
-          positions,
-          tradeHistory: tradeHistory.slice(0, 200),
-          openOrders: userOrders,
-        } satisfies WalletState),
-      );
+      localStorage.setItem(WALLET_KEY, JSON.stringify(wallet));
     } catch {
       /* ignore */
     }
-  }, [walletLoaded, cash, depositCount, nextDepositAt, stats, positions, tradeHistory, openOrders]);
+    // Additive: push to Postgres too, once signed in in backend mode.
+    // WalletState's fields are all optional; wallet above has every one
+    // populated, so it satisfies WalletRecord's stricter required shape.
+    if (BACKEND_ENABLED && signedIn) void getDataStore().putWallet(wallet as Required<WalletState>);
+  }, [walletLoaded, signedIn, cash, depositCount, nextDepositAt, stats, positions, tradeHistory, openOrders]);
 
   const grant = React.useCallback((amount: number) => {
     if (amount > 0) setCash((c) => c + amount);

@@ -3,6 +3,8 @@ import * as React from "react";
 import { useZoqo } from "./store";
 import { ASSET_BY_ID } from "./assets";
 import { useLocalStorageState } from "./useLocalStorageState";
+import { BACKEND_ENABLED, getDataStore } from "./getDataStore";
+import { useProfile } from "./profile";
 
 /** A held position in the position-based Terminal (distinct from the
  *  prediction market's `Position` in types.ts, which is a share of a
@@ -111,6 +113,31 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
   const { adjustCash, cash } = useZoqo();
   const [positions, setPositions] = useLocalStorageState(POSITIONS_KEY, EMPTY_POSITIONS, mergeArray);
   const [history, setHistory] = useLocalStorageState(HISTORY_KEY, EMPTY_HISTORY, mergeArray);
+  // TerminalProvider is always mounted inside ProfileProvider (it's a page-
+  // local provider under (app)/layout.tsx's tree, never the outermost one
+  // the way ZoqoProvider is), so useProfile() is safe here.
+  const { signedIn } = useProfile();
+
+  // Overlay the remote terminal positions/history once per sign-in.
+  const remoteAppliedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !signedIn || remoteAppliedRef.current) return;
+    remoteAppliedRef.current = true;
+    getDataStore()
+      .getTerminal()
+      .then((remote) => {
+        if (!remote) return;
+        if (remote.positions.length) setPositions(remote.positions);
+        if (remote.history.length) setHistory(remote.history);
+      });
+  }, [signedIn, setPositions, setHistory]);
+
+  // Push local changes to Postgres once signed in — additive to the
+  // localStorage writes useLocalStorageState's own setters already do.
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !signedIn) return;
+    void getDataStore().putTerminal({ positions, history });
+  }, [signedIn, positions, history]);
 
   const openPosition = React.useCallback(
     (
