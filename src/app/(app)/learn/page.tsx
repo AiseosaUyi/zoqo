@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Card, Progress, Badge } from "@/components/ui";
 import { SKILLS, useAcademy } from "@/lib/academy";
 import { LESSONS_BY_SKILL, type Lesson, type SkillId } from "@/lib/lessons";
@@ -8,6 +9,27 @@ import { AppHeader } from "@/components/trade/AppHeader";
 import { Flame, Zap, Lock, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/cn";
 
+function findLessonById(lessonId: string): Lesson | undefined {
+  for (const lessons of Object.values(LESSONS_BY_SKILL)) {
+    const found = lessons.find((l) => l.id === lessonId);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+// Resuming from a Mock Trade lesson's deep-link into /terminal (see
+// MockTradePlayer/mockTrade.ts) — the terminal sends the user back here
+// with ?resumeLesson=id rather than relying on any in-memory state
+// surviving the round trip through a different route. Read once via a lazy
+// useState initializer (guarded for SSR/static prerendering, same pattern
+// TerminalShell uses) rather than an effect + setState, which this repo's
+// React Compiler lint rules flag.
+function readResumeLesson(): Lesson | null {
+  if (typeof window === "undefined") return null;
+  const resumeId = new URLSearchParams(window.location.search).get("resumeLesson");
+  return resumeId ? (findLessonById(resumeId) ?? null) : null;
+}
+
 /** Zoqo Academy — Duolingo-style trading curriculum (TERMINAL_SPEC.md §6).
  *  The skill tree reads every lesson from `LESSONS_BY_SKILL` (`@/lib/lessons`)
  *  instead of a hardcoded lesson id — a skill with fewer authored lessons
@@ -15,9 +37,17 @@ import { cn } from "@/lib/cn";
  *  "in development" slots, so the tree is always accurate to what's
  *  actually playable right now, not a promise. */
 export default function LearnPage() {
+  const router = useRouter();
   const { xp, streak, completedLessons } = useAcademy();
-  const [expanded, setExpanded] = React.useState<SkillId | null>(null);
-  const [activeLesson, setActiveLesson] = React.useState<Lesson | null>(null);
+  const [expanded, setExpanded] = React.useState<SkillId | null>(() => readResumeLesson()?.skillId ?? null);
+  const [activeLesson, setActiveLesson] = React.useState<Lesson | null>(readResumeLesson);
+
+  // Strip ?resumeLesson= from the URL once consumed above, so a refresh
+  // doesn't re-trigger the same resume. Navigation only, no local setState,
+  // so this effect is exempt from the set-state-in-effect concern.
+  React.useEffect(() => {
+    if (window.location.search.includes("resumeLesson")) router.replace("/learn");
+  }, [router]);
 
   return (
     <>

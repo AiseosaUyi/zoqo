@@ -355,4 +355,19 @@ export const LESSONS: Lesson[] = [
     explain:
       "Entering as price breaks back above the consolidation (423-429) confirms the trend is resuming, rather than guessing when it will. The stop belongs under the consolidation's low (403-408) — a move back below it means the \"pause\" was actually a reversal. A target of 460-476 banks roughly 2x the ~$18-23 of risk, in line with the size of the prior leg up.",
   },
+  {
+    id: "risk-15",
+    skillId: "risk",
+    title: "Put it into practice",
+    type: "mock-trade",
+    assetId: "btcusd",
+    instructions:
+      "Open a long on BTC/USD sized between $50 and $150, with a stop-loss 1-3% below entry and a take-profit 2-6% above entry.",
+    requiredSide: "long",
+    sizeUsdRange: { min: 50, max: 150 },
+    stopLossPctRange: { min: 1, max: 3 },
+    takeProfitPctRange: { min: 2, max: 6 },
+    explain:
+      "A stop 1-3% away keeps a single trade's risk small and survivable; a target 2-6% away — roughly 2x the stop distance — means your winners pay for more than one loser. Same 1-2% risk-sizing habit as the rest of this unit, just placed for real on the terminal instead of a slider.",
+  },
 ];

@@ -1,5 +1,7 @@
 "use client";
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { TerminalProvider, useTerminal } from "@/lib/terminalStore";
 import { useAssetPrice } from "@/lib/useAssetPrice";
@@ -11,6 +13,12 @@ import { PositionsPanel } from "./PositionsPanel";
 import { TerminalChart } from "./TerminalChart";
 import { usd, signedUsd, price as formatPrice } from "@/lib/format";
 import { seedCandles1m, upsertTick, type Candle } from "@/lib/candles";
+import {
+  getPendingMockTrade,
+  clearPendingMockTrade,
+  setMockTradeResult,
+  type MockTradePending,
+} from "@/lib/mockTrade";
 
 // Candles are maintained incrementally (candles.ts's upsertTick), not
 // rebucketed from a raw tick list — that was the old approach and it's what
@@ -25,6 +33,20 @@ import { seedCandles1m, upsertTick, type Candle } from "@/lib/candles";
 // one candle.
 const MAX_CANDLES = 24 * 60;
 const SEED_CANDLES = 8 * 60;
+
+// Read once, lazily, inside a useState initializer rather than an effect —
+// this repo's React Compiler lint rules (react-hooks/set-state-in-effect,
+// see CLAUDE.md) flag calling setState synchronously inside an effect body,
+// and a lazy initializer is the correct "read an external system once at
+// mount" shape besides. Guarded for SSR/static prerendering, where
+// `window` doesn't exist yet — the real read only ever resolves client-side.
+function readActiveMockFromUrl(): MockTradePending | null {
+  if (typeof window === "undefined") return null;
+  const lessonId = new URLSearchParams(window.location.search).get("mockLesson");
+  if (!lessonId) return null;
+  const pending = getPendingMockTrade();
+  return pending && pending.lessonId === lessonId ? pending : null;
+}
 
 /** Multi-asset trading terminal — desktop: watchlist / chart / order ticket
  *  three-column layout with a positions panel underneath, mirroring the
@@ -41,9 +63,18 @@ export function TerminalShell() {
 }
 
 function TerminalInner() {
+  const router = useRouter();
   const { cash } = useZoqo();
   const { openPosition, markToMarket, checkStops } = useTerminal();
-  const [assetId, setAssetId] = React.useState(DEFAULT_ASSET_ID);
+  // Academy's Mock Trade lesson (spec §6) deep-links here with ?mockLesson=id
+  // and a matching sessionStorage record (mockTrade.ts) — read once via a
+  // lazy initializer (see readActiveMockFromUrl above) rather than
+  // useSearchParams(), so this component doesn't force a Suspense boundary
+  // onto an otherwise-static page just for a param only the Academy
+  // hand-off ever sets.
+  const [activeMock, setActiveMock] = React.useState<MockTradePending | null>(readActiveMockFromUrl);
+  const [mockGraded, setMockGraded] = React.useState(false);
+  const [assetId, setAssetId] = React.useState(() => readActiveMockFromUrl()?.assetId ?? DEFAULT_ASSET_ID);
   const [candlesByAsset, setCandlesByAsset] = React.useState<Record<string, Candle[]>>({});
 
   const [toast, setToast] = React.useState<{ id: number; text: string; tone: "up" | "down" } | null>(null);
@@ -123,6 +154,22 @@ function TerminalInner() {
         `${side === "long" ? "Bought" : "Sold"} ${asset?.symbol ?? assetId} @ ${formatPrice(activePrice, decimals)}`,
         side === "long" ? "up" : "down",
       );
+
+      if (activeMock && activeMock.assetId === assetId && !mockGraded) {
+        const sizeUsd = qty * activePrice;
+        const slPct = sl != null ? (Math.abs(activePrice - sl) / activePrice) * 100 : null;
+        const tpPct = tp != null ? (Math.abs(tp - activePrice) / activePrice) * 100 : null;
+        const inRange = (v: number, range: { min: number; max: number }) => v >= range.min && v <= range.max;
+        setMockTradeResult({
+          lessonId: activeMock.lessonId,
+          sideOk: side === activeMock.requiredSide,
+          sizeOk: inRange(sizeUsd, activeMock.sizeUsdRange),
+          slOk: slPct != null && inRange(slPct, activeMock.stopLossPctRange),
+          tpOk: tpPct != null && inRange(tpPct, activeMock.takeProfitPctRange),
+        });
+        clearPendingMockTrade();
+        setMockGraded(true);
+      }
     }
     return ok;
   };
@@ -136,6 +183,39 @@ function TerminalInner() {
           }`}
         >
           {toast.text}
+        </div>
+      )}
+      {activeMock && (
+        <div className="flex items-center justify-between gap-3 border-b border-line bg-purple-50 px-4 py-2 text-[12px]">
+          {mockGraded ? (
+            <>
+              <span className="font-semibold text-purple-800">✓ Trade graded — head back to see how it went.</span>
+              <Button
+                size="xs"
+                color="brand"
+                onClick={() => router.push(`/learn?resumeLesson=${encodeURIComponent(activeMock.lessonId)}`)}
+              >
+                Back to Academy
+              </Button>
+            </>
+          ) : (
+            <>
+              <span className="text-purple-800">
+                <span className="font-semibold">Academy:</span> {activeMock.instructions}
+              </span>
+              <Button
+                size="xs"
+                variant="outline"
+                color="gray"
+                onClick={() => {
+                  clearPendingMockTrade();
+                  setActiveMock(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </>
+          )}
         </div>
       )}
       <div className="flex items-center justify-between border-b border-line px-4 py-2">
@@ -187,14 +267,7 @@ function TerminalInner() {
             </option>
           ))}
         </select>
-        <OrderTicket
-          assetId={assetId}
-          price={activePrice}
-          cash={cash}
-          onSubmit={(side, qty, sl, tp) =>
-            activePrice ? openPosition(assetId, side, qty, activePrice, { stopLoss: sl, takeProfit: tp }) : false
-          }
-        />
+        <OrderTicket assetId={assetId} price={activePrice} cash={cash} onSubmit={submitOrder} />
       </div>
     </div>
   );

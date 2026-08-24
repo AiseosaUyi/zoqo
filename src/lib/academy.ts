@@ -4,11 +4,9 @@ import { useLocalStorageState } from "./useLocalStorageState";
 import { useTicker } from "./useTicker";
 
 /** Zoqo Academy — the Duolingo-style learning system (TERMINAL_SPEC.md §6).
- *  This is a first, working slice: one skill tree, real hearts/XP/streak
- *  bookkeeping, and one fully-functional lesson type (Signal Spot). The
- *  other lesson types (Pattern Pop, Build the Order, Mock Trade) and the
- *  remaining ~85 lessons the 3-month curriculum needs are designed in the
- *  spec and left for the handoff — see the Claude Code prompt. */
+ *  One skill tree, real hearts/XP/streak bookkeeping, and all four lesson
+ *  mechanics (Signal Spot, Pattern Pop, Build the Order, Mock Trade) with
+ *  real content across all seven skills — see `src/lib/lessons/`. */
 
 const KEY = "zoqo-academy-v1";
 const MAX_HEARTS = 5;
@@ -25,7 +23,7 @@ export const SKILLS: Skill[] = [
   { id: "foundations", title: "Foundations", blurb: "What a market actually is, and how price is set.", lessonCount: 8 },
   { id: "charts", title: "Reading a Chart", blurb: "Candlesticks, timeframes, support & resistance.", lessonCount: 12 },
   { id: "orders", title: "Order Types", blurb: "Market, limit, stop — and when to use each.", lessonCount: 10 },
-  { id: "risk", title: "Risk Management", blurb: "Position sizing, stop-losses, never blow up your account.", lessonCount: 14 },
+  { id: "risk", title: "Risk Management", blurb: "Position sizing, stop-losses, never blow up your account.", lessonCount: 15 },
   { id: "indicators", title: "Indicators", blurb: "Moving averages, RSI, volume — signal vs. noise.", lessonCount: 16 },
   { id: "strategy", title: "Strategy Basics", blurb: "Trend-following, mean-reversion, and picking one.", lessonCount: 18 },
   { id: "psychology", title: "Trading Psychology", blurb: "Why the hardest part is never the chart.", lessonCount: 12 },

@@ -71,4 +71,22 @@ export interface OrderBuilderLesson extends LessonBase {
   explain: string;
 }
 
-export type Lesson = SignalSpotLesson | PatternPopLesson | OrderBuilderLesson;
+/** "Place this trade on the demo terminal" — deep-links into the real
+ *  `/terminal` for a guided live rep instead of a synthetic setup, then
+ *  reports back what happened. Graded against the real fill: side must
+ *  match, size/stop-loss/take-profit are graded as % distance from entry
+ *  (not absolute price, since the terminal's price is live and moving) so
+ *  the safe range still means something regardless of where BTC happens to
+ *  be trading when the lesson is played. */
+export interface MockTradeLesson extends LessonBase {
+  type: "mock-trade";
+  assetId: string;
+  instructions: string;
+  requiredSide: "long" | "short";
+  sizeUsdRange: SafeRange;
+  stopLossPctRange: SafeRange;
+  takeProfitPctRange: SafeRange;
+  explain: string;
+}
+
+export type Lesson = SignalSpotLesson | PatternPopLesson | OrderBuilderLesson | MockTradeLesson;

@@ -7,6 +7,7 @@ import type { Lesson } from "@/lib/lessons/types";
 import { SignalSpotPlayer } from "./SignalSpotPlayer";
 import { PatternPopPlayer } from "./PatternPopPlayer";
 import { OrderBuilderPlayer } from "./OrderBuilderPlayer";
+import { MockTradePlayer } from "./MockTradePlayer";
 
 export interface LessonResult {
   correct: boolean;
@@ -73,6 +74,7 @@ export function LessonRunner({ lesson, onDone }: { lesson: Lesson; onDone: () =>
       {lesson.type === "signal-spot" && <SignalSpotPlayer lesson={lesson} onFinish={handleFinish} />}
       {lesson.type === "pattern-pop" && <PatternPopPlayer lesson={lesson} onFinish={handleFinish} />}
       {lesson.type === "build-order" && <OrderBuilderPlayer lesson={lesson} onFinish={handleFinish} />}
+      {lesson.type === "mock-trade" && <MockTradePlayer lesson={lesson} onFinish={handleFinish} />}
     </div>
   );
 }
