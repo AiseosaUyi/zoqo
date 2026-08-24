@@ -39,6 +39,16 @@ export const pct = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 export const signedUsd = (n: number) =>
   `${n >= 0 ? "+" : "-"}${usd(Math.abs(n))}`;
 
+/** Plain (no currency symbol) price at an asset's own decimal precision —
+ *  assets.ts's `decimals` (crypto/gold 2dp, JPY pairs 3dp, most FX 4-5dp).
+ *  Terminal tables show entry/mark/exit this way; a hardcoded `.toFixed(2)`
+ *  silently truncates forex pairs down to cents, e.g. EUR/USD 1.08480 -> 1.08. */
+export const price = (n: number, decimals: number) =>
+  new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(n);
+
 /** HH:MM in ET-ish local clock. */
 export function hhmm(ts: number): string {
   return new Date(ts).toLocaleTimeString("en-US", {

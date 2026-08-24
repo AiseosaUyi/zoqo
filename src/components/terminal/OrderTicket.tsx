@@ -2,7 +2,11 @@
 import * as React from "react";
 import { Button, SegmentedControl } from "@/components/ui";
 import { ASSET_BY_ID } from "@/lib/assets";
-import { usd } from "@/lib/format";
+import { usd, price as formatPrice } from "@/lib/format";
+
+const MIN_SL_TP_PCT = 0.1;
+const MAX_SL_TP_PCT = 50;
+const clampPct = (v: number) => Math.min(MAX_SL_TP_PCT, Math.max(MIN_SL_TP_PCT, v || MIN_SL_TP_PCT));
 
 export function OrderTicket({
   assetId,
@@ -16,6 +20,7 @@ export function OrderTicket({
   onSubmit: (side: "long" | "short", qty: number, stopLoss?: number, takeProfit?: number) => boolean;
 }) {
   const asset = ASSET_BY_ID[assetId];
+  const decimals = asset?.decimals ?? 2;
   const [side, setSide] = React.useState<"long" | "short">("long");
   const [amountUsd, setAmountUsd] = React.useState(100);
   const [useSlTp, setUseSlTp] = React.useState(false);
@@ -24,18 +29,26 @@ export function OrderTicket({
   const [error, setError] = React.useState<string | null>(null);
 
   const qty = price ? amountUsd / price : 0;
+  const insufficientFunds = amountUsd > cash;
+  const slPrice = price ? price * (side === "long" ? 1 - slPct / 100 : 1 + slPct / 100) : null;
+  const tpPrice = price ? price * (side === "long" ? 1 + tpPct / 100 : 1 - tpPct / 100) : null;
 
   const submit = () => {
     if (!price) return;
-    const sl = useSlTp ? price * (side === "long" ? 1 - slPct / 100 : 1 + slPct / 100) : undefined;
-    const tp = useSlTp ? price * (side === "long" ? 1 + tpPct / 100 : 1 - tpPct / 100) : undefined;
+    const sl = useSlTp ? (slPrice ?? undefined) : undefined;
+    const tp = useSlTp ? (tpPrice ?? undefined) : undefined;
     const ok = onSubmit(side, qty, sl, tp);
     setError(ok ? null : "Not enough paper cash for that size.");
   };
 
   return (
     <div className="flex h-full flex-col gap-3 p-3">
-      <div className="text-[12px] font-bold text-sub">{asset?.symbol ?? assetId}</div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-[12px] font-bold text-sub">{asset?.symbol ?? assetId}</span>
+        <span className="nums text-[15px] font-bold text-ink">
+          {price != null ? formatPrice(price, decimals) : <span className="text-[11px] font-medium text-sub">Connecting…</span>}
+        </span>
+      </div>
 
       <SegmentedControl
         value={side}
@@ -85,19 +98,29 @@ export function OrderTicket({
             <span className="text-[11px] text-sub">Stop-loss %</span>
             <input
               type="number"
+              min={MIN_SL_TP_PCT}
+              max={MAX_SL_TP_PCT}
+              step={0.1}
               value={slPct}
               onChange={(e) => setSlPct(Number(e.target.value))}
+              onBlur={() => setSlPct((v) => clampPct(v))}
               className="h-9 rounded-chip border border-line px-2 text-[13px] nums outline-none"
             />
+            <span className="text-[10px] text-sub nums">{slPrice != null ? `@ ${formatPrice(slPrice, decimals)}` : "—"}</span>
           </label>
           <label className="flex flex-col gap-1">
             <span className="text-[11px] text-sub">Take-profit %</span>
             <input
               type="number"
+              min={MIN_SL_TP_PCT}
+              max={MAX_SL_TP_PCT}
+              step={0.1}
               value={tpPct}
               onChange={(e) => setTpPct(Number(e.target.value))}
+              onBlur={() => setTpPct((v) => clampPct(v))}
               className="h-9 rounded-chip border border-line px-2 text-[13px] nums outline-none"
             />
+            <span className="text-[10px] text-sub nums">{tpPrice != null ? `@ ${formatPrice(tpPrice, decimals)}` : "—"}</span>
           </label>
         </div>
       )}
@@ -109,14 +132,20 @@ export function OrderTicket({
         </div>
         <div className="flex justify-between text-[11px] text-sub">
           <span>Available</span>
-          <span className="nums">{usd(cash)}</span>
+          <span className={`nums ${insufficientFunds ? "font-semibold text-red-600" : ""}`}>{usd(cash)}</span>
         </div>
-        {error && <div className="text-[11px] font-semibold text-red-600">{error}</div>}
+        {insufficientFunds ? (
+          <div className="text-[11px] font-semibold text-red-600">Exceeds available cash.</div>
+        ) : !price ? (
+          <div className="text-[11px] text-sub">Waiting for a live price…</div>
+        ) : (
+          error && <div className="text-[11px] font-semibold text-red-600">{error}</div>
+        )}
         <Button
           color={side === "long" ? "up" : "down"}
           size="lg"
           fullWidth
-          disabled={!price || amountUsd <= 0}
+          disabled={!price || amountUsd <= 0 || insufficientFunds}
           onClick={submit}
         >
           {side === "long" ? "Buy" : "Sell"} {asset?.symbol ?? ""}

@@ -57,6 +57,20 @@ interface TerminalCtx {
    *  shared wallet by the realized P&L. */
   closePosition: (id: string, price: number, qty?: number) => void;
   markToMarket: (prices: Record<string, number>) => { unrealizedPnl: number; equity: number };
+  /** Checks every open position's stop-loss/take-profit against the latest
+   *  marks and auto-closes anything breached, filling at the SL/TP level
+   *  (not the possibly-gapped mark price). Returns the triggered closes so
+   *  the caller can surface a toast — without this, stopLoss/takeProfit are
+   *  fields that get stored on open but never actually protect anyone. */
+  checkStops: (prices: Record<string, number>) => TriggeredStop[];
+}
+
+export interface TriggeredStop {
+  assetId: string;
+  side: "long" | "short";
+  reason: "stop-loss" | "take-profit";
+  exitPrice: number;
+  pnl: number;
 }
 
 const Ctx = React.createContext<TerminalCtx | null>(null);
@@ -147,6 +161,31 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
     [adjustCash, setHistory, setPositions],
   );
 
+  const checkStops = React.useCallback(
+    (prices: Record<string, number>): TriggeredStop[] => {
+      const triggered: TriggeredStop[] = [];
+      for (const p of positions) {
+        const mark = prices[p.assetId];
+        if (!mark) continue;
+        let hit: { price: number; reason: "stop-loss" | "take-profit" } | null = null;
+        if (p.side === "long") {
+          if (p.stopLoss != null && mark <= p.stopLoss) hit = { price: p.stopLoss, reason: "stop-loss" };
+          else if (p.takeProfit != null && mark >= p.takeProfit) hit = { price: p.takeProfit, reason: "take-profit" };
+        } else {
+          if (p.stopLoss != null && mark >= p.stopLoss) hit = { price: p.stopLoss, reason: "stop-loss" };
+          else if (p.takeProfit != null && mark <= p.takeProfit) hit = { price: p.takeProfit, reason: "take-profit" };
+        }
+        if (!hit) continue;
+        const pnl =
+          p.side === "long" ? (hit.price - p.entryPrice) * p.qty : (p.entryPrice - hit.price) * p.qty;
+        closePosition(p.id, hit.price);
+        triggered.push({ assetId: p.assetId, side: p.side, reason: hit.reason, exitPrice: hit.price, pnl });
+      }
+      return triggered;
+    },
+    [positions, closePosition],
+  );
+
   const markToMarket = React.useCallback(
     (prices: Record<string, number>) => {
       let unrealizedPnl = 0;
@@ -160,6 +199,6 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
     [positions, cash],
   );
 
-  const value: TerminalCtx = { positions, history, openPosition, closePosition, markToMarket };
+  const value: TerminalCtx = { positions, history, openPosition, closePosition, markToMarket, checkStops };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

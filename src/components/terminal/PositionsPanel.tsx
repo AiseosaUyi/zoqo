@@ -1,7 +1,7 @@
 "use client";
 import { useTerminal, type TerminalPosition } from "@/lib/terminalStore";
 import { ASSET_BY_ID } from "@/lib/assets";
-import { signedUsd } from "@/lib/format";
+import { signedUsd, price } from "@/lib/format";
 import { Button, Tabs } from "@/components/ui";
 import { useState } from "react";
 
@@ -32,6 +32,8 @@ export function PositionsPanel({ prices }: { prices: Record<string, number | nul
                   <th className="px-3 py-2 font-semibold">Qty</th>
                   <th className="px-3 py-2 font-semibold">Entry</th>
                   <th className="px-3 py-2 font-semibold">Mark</th>
+                  <th className="px-3 py-2 font-semibold">SL</th>
+                  <th className="px-3 py-2 font-semibold">TP</th>
                   <th className="px-3 py-2 font-semibold">P&amp;L</th>
                   <th className="px-3 py-2" />
                 </tr>
@@ -62,17 +64,20 @@ export function PositionsPanel({ prices }: { prices: Record<string, number | nul
               </tr>
             </thead>
             <tbody>
-              {history.map((h) => (
-                <tr key={h.id} className="border-t border-line">
-                  <td className="px-3 py-2 font-semibold">{ASSET_BY_ID[h.assetId]?.symbol ?? h.assetId}</td>
-                  <td className="px-3 py-2 capitalize">{h.side}</td>
-                  <td className="px-3 py-2 nums">{h.entryPrice.toFixed(2)}</td>
-                  <td className="px-3 py-2 nums">{h.exitPrice.toFixed(2)}</td>
-                  <td className={`px-3 py-2 nums font-bold ${h.pnl >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {signedUsd(h.pnl)}
-                  </td>
-                </tr>
-              ))}
+              {history.map((h) => {
+                const decimals = ASSET_BY_ID[h.assetId]?.decimals ?? 2;
+                return (
+                  <tr key={h.id} className="border-t border-line">
+                    <td className="px-3 py-2 font-semibold">{ASSET_BY_ID[h.assetId]?.symbol ?? h.assetId}</td>
+                    <td className="px-3 py-2 capitalize">{h.side}</td>
+                    <td className="px-3 py-2 nums">{price(h.entryPrice, decimals)}</td>
+                    <td className="px-3 py-2 nums">{price(h.exitPrice, decimals)}</td>
+                    <td className={`px-3 py-2 nums font-bold ${h.pnl >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {signedUsd(h.pnl)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -90,14 +95,17 @@ function PositionRow({
   mark: number | null;
   onClose: () => void;
 }) {
+  const decimals = ASSET_BY_ID[p.assetId]?.decimals ?? 2;
   const pnl = mark ? (p.side === "long" ? (mark - p.entryPrice) * p.qty : (p.entryPrice - mark) * p.qty) : 0;
   return (
     <tr className="border-t border-line">
       <td className="px-3 py-2 font-semibold">{ASSET_BY_ID[p.assetId]?.symbol ?? p.assetId}</td>
       <td className={`px-3 py-2 capitalize ${p.side === "long" ? "text-green-600" : "text-red-600"}`}>{p.side}</td>
       <td className="px-3 py-2 nums">{p.qty.toFixed(6)}</td>
-      <td className="px-3 py-2 nums">{p.entryPrice.toFixed(2)}</td>
-      <td className="px-3 py-2 nums">{mark ? mark.toFixed(2) : "—"}</td>
+      <td className="px-3 py-2 nums">{price(p.entryPrice, decimals)}</td>
+      <td className="px-3 py-2 nums">{mark ? price(mark, decimals) : "—"}</td>
+      <td className="px-3 py-2 nums text-red-600">{p.stopLoss != null ? price(p.stopLoss, decimals) : "—"}</td>
+      <td className="px-3 py-2 nums text-green-600">{p.takeProfit != null ? price(p.takeProfit, decimals) : "—"}</td>
       <td className={`px-3 py-2 nums font-bold ${pnl >= 0 ? "text-green-600" : "text-red-600"}`}>{signedUsd(pnl)}</td>
       <td className="px-3 py-2">
         <Button size="xs" variant="outline" color="gray" onClick={onClose} disabled={!mark}>

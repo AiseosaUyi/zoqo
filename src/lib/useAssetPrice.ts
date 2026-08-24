@@ -151,6 +151,20 @@ function subscribeCrypto(
       ]
     : [];
 
+  // Fire one immediate REST poll in parallel with the WS attempts below so
+  // there's a real price within ~1 round-trip instead of waiting out the
+  // full fallback chain (up to ~10s across two failed WS hops — 5s connect
+  // timeout each — before landing on polling). This is what made the
+  // terminal feel like it was hanging on load, especially where Binance/
+  // Coinbase are DNS-blocked (see CLAUDE.md). Whichever source responds
+  // first paints; later ticks from either source just overwrite it as normal.
+  fetch(`/api/crypto/${asset.id}`, { cache: "no-store" })
+    .then((r) => r.json())
+    .then((j) => {
+      if (!killed && j.price > 0) set(j.price, `${j.source} (poll)`, true);
+    })
+    .catch(() => {});
+
   const tryFeed = (i: number) => {
     if (killed) return;
     if (i >= feeds.length) {
