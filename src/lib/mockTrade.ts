@@ -18,7 +18,7 @@ export interface MockTradePending {
   assetId: string;
   instructions: string;
   requiredSide: "long" | "short";
-  sizeUsdRange: { min: number; max: number };
+  sizePctRange: { min: number; max: number };
   stopLossPctRange: { min: number; max: number };
   takeProfitPctRange: { min: number; max: number };
 }
@@ -37,7 +37,7 @@ export function pendingFromLesson(lesson: MockTradeLesson): MockTradePending {
     assetId: lesson.assetId,
     instructions: lesson.instructions,
     requiredSide: lesson.requiredSide,
-    sizeUsdRange: lesson.sizeUsdRange,
+    sizePctRange: lesson.sizePctRange,
     stopLossPctRange: lesson.stopLossPctRange,
     takeProfitPctRange: lesson.takeProfitPctRange,
   };

@@ -33,6 +33,24 @@ export interface TerminalHistoryEntry {
 
 const POSITIONS_KEY = "zoqo-terminal-positions-v1";
 const HISTORY_KEY = "zoqo-terminal-history-v1";
+
+/** Position-sizing caps. 10% single-position ceiling matches two
+ *  independent sources rather than an invented number: the agiprolabs
+ *  trading-skills `position-sizing` skill's "Account-Level Limits" (max
+ *  single position ~10% of portfolio) and polymarket-paper-trader's
+ *  risk-rules.md (`max_position_pct: 0.10`). The 5% risk-at-stop cap is
+ *  that skill's fixed-fractional method, which the Academy's own Risk
+ *  Management unit already teaches as 1-2% risk per trade via stop
+ *  distance — this is the outer ceiling, not the taught target. Before
+ *  this, the only cap on `openPosition` was `cost > cash` — "however much
+ *  cash you have" — the exact gap CLAUDE_CODE_HANDOFF.md §3 flagged ahead
+ *  of real money touching this path. Kelly-criterion sizing isn't
+ *  applicable yet — Kelly needs an estimated win rate/payoff ratio from
+ *  real trade history (the skill's own minimum is 50+ trades), which a
+ *  fresh paper-trading account doesn't have; a flat fixed-fractional cap is
+ *  the right tool until there's enough history to estimate an edge from. */
+export const MAX_POSITION_PCT = 0.1; // no single position's notional > 10% of cash
+export const MAX_RISK_PCT = 0.05; // if a stop-loss is set, risk at that stop <= 5% of cash
 const EMPTY_POSITIONS: TerminalPosition[] = [];
 const EMPTY_HISTORY: TerminalHistoryEntry[] = [];
 
@@ -105,6 +123,11 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
       if (!ASSET_BY_ID[assetId] || qty <= 0 || price <= 0) return false;
       const cost = qty * price;
       if (cost > cash) return false;
+      if (cost > cash * MAX_POSITION_PCT) return false;
+      if (opts?.stopLoss != null) {
+        const riskAmount = Math.abs(price - opts.stopLoss) * qty;
+        if (riskAmount > cash * MAX_RISK_PCT) return false;
+      }
       adjustCash(-cost);
       setPositions((prev) => [
         {

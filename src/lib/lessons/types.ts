@@ -83,7 +83,12 @@ export interface MockTradeLesson extends LessonBase {
   assetId: string;
   instructions: string;
   requiredSide: "long" | "short";
-  sizeUsdRange: SafeRange;
+  /** % of available cash at the time of the trade, not a fixed USD amount —
+   *  a fixed range would either be trivial for a well-funded account or
+   *  unreachable for a fresh one (terminalStore.ts's MAX_POSITION_PCT caps
+   *  any single position at 10% of cash, so a fixed-dollar range can't
+   *  safely assume any particular balance). */
+  sizePctRange: SafeRange;
   stopLossPctRange: SafeRange;
   takeProfitPctRange: SafeRange;
   explain: string;

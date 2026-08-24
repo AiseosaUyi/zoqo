@@ -86,7 +86,7 @@ export function MockTradePlayer({
         <div className="flex justify-between">
           <span>Size</span>
           <span className="font-semibold text-ink nums">
-            ${lesson.sizeUsdRange.min}–${lesson.sizeUsdRange.max}
+            {lesson.sizePctRange.min}%–{lesson.sizePctRange.max}% of cash
           </span>
         </div>
         <div className="flex justify-between">

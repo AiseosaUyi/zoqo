@@ -362,9 +362,9 @@ export const LESSONS: Lesson[] = [
     type: "mock-trade",
     assetId: "btcusd",
     instructions:
-      "Open a long on BTC/USD sized between $50 and $150, with a stop-loss 1-3% below entry and a take-profit 2-6% above entry.",
+      "Open a long on BTC/USD sized 2-8% of your available cash, with a stop-loss 1-3% below entry and a take-profit 2-6% above entry.",
     requiredSide: "long",
-    sizeUsdRange: { min: 50, max: 150 },
+    sizePctRange: { min: 2, max: 8 },
     stopLossPctRange: { min: 1, max: 3 },
     takeProfitPctRange: { min: 2, max: 6 },
     explain:

@@ -156,14 +156,14 @@ function TerminalInner() {
       );
 
       if (activeMock && activeMock.assetId === assetId && !mockGraded) {
-        const sizeUsd = qty * activePrice;
+        const sizePct = cash > 0 ? ((qty * activePrice) / cash) * 100 : 0;
         const slPct = sl != null ? (Math.abs(activePrice - sl) / activePrice) * 100 : null;
         const tpPct = tp != null ? (Math.abs(tp - activePrice) / activePrice) * 100 : null;
         const inRange = (v: number, range: { min: number; max: number }) => v >= range.min && v <= range.max;
         setMockTradeResult({
           lessonId: activeMock.lessonId,
           sideOk: side === activeMock.requiredSide,
-          sizeOk: inRange(sizeUsd, activeMock.sizeUsdRange),
+          sizeOk: inRange(sizePct, activeMock.sizePctRange),
           slOk: slPct != null && inRange(slPct, activeMock.stopLossPctRange),
           tpOk: tpPct != null && inRange(tpPct, activeMock.takeProfitPctRange),
         });

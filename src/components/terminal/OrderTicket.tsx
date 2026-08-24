@@ -3,6 +3,7 @@ import * as React from "react";
 import { Button, SegmentedControl } from "@/components/ui";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { usd, price as formatPrice } from "@/lib/format";
+import { MAX_POSITION_PCT, MAX_RISK_PCT } from "@/lib/terminalStore";
 
 const MIN_SL_TP_PCT = 0.1;
 const MAX_SL_TP_PCT = 50;
@@ -30,15 +31,18 @@ export function OrderTicket({
 
   const qty = price ? amountUsd / price : 0;
   const insufficientFunds = amountUsd > cash;
+  const oversized = amountUsd > cash * MAX_POSITION_PCT;
   const slPrice = price ? price * (side === "long" ? 1 - slPct / 100 : 1 + slPct / 100) : null;
   const tpPrice = price ? price * (side === "long" ? 1 + tpPct / 100 : 1 - tpPct / 100) : null;
+  const riskAmount = useSlTp && slPrice != null ? Math.abs((price ?? 0) - slPrice) * qty : 0;
+  const overRisk = useSlTp && riskAmount > cash * MAX_RISK_PCT;
 
   const submit = () => {
     if (!price) return;
     const sl = useSlTp ? (slPrice ?? undefined) : undefined;
     const tp = useSlTp ? (tpPrice ?? undefined) : undefined;
     const ok = onSubmit(side, qty, sl, tp);
-    setError(ok ? null : "Not enough paper cash for that size.");
+    setError(ok ? null : "That order was rejected — check size and stop-loss risk against the limits below.");
   };
 
   return (
@@ -136,6 +140,14 @@ export function OrderTicket({
         </div>
         {insufficientFunds ? (
           <div className="text-[11px] font-semibold text-red-600">Exceeds available cash.</div>
+        ) : oversized ? (
+          <div className="text-[11px] font-semibold text-red-600">
+            Size exceeds {Math.round(MAX_POSITION_PCT * 100)}% of cash — max {usd(cash * MAX_POSITION_PCT)}.
+          </div>
+        ) : overRisk ? (
+          <div className="text-[11px] font-semibold text-red-600">
+            Stop-loss risks {usd(riskAmount)}, over {Math.round(MAX_RISK_PCT * 100)}% of cash — tighten the stop or size.
+          </div>
         ) : !price ? (
           <div className="text-[11px] text-sub">Waiting for a live price…</div>
         ) : (
@@ -145,7 +157,7 @@ export function OrderTicket({
           color={side === "long" ? "up" : "down"}
           size="lg"
           fullWidth
-          disabled={!price || amountUsd <= 0 || insufficientFunds}
+          disabled={!price || amountUsd <= 0 || insufficientFunds || oversized || overRisk}
           onClick={submit}
         >
           {side === "long" ? "Buy" : "Sell"} {asset?.symbol ?? ""}
