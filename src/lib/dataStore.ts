@@ -4,32 +4,28 @@ import type { TerminalPosition, TerminalHistoryEntry } from "./terminalStore";
 import type { Automation } from "./automations";
 
 /** The backend abstraction (TERMINAL_SPEC.md §2, Phase B of the roadmap).
- *  One interface, two eventual implementations: a Postgres-backed one
- *  (`dataStore.remote.ts`, built once a live Supabase project exists — see
- *  the plan) and a localStorage-backed one matching today's exact behavior.
+ *  One interface, two implementations — `dataStore.localStorage.ts` (today's
+ *  exact behavior, Promise-wrapped) and `dataStore.remote.ts` (the live
+ *  Supabase project, via the `/api/*` routes) — selected by `getDataStore()`
+ *  in `getDataStore.ts` behind `NEXT_PUBLIC_BACKEND_ENABLED`.
  *
- *  Deliberately NOT wired into `store.tsx`/`terminalStore.tsx`/`profile.tsx`/
- *  `academy.ts` yet, and `dataStore.localStorage.ts` isn't built yet either
- *  — both are premature right now. Those providers hydrate via
- *  `useLocalStorageState`'s useSyncExternalStore pattern specifically
- *  because it resolves the persisted value *synchronously* on the client's
- *  first real render; this interface's methods are `Promise`-returning
- *  because a real remote store genuinely can't do better than that. There
- *  is no way to satisfy both a synchronous consumer and this async
- *  interface without either introducing a loading-state render pass into
- *  currently-instant hydration, or re-deriving a synchronous "cache" layer
- *  in front of it — real work that has no payoff until there's an actual
- *  remote implementation to justify it. `store.tsx` itself carries scar
- *  tissue from a past async-resolution race that silently clobbered a
- *  user's real cash balance (see its `persistedWallet`/`walletLoaded`
- *  comment) — rewiring that exact code path ahead of need, for a backend
- *  that doesn't exist yet, is the wrong tradeoff. Once a live Supabase
- *  project exists, build `dataStore.remote.ts` against this interface,
- *  design the synchronous-cache-plus-async-sync hook each provider needs
- *  (`useDataStoreState`, replacing `useLocalStorageState` call-sites one
- *  provider at a time per the plan), and only then does building
- *  `dataStore.localStorage.ts` (the interface-shaped wrapper the remote
- *  impl's offline-cache mirror writes through to) earn its place. */
+ *  Each provider (`store.tsx`, `terminalStore.tsx`, `profile.tsx`,
+ *  `academy.ts`, `automations.ts`) still hydrates its DEFAULT (backend-
+ *  disabled) path exactly as before, via `useLocalStorageState` directly —
+ *  that path is unchanged, zero regression risk, since it's the same code
+ *  that's been running all along. The remote path is additive: a
+ *  `NEXT_PUBLIC_BACKEND_ENABLED`-gated effect that loads from
+ *  `getDataStore()` and a `putX` call added to the existing persist effect.
+ *  Deliberately not a full swap of the hydration mechanism — `store.tsx`
+ *  carries scar tissue from a past async-resolution race that silently
+ *  clobbered a user's real cash balance (see its `persistedWallet`/
+ *  `walletLoaded` comment); rewiring that exact synchronous
+ *  useSyncExternalStore-based hydration to route through an inherently
+ *  async interface, for a flag that stays off until real auth + email
+ *  delivery are configured, isn't a trade worth making blind (no browser
+ *  access this session to verify it). The additive path is inert — and
+ *  therefore risk-free to the app's current behavior — until the flag
+ *  flips on. */
 
 export interface WalletRecord {
   cash: number;
