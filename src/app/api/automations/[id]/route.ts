@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { AutomationRecord } from "@/lib/dataStore";
-import type { Database } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 
 type AutomationUpdate = Database["public"]["Tables"]["automations"]["Update"];
 
@@ -11,9 +11,8 @@ const AUTOMATION_COLUMNS: Record<string, string> = {
   name: "name",
   templateKey: "template_key",
   category: "category",
+  symbol: "symbol",
   rule: "rule",
-  cooldownLabel: "cooldown_label",
-  executionsLabel: "executions_label",
   enabled: "enabled",
   maxOrderSize: "max_order_size",
   dailyCap: "daily_cap",
@@ -35,6 +34,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const update: AutomationUpdate = {};
   for (const [key, column] of Object.entries(AUTOMATION_COLUMNS)) {
     if (key in patch) (update as Record<string, unknown>)[column] = (patch as Record<string, unknown>)[key];
+  }
+  if (patch.condition) {
+    update.condition_type = patch.condition.type;
+    update.condition = patch.condition as unknown as Json;
+  }
+  if (patch.action) {
+    update.action = patch.action as unknown as Json;
   }
 
   const { error } = await supabase.from("automations").update(update).eq("id", id).eq("user_id", user.id);

@@ -5,6 +5,9 @@ import { ASSET_BY_ID } from "./assets";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { BACKEND_ENABLED, getDataStore } from "./getDataStore";
 import { useProfile } from "./profile";
+import { computeOpenPosition, computeClosePosition, MAX_POSITION_PCT, MAX_RISK_PCT } from "./orderExecution";
+
+export { MAX_POSITION_PCT, MAX_RISK_PCT };
 
 /** A held position in the position-based Terminal (distinct from the
  *  prediction market's `Position` in types.ts, which is a share of a
@@ -36,23 +39,6 @@ export interface TerminalHistoryEntry {
 const POSITIONS_KEY = "zoqo-terminal-positions-v1";
 const HISTORY_KEY = "zoqo-terminal-history-v1";
 
-/** Position-sizing caps. 10% single-position ceiling matches two
- *  independent sources rather than an invented number: the agiprolabs
- *  trading-skills `position-sizing` skill's "Account-Level Limits" (max
- *  single position ~10% of portfolio) and polymarket-paper-trader's
- *  risk-rules.md (`max_position_pct: 0.10`). The 5% risk-at-stop cap is
- *  that skill's fixed-fractional method, which the Academy's own Risk
- *  Management unit already teaches as 1-2% risk per trade via stop
- *  distance — this is the outer ceiling, not the taught target. Before
- *  this, the only cap on `openPosition` was `cost > cash` — "however much
- *  cash you have" — the exact gap CLAUDE_CODE_HANDOFF.md §3 flagged ahead
- *  of real money touching this path. Kelly-criterion sizing isn't
- *  applicable yet — Kelly needs an estimated win rate/payoff ratio from
- *  real trade history (the skill's own minimum is 50+ trades), which a
- *  fresh paper-trading account doesn't have; a flat fixed-fractional cap is
- *  the right tool until there's enough history to estimate an edge from. */
-export const MAX_POSITION_PCT = 0.1; // no single position's notional > 10% of cash
-export const MAX_RISK_PCT = 0.05; // if a stop-loss is set, risk at that stop <= 5% of cash
 const EMPTY_POSITIONS: TerminalPosition[] = [];
 const EMPTY_HISTORY: TerminalHistoryEntry[] = [];
 
@@ -147,28 +133,20 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
       price: number,
       opts?: { stopLoss?: number; takeProfit?: number },
     ): boolean => {
-      if (!ASSET_BY_ID[assetId] || qty <= 0 || price <= 0) return false;
-      const cost = qty * price;
-      if (cost > cash) return false;
-      if (cost > cash * MAX_POSITION_PCT) return false;
-      if (opts?.stopLoss != null) {
-        const riskAmount = Math.abs(price - opts.stopLoss) * qty;
-        if (riskAmount > cash * MAX_RISK_PCT) return false;
-      }
-      adjustCash(-cost);
-      setPositions((prev) => [
-        {
-          id: `pos-${Date.now().toString(36)}-${prev.length}`,
-          assetId,
-          side,
-          qty,
-          entryPrice: price,
-          openedAt: Date.now(),
-          stopLoss: opts?.stopLoss,
-          takeProfit: opts?.takeProfit,
-        },
-        ...prev,
-      ]);
+      if (!ASSET_BY_ID[assetId]) return false;
+      const result = computeOpenPosition({
+        cash,
+        assetId,
+        side,
+        qty,
+        price,
+        opts,
+        id: crypto.randomUUID(),
+        now: Date.now(),
+      });
+      if (!result.ok) return false;
+      adjustCash(result.cashDelta);
+      setPositions((prev) => [result.position, ...prev]);
       return true;
     },
     [cash, adjustCash, setPositions],
@@ -179,32 +157,18 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
       setPositions((prev) => {
         const i = prev.findIndex((p) => p.id === id);
         if (i < 0) return prev;
-        const pos = prev[i];
-        const closeQty = Math.min(pos.qty, qty ?? pos.qty);
-        const pnl =
-          pos.side === "long"
-            ? (price - pos.entryPrice) * closeQty
-            : (pos.entryPrice - price) * closeQty;
-        // Return the original margin for the closed portion plus/minus P&L.
-        adjustCash(pos.entryPrice * closeQty + pnl);
-        setHistory((h) => [
-          {
-            id: `th-${Date.now().toString(36)}`,
-            assetId: pos.assetId,
-            side: pos.side,
-            qty: closeQty,
-            entryPrice: pos.entryPrice,
-            exitPrice: price,
-            pnl,
-            openedAt: pos.openedAt,
-            closedAt: Date.now(),
-          },
-          ...h,
-        ].slice(0, 200));
-        const remaining = pos.qty - closeQty;
+        const { cashDelta, historyEntry, remainingPosition } = computeClosePosition({
+          position: prev[i],
+          price,
+          qty,
+          id: crypto.randomUUID(),
+          now: Date.now(),
+        });
+        adjustCash(cashDelta);
+        setHistory((h) => [historyEntry, ...h].slice(0, 200));
         const next = prev.slice();
-        if (remaining <= 0) next.splice(i, 1);
-        else next[i] = { ...pos, qty: remaining };
+        if (remainingPosition === null) next.splice(i, 1);
+        else next[i] = remainingPosition;
         return next;
       });
     },

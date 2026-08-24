@@ -65,6 +65,11 @@ export function ActiveAutomations({
                 <Tag color="gray" size="sm">
                   {a.category}
                 </Tag>
+                {a.executionsCount != null && (
+                  <Tag color="gray" size="sm">
+                    {a.executionsCount} execution{a.executionsCount === 1 ? "" : "s"}
+                  </Tag>
+                )}
                 {!a.enabled && (
                   <Tag color="gold" size="sm">
                     Paused

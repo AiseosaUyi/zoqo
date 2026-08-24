@@ -108,13 +108,11 @@ export const localDataStore: DataStore = {
  *  this is the actual bytes on the client's first real sign-in) into the
  *  shape /api/migrate expects. Used by profile.tsx once real auth lands.
  *
- *  Automations are deliberately excluded: today's client-side `Automation`
- *  shape predates `maxOrderSize`/`dailyCap` (added for the Phase C trigger
- *  engine — see dataStore.ts's AutomationRecord comment), and those columns
- *  are NOT NULL in the schema. A pre-existing local automation migrated
- *  as-is would fail the insert; since automations are cosmetic mocks with
- *  no real execution behind them yet, losing them on migration is the safe
- *  choice, not a real one worth backfilling defaults for. */
+ *  Automations now migrate for real (Phase C's `Automation` shape always
+ *  carries `maxOrderSize`/`dailyCap`/`condition`/`action` — the NOT NULL gap
+ *  that used to block this is gone; `condition`/`action` are nullable in the
+ *  schema specifically as a safety net for any row from *before* this
+ *  migration, not for anything created client-side today). */
 export function collectLocalStorageSnapshot(): LocalStorageSnapshot {
   return {
     wallet: read<WalletRecord>(WALLET_KEY),
@@ -124,6 +122,6 @@ export function collectLocalStorageSnapshot(): LocalStorageSnapshot {
     },
     profile: read<ProfileRecord>(PROFILE_KEY),
     academy: read<AcademyRecord>(ACADEMY_KEY),
-    automations: [],
+    automations: read<{ automations: AutomationRecord[] }>(AUTOMATIONS_KEY)?.automations ?? [],
   };
 }

@@ -2,6 +2,7 @@ import type { Position, OpenOrder, HistoryEntry } from "@/lib/types";
 import type { PlayStats } from "@/lib/store";
 import type { TerminalPosition, TerminalHistoryEntry } from "@/lib/terminalStore";
 import type { Automation } from "@/lib/automations";
+import type { AutomationCondition, AutomationAction } from "@/lib/automationRules";
 import type {
   WalletRecord,
   TerminalRecord,
@@ -9,7 +10,7 @@ import type {
   AcademyRecord,
   AutomationRecord,
 } from "@/lib/dataStore";
-import type { Database } from "./database.types";
+import type { Database, Json } from "./database.types";
 
 /** Row <-> client-record conversions for every /api/* route (src/lib/dataStore.ts)
  *  — one place for the snake_case-column <-> camelCase-field and
@@ -93,6 +94,11 @@ export function walletToRecord(
 }
 
 export function walletToRows(userId: string, record: WalletRecord) {
+  // `updated_at` is written explicitly on every human PUT (not left to a
+  // trigger) because src/lib/server/terminalExecution.ts's cron/MCP writers
+  // use it as an optimistic-concurrency token on this exact row — without
+  // this, a concurrent human PUT (this path) could silently overwrite a
+  // server-initiated cash change without either side detecting the race.
   const wallet: Database["public"]["Tables"]["wallets"]["Insert"] = {
     user_id: userId,
     cash: record.cash,
@@ -102,6 +108,7 @@ export function walletToRows(userId: string, record: WalletRecord) {
     wins: record.stats.wins,
     losses: record.stats.losses,
     best_pnl: record.stats.bestPnl,
+    updated_at: new Date().toISOString(),
   };
   const positions: Database["public"]["Tables"]["positions"]["Insert"][] = record.positions.map((p) => ({
     id: `${userId}:${p.marketId}:${p.side}`,
@@ -263,25 +270,35 @@ export function academyToRow(userId: string, record: AcademyRecord) {
 
 // --- Automations ---
 
+// Fallback for any pre-Phase-C row that predates `condition`/`action`
+// (nullable in the schema specifically to avoid failing the migration
+// against such rows — see supabase/migrations/20260824120000_phase_c_and_f.sql).
+// Renders as an always-false price-cross so a legacy row shows up inert
+// rather than crashing the automations page.
+const FALLBACK_CONDITION: AutomationCondition = { type: "price-cross", direction: "above", price: 0 };
+const FALLBACK_ACTION: AutomationAction = { side: "long", sizeType: "fixed", sizeValue: 0 };
+
 export function automationToRecord(row: AutomationRow, trigger: AutomationTriggerRow | null): AutomationRecord {
   const automation: Automation = {
     id: row.id,
     name: row.name,
     templateKey: row.template_key,
     category: row.category,
+    symbol: row.symbol ?? "",
+    condition: (row.condition as AutomationCondition | null) ?? FALLBACK_CONDITION,
+    action: (row.action as AutomationAction | null) ?? FALLBACK_ACTION,
+    maxOrderSize: row.max_order_size,
+    dailyCap: row.daily_cap,
     rule: row.rule,
-    cooldownLabel: row.cooldown_label ?? "",
-    executionsLabel: row.executions_label ?? "",
     enabled: row.enabled,
     createdAt: toMs(row.created_at),
   };
   return {
     ...automation,
-    maxOrderSize: row.max_order_size,
-    dailyCap: row.daily_cap,
     lastTriggeredAt: toMsOrNull(trigger?.last_triggered_at ?? null) ?? undefined,
     spentToday: trigger?.spent_today ?? undefined,
     spentTodayResetAt: toMsOrNull(trigger?.spent_today_reset_at ?? null) ?? undefined,
+    executionsCount: trigger?.executions_count ?? undefined,
   };
 }
 
@@ -292,9 +309,11 @@ export function automationToRow(userId: string, record: Omit<AutomationRecord, "
     name: record.name,
     template_key: record.templateKey,
     category: record.category,
+    symbol: record.symbol,
+    condition_type: record.condition.type,
+    condition: record.condition as unknown as Json,
+    action: record.action as unknown as Json,
     rule: record.rule,
-    cooldown_label: record.cooldownLabel,
-    executions_label: record.executionsLabel,
     max_order_size: record.maxOrderSize,
     daily_cap: record.dailyCap,
   };

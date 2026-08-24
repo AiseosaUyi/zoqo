@@ -72,6 +72,7 @@ export type Database = {
       automation_triggers: {
         Row: {
           automation_id: string
+          executions_count: number
           last_evaluated_at: string | null
           last_triggered_at: string | null
           spent_today: number
@@ -79,6 +80,7 @@ export type Database = {
         }
         Insert: {
           automation_id: string
+          executions_count?: number
           last_evaluated_at?: string | null
           last_triggered_at?: string | null
           spent_today?: number
@@ -86,6 +88,7 @@ export type Database = {
         }
         Update: {
           automation_id?: string
+          executions_count?: number
           last_evaluated_at?: string | null
           last_triggered_at?: string | null
           spent_today?: number
@@ -103,7 +106,10 @@ export type Database = {
       }
       automations: {
         Row: {
+          action: Json | null
           category: string
+          condition: Json | null
+          condition_type: string | null
           cooldown_label: string | null
           created_at: string
           daily_cap: number
@@ -113,11 +119,15 @@ export type Database = {
           max_order_size: number
           name: string
           rule: string
+          symbol: string | null
           template_key: string
           user_id: string
         }
         Insert: {
+          action?: Json | null
           category: string
+          condition?: Json | null
+          condition_type?: string | null
           cooldown_label?: string | null
           created_at?: string
           daily_cap: number
@@ -127,11 +137,15 @@ export type Database = {
           max_order_size: number
           name: string
           rule: string
+          symbol?: string | null
           template_key: string
           user_id: string
         }
         Update: {
+          action?: Json | null
           category?: string
+          condition?: Json | null
+          condition_type?: string | null
           cooldown_label?: string | null
           created_at?: string
           daily_cap?: number
@@ -141,8 +155,87 @@ export type Database = {
           max_order_size?: number
           name?: string
           rule?: string
+          symbol?: string | null
           template_key?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      api_keys: {
+        Row: {
+          created_at: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          scope: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          scope?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_stats_snapshot: {
+        Row: {
+          day: string
+          lessons_completed: number
+          pnl: number
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          day: string
+          lessons_completed?: number
+          pnl?: number
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          day?: string
+          lessons_completed?: number
+          pnl?: number
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      price_history: {
+        Row: {
+          asset_id: string
+          price: number
+          ts: string
+        }
+        Insert: {
+          asset_id: string
+          price: number
+          ts?: string
+        }
+        Update: {
+          asset_id?: string
+          price?: number
+          ts?: string
         }
         Relationships: []
       }
@@ -266,6 +359,7 @@ export type Database = {
           best_streak: number
           claims: number
           created_at: string
+          digest_opt_in: boolean
           email: string | null
           handle: string | null
           last_claim_day: string | null
@@ -277,6 +371,7 @@ export type Database = {
           best_streak?: number
           claims?: number
           created_at?: string
+          digest_opt_in?: boolean
           email?: string | null
           handle?: string | null
           last_claim_day?: string | null
@@ -288,6 +383,7 @@ export type Database = {
           best_streak?: number
           claims?: number
           created_at?: string
+          digest_opt_in?: boolean
           email?: string | null
           handle?: string | null
           last_claim_day?: string | null

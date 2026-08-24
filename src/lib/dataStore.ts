@@ -62,20 +62,19 @@ export interface AcademyRecord {
   completedLessons: string[];
 }
 
-/** Extends today's (cosmetic, CRUD-only) `Automation` with the fields the
- *  Phase C trigger engine needs from day one — `maxOrderSize`/`dailyCap` are
- *  the server-enforced ceiling regardless of what created the trigger (a
- *  human in the UI, or the future MCP server's `create_automation_trigger`
- *  — spec §7). `lastTriggeredAt`/`spentToday` are evaluator-written state,
- *  not user config — kept logically separate (a distinct `automation_triggers`
- *  table in the schema) so the Cron evaluator's writes never race a user
- *  editing name/rule/enabled. */
+/** Extends `Automation` (src/lib/automations.ts — `maxOrderSize`/`dailyCap`
+ *  already live on the automation itself, the server-enforced ceiling
+ *  regardless of what created the trigger: a human in the UI, or the MCP
+ *  server's `create_automation_trigger` — spec §7) with evaluator-written
+ *  state. `lastTriggeredAt`/`spentToday`/`executionsCount` are not user
+ *  config — kept logically separate (a distinct `automation_triggers` table
+ *  in the schema) so the Cron evaluator's writes never race a user editing
+ *  name/condition/enabled. */
 export interface AutomationRecord extends Automation {
-  maxOrderSize: number;
-  dailyCap: number;
   lastTriggeredAt?: number;
   spentToday?: number;
   spentTodayResetAt?: number;
+  executionsCount?: number;
 }
 
 export interface LocalStorageSnapshot {

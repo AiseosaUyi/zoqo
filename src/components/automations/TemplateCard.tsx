@@ -1,4 +1,5 @@
 import { Button, Card, Tag } from "@/components/ui";
+import { describeAutomation } from "@/lib/automations";
 import type { AutomationTemplate } from "./data";
 
 export function TemplateCard({
@@ -24,15 +25,14 @@ export function TemplateCard({
       <p className="mt-1 text-[12.5px] leading-relaxed text-sub">{template.description}</p>
 
       <div className="mt-3 rounded-[10px] border bg-muted px-3 py-2.5">
-        <p className="text-[11.5px] italic leading-snug text-sub">{template.rule}</p>
+        <p className="text-[11.5px] italic leading-snug text-sub">
+          {describeAutomation(template.symbol, template.condition, template.action)}
+        </p>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         <Tag color="gray" size="sm">
           {template.cooldownLabel}
-        </Tag>
-        <Tag color="gray" size="sm">
-          {template.executionsLabel}
         </Tag>
       </div>
 
