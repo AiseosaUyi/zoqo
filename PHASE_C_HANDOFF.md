@@ -1,11 +1,13 @@
-# ZOQO — handoff from Phase C onward
+# ZOQO — full roadmap handoff: what's done, what's left (Phase C through G)
 
 Written 2026-08-24 at the end of a session that finished Phases A, B, D, and E of the
 `feat/trading-terminal` roadmap (see `TERMINAL_SPEC.md` for the full architecture, and
 `CLAUDE_CODE_HANDOFF.md` for the original priority list this picks up from — both still accurate
 as living docs, just stale on "what's done"). This file is written so a **fresh Claude Code
-session with zero memory of this work** can pick up Phase C without needing the prior
-conversation — read this, then `git log --oneline -20` to see the actual commits, then start.
+session with zero memory of this work** can pick up anywhere from Phase C to the end of the
+roadmap without needing the prior conversation — read this in full, then `git log --oneline -20`
+to see the actual commits, then start. Every remaining phase (C, F, G — D and E are done) is
+covered below with the same level of concrete detail; none of them are just a one-line stub.
 
 ## What's actually done (verified, not assumed — read the commits, not just this doc)
 
@@ -156,20 +158,103 @@ reusable MCP server implementation.
 
 ## Phase F — email digests (spec §6, blocked on Phase B — now unblocked)
 
-Phase B is done, so this is now genuinely startable. Needs a Resend account (or similar — spec
-allows Postgres+SES too) via the `vercel:marketplace` skill flow — hasn't been provisioned. Daily
-digest ("yesterday: 40 XP, 2 lessons, +2.1% on paper...") + weekly "traders to follow" nudge, per
-spec §6. Low priority relative to Phase C per the original roadmap ordering.
+Not started. Phase B is done, so this is now genuinely buildable — it was only ever blocked on
+the backend existing. Lower priority than Phase C per the original roadmap ordering, but nothing
+below depends on Phase C, so it can be built in either order.
 
-## Phase G — real-money bridge (spec §9 Phase 5 — still explicitly not started)
+1. **Provision a transactional email provider.** Resend recommended (spec allows Postgres+SES
+   too) — use the `vercel:marketplace` skill flow to provision it, don't hand-roll the SDK
+   integration without going through that skill first (this session's own injected guidance was
+   explicit: load `vercel:marketplace` *before* recommending or wiring a provider). Worth noting:
+   this is the same kind of SMTP problem Phase B's Auth emails have (see the "2 emails/hour"
+   default-mailer note above) — a Resend account wired for digests could *also* become the custom
+   SMTP provider Supabase Auth uses (Dashboard → Authentication → Emails → SMTP Settings), solving
+   both with one provisioning step instead of two.
+2. **Content, per spec §6**: a daily digest ("yesterday: 40 XP, 2 lessons, +2.1% on paper. Today's
+   goal: finish Risk Management unit 3.") and a weekly "traders to follow" nudge. Source the daily
+   numbers from real Postgres data, not anything fabricated — `academy_progress` (xp, streak,
+   `completed_lessons` diffed against yesterday) and `trade_history`/`wallets` (`kind='terminal'`
+   rows closed in the last 24h, `cash` delta) via `createServiceRoleClient()`
+   (`src/lib/supabase/server.ts`). The "traders to follow" nudge is explicitly illustrative per
+   the existing `leaderboard/page.tsx` comment ("XP board is new: ... illustrative until Phase 2's
+   backend gives every user a real, shared Academy XP total") — now that Phase B is done, this is
+   the point where that leaderboard could also stop being seeded/mocked and start reading real
+   cross-user data from `leaderboard_pnl` (already a view in `supabase/schema.sql`) plus a real
+   academy-XP equivalent view, which would make the "traders to follow" nudge genuinely real too.
+3. **Scheduling**: another Vercel Cron route, e.g. `/api/cron/daily-digest`, same `CRON_SECRET`-
+   gated pattern as `/api/cron/evaluate-triggers` (see Phase C's C2 above) — loop every user with
+   an email on file, compute yesterday's numbers, send. Needs its own schedule entry in whatever
+   `vercel.ts`/`vercel.json` Phase C's evaluator also needs (write both cron entries at once if
+   building this alongside C2, not as two separate config edits).
+4. **Preferences/unsubscribe**: nothing in `supabase/schema.sql` currently tracks whether a user
+   wants digest emails. Add a column (e.g. `profiles.digest_opt_in boolean default true`) rather
+   than a new table — it's a single per-user toggle, not a domain of its own. A real unsubscribe
+   link (not just a Settings toggle) is expected for transactional-adjacent email in general;
+   Resend's own docs cover list-unsubscribe headers.
+5. **Templates**: no email-rendering library installed yet (React Email is Resend's own
+   recommended pairing, worth checking their current docs rather than assuming the API — same
+   "training data may be stale" caution this session's Vercel guidance repeated for other Vercel-
+   adjacent libraries).
 
-Unchanged from before this session: needs Aise's decision on broker per asset class (OANDA vs.
-the MetaTrader bridge for forex/gold, an exchange for crypto), KYC/custody model, and the
-Nigerian-rules check on retail forex/international money movement the original handoff doc
-flagged. The schema already has `broker_credentials` (Phase-5-prep-only, `secret_ref` points at a
-real secrets manager, never stores a secret directly — see `supabase/schema.sql`'s comment on that
-table) so this doesn't need a schema rewrite when it starts, but no broker-integration code should
-be written without that decision first.
+## Phase G — real-money bridge (spec §9 Phase 5 — still explicitly not started, deliberately)
+
+This is the last phase in the roadmap. It is **not a coding task to start from this doc alone** —
+it needs a real decision from Aise first, recorded in `TERMINAL_SPEC.md` §9 as: "Zoqo will trade
+real money, but personal/family only, and non-custodial (each person connects their own broker/
+exchange account with their own API key; Zoqo never holds anyone's funds)." That framing already
+answers "does this need a broker-dealer license" (no, as long as it stays personal/family/
+non-custodial) but leaves the concrete choices below genuinely open. **Do not write broker-
+integration code, or wire any real API credential, before these are resolved** — that's not
+caution for its own sake, it's the explicit ground rule this whole roadmap has carried since the
+original handoff prompt.
+
+### Open decisions only Aise can make
+
+1. **Broker/exchange per asset class.** Forex + gold: OANDA (spec's own pick — "shares an API
+   shape across demo and live," meaning the same integration code can point at either) or the
+   MetaTrader bridge (`ariadng/metatrader-mcp-server`'s skill is already installed at
+   `~/.claude/skills/trading/` specifically so its tool shapes — order types, lot sizing, spread
+   handling — can be referenced when this integration is actually built, without inventing a
+   parallel convention). Crypto: an actual licensed exchange, unspecified which — needs picking.
+2. **KYC flow** — whose responsibility (the broker's own KYC, since accounts are non-custodial
+   and user-owned, vs. anything Zoqo itself needs to collect).
+3. **Legal/compliance review** — the original handoff doc specifically flagged checking Nigerian
+   rules on retail forex trading and international money movement before flipping this on. That's
+   a "check before flipping the switch" item per that doc's own framing, not a "check before
+   building the paper-trading groundwork" item — but it does gate the actual go-live, not just the
+   first line of integration code.
+
+### What's already in place for when those decisions land (no rework needed)
+
+- `supabase/schema.sql`'s `broker_credentials` table: one row per user per broker/exchange
+  connection, `scope` (`read`/`trade`) mirroring the MCP key scoping from Phase C's C3,
+  `secret_ref` an opaque pointer into a real secrets manager (Vercel env / Supabase Vault) —
+  **never the credential itself in that column**. RLS already applied, same pattern as every
+  other table.
+- The **paper-to-live gate pattern** to reuse, not invent: the `polymarket-paper-trader` skill
+  (installed at `.agents/skills/polymarket-paper-trader/`) gates real execution on **20+ closed
+  trades, win rate > 55%, Sharpe ratio > 0.5** — confirmed this session (commit `c531e5e`) to
+  match the numbers the original handoff doc cited, not a paraphrase. Zoqo's own gate should
+  compute the equivalent off real Postgres data (`trade_history`, `wallets`) once Phase B's
+  backend has enough real history to compute a meaningful win rate/Sharpe from — a **client-side-
+  only gate is explicitly not a safety boundary** (same reasoning as the `maxOrderSize`/`dailyCap`
+  enforcement in Phase C being server-side, not trusted from the caller).
+- The order-placement path discipline from Phase C (C2: automation orders go through the same
+  path human orders do) extends here — a real-money order should go through the *same* logical
+  path as a paper order, differing only in which broker/exchange it's actually routed to at the
+  bottom, not a parallel "live order" code path bolted on separately.
+
+### What Phase G actually involves once the decisions above are made
+
+1. Broker/exchange OAuth or API-key connection flow (non-custodial — user's own credentials,
+   trade-only scope, no-withdrawal permission where the broker's API supports scoping that).
+2. The paper-to-live gate UI (a "you're eligible to connect a real account" state once the stats
+   above clear the threshold, gating the connection flow itself).
+3. Real order routing — translating a Zoqo order into whatever the chosen broker's API expects
+   (OANDA and MetaTrader have different conventions; the MetaTrader skill's tool shapes are the
+   reference for whichever is picked once picked).
+4. Server-enforced spend caps on real orders — the same `maxOrderSize`/`dailyCap` mechanism from
+   Phase C, now guarding actual money, not paper cash.
 
 ## Practical notes for whoever picks this up
 
