@@ -6,6 +6,7 @@ import type {
   ProfileRecord,
   AcademyRecord,
   AutomationRecord,
+  LocalStorageSnapshot,
 } from "./dataStore";
 
 /** localStorage-backed DataStore — today's actual behavior (the same keys
@@ -101,3 +102,28 @@ export const localDataStore: DataStore = {
     // No-op — migration only makes sense when moving *into* a remote store.
   },
 };
+
+/** Reads the browser's legacy localStorage keys directly (bypassing
+ *  DataStore's own async reads, which would just read the same keys back —
+ *  this is the actual bytes on the client's first real sign-in) into the
+ *  shape /api/migrate expects. Used by profile.tsx once real auth lands.
+ *
+ *  Automations are deliberately excluded: today's client-side `Automation`
+ *  shape predates `maxOrderSize`/`dailyCap` (added for the Phase C trigger
+ *  engine — see dataStore.ts's AutomationRecord comment), and those columns
+ *  are NOT NULL in the schema. A pre-existing local automation migrated
+ *  as-is would fail the insert; since automations are cosmetic mocks with
+ *  no real execution behind them yet, losing them on migration is the safe
+ *  choice, not a real one worth backfilling defaults for. */
+export function collectLocalStorageSnapshot(): LocalStorageSnapshot {
+  return {
+    wallet: read<WalletRecord>(WALLET_KEY),
+    terminal: {
+      positions: read<TerminalRecord["positions"]>(TERMINAL_POSITIONS_KEY) ?? [],
+      history: read<TerminalRecord["history"]>(TERMINAL_HISTORY_KEY) ?? [],
+    },
+    profile: read<ProfileRecord>(PROFILE_KEY),
+    academy: read<AcademyRecord>(ACADEMY_KEY),
+    automations: [],
+  };
+}

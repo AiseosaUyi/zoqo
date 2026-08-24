@@ -2,6 +2,8 @@
 import * as React from "react";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { useTicker } from "./useTicker";
+import { BACKEND_ENABLED, getDataStore } from "./getDataStore";
+import { useProfile } from "./profile";
 
 /** Zoqo Academy — the Duolingo-style learning system (TERMINAL_SPEC.md §6).
  *  One skill tree, real hearts/XP/streak bookkeeping, and all four lesson
@@ -73,6 +75,30 @@ export function useAcademy() {
 
 export function AcademyProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useLocalStorageState(KEY, INITIAL);
+  // AcademyProvider is nested inside ProfileProvider in (app)/layout.tsx,
+  // so this context is always available here.
+  const { signedIn } = useProfile();
+
+  // Overlay the remote academy row once per sign-in — same pattern as
+  // profile.tsx's own remote-profile overlay. Inert unless backend mode is
+  // on and the user is actually signed in.
+  const remoteAppliedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !signedIn || remoteAppliedRef.current) return;
+    remoteAppliedRef.current = true;
+    getDataStore()
+      .getAcademy()
+      .then((remote) => {
+        if (remote) setState((prev) => ({ ...prev, ...remote }));
+      });
+  }, [signedIn, setState]);
+
+  // Push local changes to Postgres once signed in — additive to the
+  // localStorage write useLocalStorageState's own setState already does.
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !signedIn) return;
+    void getDataStore().putAcademy(state);
+  }, [state, signedIn]);
 
   // Passive heart refill — ticks "now" periodically instead of reading
   // Date.now() straight in a memo, so the count is both render-pure and
