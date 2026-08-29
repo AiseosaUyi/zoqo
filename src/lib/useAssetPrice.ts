@@ -101,6 +101,17 @@ function subscribeCrypto(
   let ws: WebSocket | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let connectTimer: ReturnType<typeof setTimeout> | null = null;
+  // Set the instant a WS tick lands, checked by the one-shot immediate poll
+  // below before it writes state. Without this, a real bug: the poll and
+  // the WS race with no ordering guarantee (the poll is a fetch through
+  // this app's own server, which itself calls an external API — nothing
+  // stops it resolving *after* the WS has already connected and delivered
+  // ticks), so a late poll response could silently flip a live connection
+  // back to "(poll)" — the ticker would look right but read as perpetually
+  // delayed. Confirmed live via LiveDot: Terminal showed "Delayed" while
+  // /trade's equivalent BTC feed (useBtc.ts, no competing one-shot poll)
+  // showed "Live" in the same test run.
+  let wsConnected = false;
 
   const startPolling = () => {
     if (pollTimer) return;
@@ -161,7 +172,7 @@ function subscribeCrypto(
   fetch(`/api/crypto/${asset.id}`, { cache: "no-store" })
     .then((r) => r.json())
     .then((j) => {
-      if (!killed && j.price > 0) set(j.price, `${j.source} (poll)`, true);
+      if (!killed && !wsConnected && j.price > 0) set(j.price, `${j.source} (poll)`, true);
     })
     .catch(() => {});
 
@@ -196,6 +207,7 @@ function subscribeCrypto(
         const price = feed.parse(JSON.parse(ev.data));
         if (price && price > 0) {
           gotData = true;
+          wsConnected = true;
           if (connectTimer) {
             clearTimeout(connectTimer);
             connectTimer = null;
@@ -216,7 +228,10 @@ function subscribeCrypto(
     ws.onclose = () => {
       if (killed) return;
       if (!gotData) tryFeed(i + 1);
-      else startPolling();
+      else {
+        wsConnected = false; // lost a working feed — recurring polling below is the real fallback now, not a race
+        startPolling();
+      }
     };
   };
 
