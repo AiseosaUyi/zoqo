@@ -149,7 +149,18 @@ async function readTriggerState(supabase: SupabaseServiceClient, automationId: s
   return fresh;
 }
 
+// Vercel Cron invokes via GET (see vercel.ts's schedule) with the shared
+// secret in the Authorization header; POST is kept too for manual/local
+// testing (curl -X POST) since both paths run the identical handler.
+export async function GET(req: NextRequest) {
+  return handle(req);
+}
+
 export async function POST(req: NextRequest) {
+  return handle(req);
+}
+
+async function handle(req: NextRequest) {
   const auth = req.headers.get("authorization");
   if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
