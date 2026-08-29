@@ -10,7 +10,7 @@ import { RightRail } from "@/components/trade/RightRail";
 import { MarketDepth } from "@/components/trade/MarketDepth";
 import { MobileTradeBar } from "@/components/trade/MobileTradeBar";
 import { useMeasure } from "@/components/trade/useMeasure";
-import { SegmentedControl, Switch } from "@/components/ui";
+import { LiveDot, SegmentedControl, Switch } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { DEFAULT_DURATION, MARKET_DURATIONS, MD_BY_KEY } from "@/lib/timeframe";
 import { PAD_RIGHT, padLeftFor, plotWidth, timeToX, type TimelineGeo } from "@/lib/chartGeo";
@@ -21,7 +21,7 @@ const TARGET_COL = 168; // aim for ~168px-wide market cards; fewer columns when 
 
 export default function MultiMarketPage() {
   const router = useRouter();
-  const { ready, snapshot, priceSeries, positions, tradeHistory, btc: price } = useZoqo();
+  const { ready, snapshot, priceSeries, positions, tradeHistory, btc: price, source, connected } = useZoqo();
   const [duration, setDuration] = React.useState(DEFAULT_DURATION); // which market
   const [showSignals, setShowSignals] = React.useState(false);
   const [selected, setSelected] = React.useState<string | undefined>();
@@ -141,19 +141,29 @@ export default function MultiMarketPage() {
                 onClickCapture={onClickCapture}
                 className={dragging ? "cursor-grabbing select-none" : "cursor-grab"}
               >
-                <MarketColumns
-                  markets={markets}
-                  geo={geo}
-                  now={snapshot.now}
-                  liveMarketId={live}
-                  selectedId={tradingId}
-                  canOlder={canOlder}
-                  canNewer={canNewer}
-                  onStep={stepMarkets}
-                  onHover={setHoverId}
-                  onSelect={setSelected}
-                  onActivate={open}
-                />
+                {/* Hidden below lg — this row duplicates info the Target/BTC
+                    row and the chart itself already show, its one unique
+                    interaction (double-click a past market to open it)
+                    doesn't translate to a reliable touch gesture anyway, and
+                    trading screens need the vertical space more than a
+                    historical-markets strip does (a live mobile QA pass
+                    flagged this exact row as UX debt). Desktop keeps it —
+                    there's room, and mouse users get the double-click. */}
+                <div className="hidden lg:block">
+                  <MarketColumns
+                    markets={markets}
+                    geo={geo}
+                    now={snapshot.now}
+                    liveMarketId={live}
+                    selectedId={tradingId}
+                    canOlder={canOlder}
+                    canNewer={canNewer}
+                    onStep={stepMarkets}
+                    onHover={setHoverId}
+                    onSelect={setSelected}
+                    onActivate={open}
+                  />
+                </div>
                 <div className="pb-1 pt-3">
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <span className="ml-1 flex items-center gap-3 text-[12px]">
@@ -164,6 +174,7 @@ export default function MultiMarketPage() {
                       <span className="text-sub">
                         BTC <b className="text-purple-600 nums">{price ? btc2(price) : "—"}</b>
                       </span>
+                      <LiveDot source={source} connected={connected} />
                     </span>
                     <span data-no-pan>
                       <Switch

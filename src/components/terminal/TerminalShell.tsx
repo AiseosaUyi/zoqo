@@ -275,7 +275,12 @@ function TerminalInner() {
 
         <div className="flex flex-col overflow-hidden">
           <div className="min-h-[280px] flex-1">
-            <TerminalChart assetId={assetId} candles={candlesByAsset[assetId] ?? []} />
+            <TerminalChart
+              assetId={assetId}
+              candles={candlesByAsset[assetId] ?? []}
+              source={prices[assetId]?.source}
+              connected={prices[assetId]?.connected}
+            />
           </div>
           <div className="h-[220px] border-t border-line">
             <PositionsPanel prices={priceMap} />
@@ -288,13 +293,15 @@ function TerminalInner() {
             price={activePrice}
             cash={cash}
             onSubmit={submitOrder}
+            source={prices[assetId]?.source}
+            connected={prices[assetId]?.connected}
           />
         </div>
       </div>
 
       {/* Mobile: sticky Long/Short bar + slide-up order ticket sheet, docked
-          above the five-tab bottom nav — generalized from MobileTradeBar's
-          pattern (src/components/trade/MobileTradeBar.tsx). */}
+          at the screen's true bottom edge — generalized from
+          MobileTradeBar's pattern (src/components/trade/MobileTradeBar.tsx). */}
       <MobileTerminalBar assetId={assetId} price={activePrice} cash={cash} onSubmit={submitOrder} />
     </div>
   );

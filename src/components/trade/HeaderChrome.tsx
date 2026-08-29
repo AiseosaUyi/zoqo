@@ -129,25 +129,17 @@ export function HeaderMobileNavTrigger({
 
 /** The mobile nav drawer itself — the fix for a real, confirmed gap: below
  *  its header's nav breakpoint, a user previously had no way to reach
- *  Terminal/Learn/Leaderboard/Automations/Referrals at all (Predict was only
- *  reachable via the logo). Every header renders one of these paired with
- *  its trigger; state is owned by the calling header (same pattern as
- *  DepositModal's `open`/`onClose`).
- *
- *  `showPrimaryNav` (default true) controls whether the five NAV_ITEMS
- *  repeat here. TopNav (/trade, /market/*) is the one caller that needs
- *  them — those routes have no persistent bottom tab bar (MobileBottomNav
- *  excludes them, see hasOwnMobileActionBar), so this drawer is the only
- *  mobile way to reach Terminal/Learn/Leaderboard/Automations. Every other
- *  header (AppHeader, AutomationsHeader, ProfileTopNav, ReferralsTopNav,
- *  SettingsTopNav) already sits over MobileBottomNav, which repeats these
- *  same five links as icons one tap away — a second full-text copy of the
- *  identical list behind a hamburger was pure redundancy (confirmed via a
- *  live mobile QA pass: the drawer and the bottom bar were both on screen
- *  at once, offering the exact same five destinations). Those headers pass
- *  `showPrimaryNav={false}` and get a lean account menu instead: Settings
- *  (previously unreachable from any nav at all) and Design system, plus the
- *  existing portfolio/cash preview and Rewards & referrals/auth footer. */
+ *  Terminal/Learn/Leaderboard/Automations/Referrals/Profile/Settings at all
+ *  (Predict was only reachable via the logo). Every header renders one of
+ *  these paired with its trigger; state is owned by the calling header
+ *  (same pattern as DepositModal's `open`/`onClose`). This is now the ONE
+ *  mobile nav surface in the app — there is no separate bottom tab bar
+ *  (removed: trading screens need the vertical space more than a persistent
+ *  nav chrome does), so it always carries the full NAV_ITEMS list plus
+ *  Profile/Settings/Design system. Full mobile-viewport width below `sm`
+ *  (a slide-in panel didn't leave room for that much list); capped at a
+ *  reasonable drawer width above `sm`, where this can still open on a
+ *  tablet-width header. */
 export function HeaderMobileNav({
   open,
   onClose,
@@ -156,7 +148,6 @@ export function HeaderMobileNav({
   portfolioValue,
   cash,
   onOpenAuth,
-  showPrimaryNav = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -165,23 +156,22 @@ export function HeaderMobileNav({
   portfolioValue?: number;
   cash?: number;
   onOpenAuth?: () => void;
-  showPrimaryNav?: boolean;
 }) {
   const active = useActiveNavKey();
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Navigation menu">
-      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
-      <div className="animate-in slide-in-from-left fade-in absolute inset-y-0 left-0 flex w-[280px] max-w-[85vw] flex-col overflow-y-auto border-r bg-surface shadow-[0_24px_64px_rgba(14,17,19,0.25)] duration-200">
+      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm sm:block hidden" onClick={onClose} aria-hidden="true" />
+      <div className="animate-in slide-in-from-right fade-in absolute inset-y-0 right-0 flex w-full flex-col overflow-y-auto bg-surface shadow-[0_24px_64px_rgba(14,17,19,0.25)] duration-200 sm:w-[340px] sm:border-l">
         <div className="flex items-center justify-between border-b px-4 py-3.5">
           <HeaderLogo />
           <button
             onClick={onClose}
             aria-label="Close navigation menu"
-            className={cn("grid h-8 w-8 place-items-center rounded-full hover:bg-gray-100", NAV_FOCUS)}
+            className={cn("grid h-9 w-9 place-items-center rounded-full hover:bg-gray-100", NAV_FOCUS)}
           >
-            <X size={18} className="text-sub" />
+            <X size={20} className="text-sub" />
           </button>
         </div>
 
@@ -198,80 +188,71 @@ export function HeaderMobileNav({
           </div>
         )}
 
-        {showPrimaryNav ? (
-          <nav className="flex flex-col gap-1 p-3">
-            {NAV_ITEMS.map((item) => {
-              const isActive = active === item.key;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  onClick={onClose}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold",
-                    NAV_FOCUS,
-                    isActive ? "bg-purple-50 text-purple-700" : "text-ink hover:bg-gray-100",
-                  )}
-                >
-                  <Icon size={17} className={isActive ? "text-purple-600" : "text-sub"} />
-                  {item.label}
-                  {item.key === "automations" && activeAutomations > 0 && (
-                    <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                      {activeAutomations}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-        ) : (
-          // Lean account menu — this header's page already sits over
-          // MobileBottomNav, which covers all five NAV_ITEMS as icons, so
-          // repeating them here would just be the same links twice on
-          // screen at once. What's left is what the bottom bar has no room
-          // for: Profile and Settings, neither reachable from anywhere else
-          // on mobile before this (Settings had no link at all; Profile was
-          // only reachable via the desktop-shaped avatar popover).
-          <nav className="flex flex-col gap-1 p-3">
-            {signedIn && (
+        <nav className="flex flex-col gap-1 p-3">
+          {NAV_ITEMS.map((item) => {
+            const isActive = active === item.key;
+            const Icon = item.icon;
+            return (
               <Link
-                href="/profile"
+                key={item.key}
+                href={item.href}
                 onClick={onClose}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
+                  "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold",
                   NAV_FOCUS,
+                  isActive ? "bg-purple-50 text-purple-700" : "text-ink hover:bg-gray-100",
                 )}
               >
-                <User size={17} className="text-sub" />
-                Profile
+                <Icon size={17} className={isActive ? "text-purple-600" : "text-sub"} />
+                {item.label}
+                {item.key === "automations" && activeAutomations > 0 && (
+                  <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                    {activeAutomations}
+                  </span>
+                )}
               </Link>
+            );
+          })}
+
+          <div className="my-1 border-t" />
+
+          {signedIn && (
+            <Link
+              href="/profile"
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
+                NAV_FOCUS,
+              )}
+            >
+              <User size={17} className="text-sub" />
+              Profile
+            </Link>
+          )}
+          <Link
+            href="/settings"
+            onClick={onClose}
+            className={cn(
+              "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
+              NAV_FOCUS,
             )}
-            <Link
-              href="/settings"
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
-                NAV_FOCUS,
-              )}
-            >
-              <SettingsIcon size={17} className="text-sub" />
-              Settings
-            </Link>
-            <Link
-              href="/system"
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
-                NAV_FOCUS,
-              )}
-            >
-              <Palette size={17} className="text-sub" />
-              Design system
-            </Link>
-          </nav>
-        )}
+          >
+            <SettingsIcon size={17} className="text-sub" />
+            Settings
+          </Link>
+          <Link
+            href="/system"
+            onClick={onClose}
+            className={cn(
+              "flex items-center gap-3 rounded-[12px] px-3 py-2.5 text-[14px] font-semibold text-ink hover:bg-gray-100",
+              NAV_FOCUS,
+            )}
+          >
+            <Palette size={17} className="text-sub" />
+            Design system
+          </Link>
+        </nav>
 
         <div className="mt-auto border-t p-3">
           {signedIn ? (

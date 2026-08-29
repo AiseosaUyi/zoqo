@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
-import { Button, SegmentedControl } from "@/components/ui";
+import { Button, LiveDot, SegmentedControl } from "@/components/ui";
+import { cn } from "@/lib/cn";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { usd, price as formatPrice } from "@/lib/format";
 import { MAX_POSITION_PCT, MAX_RISK_PCT } from "@/lib/terminalStore";
@@ -15,6 +16,8 @@ export function OrderTicket({
   cash,
   onSubmit,
   initialSide = "long",
+  source,
+  connected,
 }: {
   assetId: string;
   price: number | null;
@@ -24,6 +27,11 @@ export function OrderTicket({
    *  buttons should open the sheet already on the tapped side rather than
    *  always defaulting to long. */
   initialSide?: "long" | "short";
+  /** Feed status from useAssetPrice — optional since MobileTerminalBar's
+   *  sheet doesn't thread it through yet; the price digits' own tick-flash
+   *  still works without it. */
+  source?: string;
+  connected?: boolean;
 }) {
   const asset = ASSET_BY_ID[assetId];
   const decimals = asset?.decimals ?? 2;
@@ -42,6 +50,24 @@ export function OrderTicket({
   const riskAmount = useSlTp && slPrice != null ? Math.abs((price ?? 0) - slPrice) * qty : 0;
   const overRisk = useSlTp && riskAmount > cash * MAX_RISK_PCT;
 
+  // Same tick-direction flash Watchlist rows use — this is the single
+  // number a trader stares at most on this screen, and it was the one price
+  // display in the terminal with zero liveliness cue: real ticks were
+  // landing (confirmed via /api/crypto/[symbol] and /api/btc/price both
+  // returning fresh prices on every poll), it just silently swapped digits
+  // with no visual signal that anything had happened.
+  const prevPriceRef = React.useRef<number | null>(null);
+  const [flash, setFlash] = React.useState<"up" | "down" | null>(null);
+  React.useEffect(() => {
+    if (price == null) return;
+    const prev = prevPriceRef.current;
+    prevPriceRef.current = price;
+    if (prev == null || price === prev) return;
+    setFlash(price > prev ? "up" : "down");
+    const t = setTimeout(() => setFlash(null), 450);
+    return () => clearTimeout(t);
+  }, [price]);
+
   const submit = () => {
     if (!price) return;
     const sl = useSlTp ? (slPrice ?? undefined) : undefined;
@@ -53,8 +79,16 @@ export function OrderTicket({
   return (
     <div className="flex h-full flex-col gap-3 p-3">
       <div className="flex items-baseline justify-between">
-        <span className="text-[12px] font-bold text-sub">{asset?.symbol ?? assetId}</span>
-        <span className="nums text-[15px] font-bold text-ink">
+        <span className="flex items-center gap-2">
+          <span className="text-[12px] font-bold text-sub">{asset?.symbol ?? assetId}</span>
+          {source != null && connected != null && <LiveDot source={source} connected={connected} />}
+        </span>
+        <span
+          className={cn(
+            "nums text-[15px] font-bold transition-colors duration-300",
+            flash === "up" ? "text-green-600" : flash === "down" ? "text-red-600" : "text-ink",
+          )}
+        >
           {price != null ? formatPrice(price, decimals) : <span className="text-[11px] font-medium text-sub">Connecting…</span>}
         </span>
       </div>

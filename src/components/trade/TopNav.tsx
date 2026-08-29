@@ -44,7 +44,6 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
           viewport when everything (BTC selector + duration switcher) is
           visible at once. */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} breakpoint="lg" />
         <HeaderLogo />
 
         {showBack ? (
@@ -121,6 +120,8 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
         ) : (
           <HeaderAuthButtons onOpenAuth={openAuth} />
         ))}
+
+        <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} breakpoint="lg" />
       </div>
       {/* live BTC ticker tucked for accessibility */}
       <span className="sr-only">BTC {btc ?? "—"}</span>

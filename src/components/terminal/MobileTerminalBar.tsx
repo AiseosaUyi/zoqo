@@ -5,26 +5,21 @@ import { TrendingDown, TrendingUp, X } from "lucide-react";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { price as formatPrice } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { MOBILE_NAV_TOTAL_HEIGHT_CSS } from "@/components/trade/MobileBottomNav";
 import { OrderTicket } from "./OrderTicket";
 
-/** Combined reservation for both fixed elements stacked on mobile — this
- *  bar's own ~64px (py-2.5 top+bottom + the button row) plus the five-tab
- *  nav's 56px + its safe-area inset below it — so TerminalShell's
- *  chart/positions column doesn't end up hidden underneath either one.
- *  Mirrors MobileBottomNav's own MOBILE_NAV_SAFE_PADDING pattern; kept as
- *  one literal string (not composed from that constant) because Tailwind's
- *  class scanner needs the full arbitrary-value string to appear literally
- *  in source, not built up at runtime. */
-export const MOBILE_TERMINAL_CONTENT_SAFE_PADDING = "pb-[calc(64px+56px+env(safe-area-inset-bottom))] lg:pb-0";
+/** Reservation for this bar's own ~64px (py-2.5 top+bottom + the button
+ *  row) plus its safe-area inset, so TerminalShell's chart/positions column
+ *  doesn't end up hidden underneath it. There's no bottom tab nav to stack
+ *  above anymore (removed — trading screens need the vertical space more
+ *  than persistent nav chrome does; the header's hamburger is the only
+ *  mobile nav now), so this bar docks flush at the true screen edge. */
+export const MOBILE_TERMINAL_CONTENT_SAFE_PADDING = "pb-[calc(64px+env(safe-area-inset-bottom))] lg:pb-0";
 
 /** Phone-only trading surface for the Terminal — the same sticky-bar +
  *  slide-up-sheet shape `src/components/trade/MobileTradeBar.tsx` already
  *  established for the prediction market, generalized to the terminal's
- *  long/short order ticket instead of TradeCard. Docks directly above the
- *  five-tab bottom nav (MOBILE_NAV_TOTAL_HEIGHT_CSS) rather than at the
- *  screen edge — both were authored together in this same pass so that
- *  offset is exact, not reverse-engineered. */
+ *  long/short order ticket instead of TradeCard. Docks at the screen's true
+ *  bottom edge (its own safe-area-inset-bottom padding handles the notch). */
 export function MobileTerminalBar({
   assetId,
   price,
@@ -49,8 +44,7 @@ export function MobileTerminalBar({
   return (
     <>
       <div
-        className="fixed inset-x-0 z-40 border-t bg-surface/95 px-3 pb-2.5 pt-2.5 backdrop-blur-md lg:hidden"
-        style={{ bottom: MOBILE_NAV_TOTAL_HEIGHT_CSS }}
+        className="fixed inset-x-0 bottom-0 z-40 border-t bg-surface/95 px-3 pb-[calc(10px+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-md lg:hidden"
       >
         <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-2">
           <BarButton

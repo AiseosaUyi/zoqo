@@ -4,7 +4,7 @@ import { createChart, CandlestickSeries, type IChartApi, type ISeriesApi, type U
 import { DrawingManager, getToolRegistry } from "lightweight-charts-drawing";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { CANDLE_TIMEFRAMES, groupCandles, type Candle } from "@/lib/candles";
-import { SegmentedControl, Spinner } from "@/components/ui";
+import { LiveDot, SegmentedControl, Spinner } from "@/components/ui";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { getDrawings, setDrawings } from "@/lib/drawings";
 
@@ -21,7 +21,22 @@ import { getDrawings, setDrawings } from "@/lib/drawings";
  * active tool and persists the manager's own drawing list (see drawings.ts)
  * per asset; it doesn't hand-roll any canvas/mouse handling itself.
  */
-export function TerminalChart({ assetId, candles }: { assetId: string; candles: Candle[] }) {
+export function TerminalChart({
+  assetId,
+  candles,
+  source,
+  connected,
+}: {
+  assetId: string;
+  candles: Candle[];
+  /** Live-price feed status (from useAssetPrice) — shown next to the
+   *  symbol so a degraded connection (WS blocked, silently falling back to
+   *  a 4s poll) reads as "Delayed" instead of just looking like a dead
+   *  chart. Optional so callers without a feed handle (none today) don't
+   *  need to thread it through just to compile. */
+  source?: string;
+  connected?: boolean;
+}) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const chartRef = React.useRef<IChartApi | null>(null);
   const seriesRef = React.useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -183,7 +198,10 @@ export function TerminalChart({ assetId, candles }: { assetId: string; candles: 
   return (
     <div className="relative flex h-full w-full flex-col">
       <div className="flex items-center justify-between px-3 pt-2">
-        <div className="text-[12px] font-semibold text-sub">{asset?.symbol ?? assetId}</div>
+        <div className="flex items-center gap-2.5">
+          <div className="text-[12px] font-semibold text-sub">{asset?.symbol ?? assetId}</div>
+          {source != null && connected != null && <LiveDot source={source} connected={connected} />}
+        </div>
         <SegmentedControl
           data={CANDLE_TIMEFRAMES.map((tf) => ({ value: tf.key, label: tf.label }))}
           value={timeframe}

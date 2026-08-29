@@ -5,14 +5,13 @@ import { PortfolioCards } from "@/components/profile/PortfolioCards";
 import { PerformanceCards } from "@/components/profile/PerformanceCards";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { useProfile } from "@/lib/profile";
-import { MOBILE_NAV_SAFE_PADDING } from "@/components/trade/MobileBottomNav";
 import { cn } from "@/lib/cn";
 
 export default function ProfilePage() {
   const { ready, signedIn } = useProfile();
 
   return (
-    <div className={cn("min-h-screen", MOBILE_NAV_SAFE_PADDING)}>
+    <div className={cn("min-h-screen")}>
       <ProfileTopNav />
       {ready && (
         <div className="mx-auto max-w-[1180px] px-4 pb-16 sm:px-6">

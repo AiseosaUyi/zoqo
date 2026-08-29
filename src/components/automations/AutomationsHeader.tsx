@@ -37,7 +37,6 @@ export function AutomationsHeader() {
   return (
     <header className="sticky top-0 z-30 border-b bg-surface/90 backdrop-blur-md">
       <div className="flex h-[60px] items-center gap-2 px-3 sm:gap-3 sm:px-4">
-        <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
         <HeaderLogo />
 
         <HeaderNav activeAutomations={activeAutomations} className="ml-2" />
@@ -58,6 +57,8 @@ export function AutomationsHeader() {
           ) : (
             <HeaderAuthButtons onOpenAuth={openAuth} />
           ))}
+
+          <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
         </div>
       </div>
 
@@ -69,7 +70,6 @@ export function AutomationsHeader() {
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}
         onOpenAuth={openAuth}
-        showPrimaryNav={false}
       />
       {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>

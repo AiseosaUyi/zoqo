@@ -6,7 +6,6 @@ import { useAcademy } from "@/lib/academy";
 import { mulberry32 } from "@/lib/math";
 import { usd, pct } from "@/lib/format";
 import { AppHeader } from "@/components/trade/AppHeader";
-import { MOBILE_NAV_SAFE_PADDING } from "@/components/trade/MobileBottomNav";
 import { cn } from "@/lib/cn";
 import { Trophy, Users } from "lucide-react";
 
@@ -35,7 +34,7 @@ export default function LeaderboardPage() {
   return (
     <>
       <AppHeader />
-      <div className={cn("mx-auto max-w-2xl px-4 pt-8 lg:pb-8", MOBILE_NAV_SAFE_PADDING)}>
+      <div className={cn("mx-auto max-w-2xl px-4 pt-8 lg:pb-8")}>
       <div className="mb-2 flex items-center gap-2">
         <Trophy size={22} className="text-gold-600" />
         <h1 className="font-display text-[24px] font-black text-ink">Leaderboard</h1>

@@ -4,7 +4,6 @@ import { KeyRound, Trash2, Check, Copy } from "lucide-react";
 import { Button, Card, Input, Select, Switch, Tag, EmptyState } from "@/components/ui";
 import { useProfile } from "@/lib/profile";
 import { SettingsTopNav } from "@/components/settings/SettingsTopNav";
-import { MOBILE_NAV_SAFE_PADDING } from "@/components/trade/MobileBottomNav";
 import { cn } from "@/lib/cn";
 
 interface ApiKeyRow {
@@ -82,7 +81,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className={cn("min-h-screen bg-bg", MOBILE_NAV_SAFE_PADDING)}>
+    <div className={cn("min-h-screen bg-bg")}>
       <SettingsTopNav />
 
       <div className="mx-auto max-w-[720px] px-4 py-8 sm:px-6">

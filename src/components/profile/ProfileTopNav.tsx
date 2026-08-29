@@ -49,7 +49,6 @@ export function ProfileTopNav() {
 
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b bg-surface/90 px-3 backdrop-blur-md sm:px-4">
-      <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
       <HeaderLogo />
 
       <HeaderNav activeAutomations={activeAutomations} className="mx-auto" />
@@ -87,6 +86,8 @@ export function ProfileTopNav() {
         )}
 
         {ready && !signedIn && <HeaderAuthButtons onOpenAuth={openAuth} />}
+
+        <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
       </div>
 
       <HeaderMobileNav
@@ -97,7 +98,6 @@ export function ProfileTopNav() {
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}
         onOpenAuth={openAuth}
-        showPrimaryNav={false}
       />
       {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>

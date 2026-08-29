@@ -10,6 +10,7 @@ export { Card } from "./Card";
 export { Input } from "./Input";
 export { Tooltip } from "./Tooltip";
 export { Stat } from "./Stat";
+export { LiveDot } from "./LiveDot";
 
 // Loaders
 export { Skeleton } from "./Skeleton";

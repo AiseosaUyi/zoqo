@@ -9,7 +9,6 @@ import { CreateAutomationModal } from "@/components/automations/CreateAutomation
 import { ActiveAutomations } from "@/components/automations/ActiveAutomations";
 import { AUTOMATION_TEMPLATES, type AutomationTemplate } from "@/components/automations/data";
 import { useAutomations } from "@/lib/automations";
-import { MOBILE_NAV_SAFE_PADDING } from "@/components/trade/MobileBottomNav";
 import { cn } from "@/lib/cn";
 
 /** ZOQO is a fully client-side, localStorage-backed demo — there is no real
@@ -45,7 +44,7 @@ export default function AutomationsPage() {
   }
 
   return (
-    <div className={cn("min-h-screen bg-bg", MOBILE_NAV_SAFE_PADDING)}>
+    <div className={cn("min-h-screen bg-bg")}>
       <AutomationsHeader />
       <AutomationsBackRow />
 

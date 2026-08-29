@@ -36,7 +36,6 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex h-[56px] items-center gap-3 border-b bg-surface/90 px-4 backdrop-blur-md">
-      <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
       <HeaderLogo />
       <HeaderNav activeAutomations={activeAutomations} visibleFrom="sm" className="ml-4" />
       <div className="ml-auto flex items-center gap-3">
@@ -54,6 +53,8 @@ export function AppHeader() {
         ) : (
           <HeaderAuthButtons onOpenAuth={openAuth} />
         ))}
+
+        <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
       </div>
       <HeaderMobileNav
         open={navOpen}
@@ -63,7 +64,6 @@ export function AppHeader() {
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}
         onOpenAuth={openAuth}
-        showPrimaryNav={false}
       />
       {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>
