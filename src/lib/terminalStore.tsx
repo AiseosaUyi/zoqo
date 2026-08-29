@@ -87,6 +87,16 @@ export function useTerminal() {
   return c;
 }
 
+/** Read-only terminal trade history, usable anywhere in the app (e.g. the
+ *  profile page's trade journal) without mounting the full TerminalProvider
+ *  — useLocalStorageState reads straight off the same HISTORY_KEY the
+ *  provider writes to, so it stays in sync whether or not /terminal has been
+ *  visited this session. */
+export function useTerminalHistory(): TerminalHistoryEntry[] {
+  const [history] = useLocalStorageState(HISTORY_KEY, EMPTY_HISTORY, mergeArray);
+  return history;
+}
+
 /**
  * Position-based paper trading for the multi-asset Terminal. Shares the same
  * cash balance as the prediction market via useZoqo().adjustCash — this is
