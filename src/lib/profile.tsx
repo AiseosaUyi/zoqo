@@ -2,6 +2,12 @@
 import * as React from "react";
 import { useZoqo } from "./store";
 import { mulberry32 } from "./math";
+import { useLocalStorageState, useHasMounted } from "./useLocalStorageState";
+import { useTicker } from "./useTicker";
+import { BACKEND_ENABLED, getDataStore } from "./getDataStore";
+import { collectLocalStorageSnapshot } from "./dataStore.localStorage";
+import { createClient } from "./supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const KEY = "zoqo-profile-v1";
 
@@ -80,6 +86,17 @@ interface ProfileCtx {
   myRank: number;
 }
 
+const INITIAL_PROFILE: ProfileState = {
+  handle: null,
+  email: null,
+  avatarSeed: "trader",
+  streak: 0,
+  bestStreak: 0,
+  lastClaimDay: null,
+  claims: 0,
+  createdAt: 0,
+};
+
 const XP_PER = 150;
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 /** Mocked resend countdown — 02:59, matching the Figma reference. */
@@ -116,42 +133,16 @@ const LEADER_NAMES = [
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { portfolioValue, netPnl, exposure, grant, stats } = useZoqo();
-  const [p, setP] = React.useState<ProfileState>({
-    handle: null,
-    email: null,
-    avatarSeed: "trader",
-    streak: 0,
-    bestStreak: 0,
-    lastClaimDay: null,
-    claims: 0,
-    createdAt: 0,
-  });
-  const [ready, setReady] = React.useState(false);
-  const loaded = React.useRef(false);
+  const [p, setP] = useLocalStorageState(KEY, INITIAL_PROFILE);
+  const ready = useHasMounted();
+  // Real wall-clock day, ticking hourly instead of calling `new Date()`
+  // straight in render — keeps today/yesterday render-pure while still
+  // rolling over on its own if a session is left open across midnight.
+  const nowMs = useTicker(3600_000);
 
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setP((prev) => ({ ...prev, ...(JSON.parse(raw) as ProfileState) }));
-    } catch {
-      /* ignore */
-    }
-    loaded.current = true;
-    setReady(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (!loaded.current) return;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(p));
-    } catch {
-      /* ignore */
-    }
-  }, [p]);
-
-  const today = dayStr(new Date());
+  const today = dayStr(new Date(nowMs));
   const canClaimToday = ready && p.lastClaimDay !== today;
-  const yesterday = dayStr(new Date(Date.now() - 86_400_000));
+  const yesterday = dayStr(new Date(nowMs - 86_400_000));
   const projectedStreak = p.lastClaimDay === yesterday ? p.streak + 1 : 1;
   const dailyBonus = bonusFor(projectedStreak);
 
@@ -163,7 +154,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       avatarSeed: clean,
       createdAt: prev.createdAt || Date.now(),
     }));
-  }, []);
+  }, [setP]);
 
   const claimDaily = React.useCallback((): number => {
     const t = dayStr(new Date());
@@ -183,14 +174,63 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     });
     if (credited > 0) grant(credited);
     return credited;
-  }, [grant]);
+  }, [grant, setP]);
+
+  // ---- real Supabase Auth (Phase B) — inert unless NEXT_PUBLIC_BACKEND_ENABLED
+  // is "1", so none of this changes today's mocked-auth behavior by default.
+  const supabase = React.useMemo<SupabaseClient | null>(() => (BACKEND_ENABLED ? createClient() : null), []);
+  const [session, setSession] = React.useState<{ userId: string; email: string | null } | null>(null);
+  React.useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setSession({ userId: data.session.user.id, email: data.session.user.email ?? null });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession ? { userId: newSession.user.id, email: newSession.user.email ?? null } : null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [supabase]);
+
+  // Migrate whatever's in localStorage into Postgres exactly once per real
+  // sign-in (see the plan's migration-on-first-login step) — guarded by a
+  // ref (not state) since this must fire at most once per session
+  // regardless of how many times `session` re-renders this effect.
+  const migratedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !session || migratedRef.current) return;
+    migratedRef.current = true;
+    void getDataStore().migrateFromLocalStorage(collectLocalStorageSnapshot());
+  }, [session]);
+
+  // Overlay the user's remote profile row once, right after a real sign-in
+  // — same "adjust state during render" pattern store.tsx uses for its own
+  // persisted-blob hydration, gated on a ref so it only ever applies once
+  // per sign-in rather than fighting local edits made afterward.
+  const remoteProfileAppliedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !session || remoteProfileAppliedRef.current) return;
+    remoteProfileAppliedRef.current = true;
+    getDataStore()
+      .getProfile()
+      .then((remote) => {
+        if (remote) setP((prev) => ({ ...prev, ...remote }));
+      });
+  }, [session, setP]);
+
+  // Push local profile edits to Postgres once signed in — additive to the
+  // localStorage write useLocalStorageState's own setP already does.
+  React.useEffect(() => {
+    if (!BACKEND_ENABLED || !session) return;
+    void getDataStore().putProfile(p);
+  }, [p, session]);
 
   // ---- auth / onboarding ----
   const SIGNUP_BONUS = 50;
   // Handle is only assigned once the OTP step mock-verifies — that's the
   // moment the user is considered signed in, mirroring the Figma flow where
-  // step 3 (rewards) happens *after* the account already exists.
-  const signedIn = ready && p.handle !== null;
+  // step 3 (rewards) happens *after* the account already exists. In backend
+  // mode, the real Supabase session is the actual source of truth instead.
+  const signedIn = BACKEND_ENABLED ? session !== null : ready && p.handle !== null;
   const [authOpen, setAuthOpen] = React.useState(false);
   const [authStep, setAuthStep] = React.useState<AuthStep>("email");
   const [authError, setAuthError] = React.useState<string | null>(null);
@@ -241,24 +281,49 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     setP((prev) => ({ ...prev, email: clean, createdAt: prev.createdAt || Date.now() }));
     setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
     setAuthStep("otp");
-  }, []);
+    // Fires the real OTP email in backend mode — not awaited (the interface
+    // is synchronous, matching the mock's own "advance immediately" shape);
+    // a send failure surfaces as an authError without blocking the step
+    // change, same as the mock never fails this step either.
+    if (BACKEND_ENABLED && supabase) {
+      supabase.auth.signInWithOtp({ email: clean }).then(({ error }) => {
+        if (error) setAuthError(error.message);
+      });
+    }
+  }, [setP, supabase]);
 
   const resendOtp = React.useCallback(() => {
     setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
-  }, []);
+    if (BACKEND_ENABLED && supabase && p.email) {
+      void supabase.auth.signInWithOtp({ email: p.email });
+    }
+  }, [supabase, p.email]);
 
   const confirmOtp = React.useCallback(
     (code: string) => {
       if (!/^\d{6}$/.test(code)) return; // mock-accepts any 6 digits
-      setHandle(handleFromEmail(p.email));
-      if (!credited.current) {
-        credited.current = true;
-        grant(SIGNUP_BONUS);
+
+      const proceed = () => {
+        setHandle(handleFromEmail(p.email));
+        if (!credited.current) {
+          credited.current = true;
+          grant(SIGNUP_BONUS);
+        }
+        setAuthError(null);
+        setAuthStep("rewards");
+      };
+
+      if (BACKEND_ENABLED && supabase) {
+        if (!p.email) return;
+        supabase.auth.verifyOtp({ email: p.email, token: code, type: "email" }).then(({ error }) => {
+          if (error) setAuthError(error.message);
+          else proceed();
+        });
+        return;
       }
-      setAuthError(null);
-      setAuthStep("rewards");
+      proceed();
     },
-    [p.email, setHandle, grant],
+    [p.email, setHandle, grant, supabase],
   );
 
   const claimRewards = React.useCallback((code?: string) => {

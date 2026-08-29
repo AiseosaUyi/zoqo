@@ -38,6 +38,7 @@ export function Select({
   const items = data.map((d) => (typeof d === "string" ? { value: d, label: d } : d));
   const [open, setOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement>(null);
+  const listboxId = React.useId();
   const selected = items.find((it) => it.value === value);
 
   React.useEffect(() => {
@@ -62,6 +63,7 @@ export function Select({
         type="button"
         role="combobox"
         aria-expanded={open}
+        aria-controls={listboxId}
         aria-haspopup="listbox"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
@@ -85,6 +87,7 @@ export function Select({
 
       {open && (
         <div
+          id={listboxId}
           role="listbox"
           className={cn(
             "absolute z-50 mt-1.5 max-h-64 w-full min-w-[8rem] overflow-auto rounded-[12px] border border-line bg-surface p-1 shadow-e3",

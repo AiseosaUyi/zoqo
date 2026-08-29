@@ -1,23 +1,39 @@
 "use client";
 import { Bot, Trash2 } from "lucide-react";
-import { Card, Switch, Tag } from "@/components/ui";
+import { Card, EmptyState, Switch, Tag } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { Automation } from "@/lib/automations";
 
 /** "Sit back and relax" made tangible: the automations the user has actually
- *  created in this demo, persisted locally. Not pixel-matched to Figma —
- *  there's no equivalent frame in the reference for a populated list, this
- *  is a reasonable extension of the page's own visual language. */
+ *  created in this demo, persisted locally. The zero-automations case can be
+ *  handled either here (pass `onCreate` and it shows a real `EmptyState`) or
+ *  by the caller — if `onCreate` isn't passed, this renders nothing when
+ *  empty, same as before. Either way it never silently renders nothing when
+ *  the caller expected an empty-state affordance. */
 export function ActiveAutomations({
   automations,
   onToggle,
   onRemove,
+  onCreate,
 }: {
   automations: Automation[];
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
+  onCreate?: () => void;
 }) {
-  if (automations.length === 0) return null;
+  if (automations.length === 0) {
+    if (!onCreate) return null;
+    return (
+      <section className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
+        <EmptyState
+          icon={Bot}
+          title="Nothing on autopilot yet"
+          description="Pick a template above and set your own numbers — the moment you create one, it lands here, ready to toggle or delete any time."
+          action={{ label: "Create an automation", onClick: onCreate }}
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
@@ -49,6 +65,11 @@ export function ActiveAutomations({
                 <Tag color="gray" size="sm">
                   {a.category}
                 </Tag>
+                {a.executionsCount != null && (
+                  <Tag color="gray" size="sm">
+                    {a.executionsCount} execution{a.executionsCount === 1 ? "" : "s"}
+                  </Tag>
+                )}
                 {!a.enabled && (
                   <Tag color="gold" size="sm">
                     Paused

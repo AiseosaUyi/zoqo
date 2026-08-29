@@ -1,18 +1,15 @@
 "use client";
 import * as React from "react";
+import { useLocalStorageState } from "@/lib/useLocalStorageState";
 
 const STORAGE_KEY = "zoqo-token-overrides";
 
 type Overrides = Record<string, string>; // "purple-500" -> "#601fff"
 
-function readStored(): Overrides {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Overrides) : {};
-  } catch {
-    return {};
-  }
+const EMPTY_OVERRIDES: Overrides = {};
+
+function mergeOverrides(parsed: unknown): Overrides {
+  return parsed && typeof parsed === "object" ? (parsed as Overrides) : EMPTY_OVERRIDES;
 }
 
 function applyVar(token: string, hex: string) {
@@ -29,39 +26,32 @@ function clearVar(token: string) {
  * localStorage so they survive reloads.
  */
 export function useTokenOverrides() {
-  const [overrides, setOverrides] = React.useState<Overrides>({});
+  const [overrides, setOverrides] = useLocalStorageState(STORAGE_KEY, EMPTY_OVERRIDES, mergeOverrides);
+  const appliedRef = React.useRef<Overrides>({});
 
-  // Re-apply persisted overrides on mount.
+  // Reconcile the DOM with whatever `overrides` currently is (persisted
+  // value on first paint after hydration, or a live edit after that) — a
+  // pure DOM side effect, not a state update, so it's not the pattern
+  // react-hooks/set-state-in-effect flags.
   React.useEffect(() => {
-    const stored = readStored();
-    setOverrides(stored);
-    for (const [token, hex] of Object.entries(stored)) applyVar(token, hex);
-  }, []);
+    const applied = appliedRef.current;
+    for (const token of Object.keys(applied)) {
+      if (!(token in overrides)) clearVar(token);
+    }
+    for (const [token, hex] of Object.entries(overrides)) applyVar(token, hex);
+    appliedRef.current = overrides;
+  }, [overrides]);
 
-  const setToken = React.useCallback((token: string, hex: string) => {
-    applyVar(token, hex);
-    setOverrides((prev) => {
-      const next = { ...prev, [token]: hex };
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
+  const setToken = React.useCallback(
+    (token: string, hex: string) => {
+      setOverrides((prev) => ({ ...prev, [token]: hex }));
+    },
+    [setOverrides],
+  );
 
   const reset = React.useCallback(() => {
-    setOverrides((prev) => {
-      for (const token of Object.keys(prev)) clearVar(token);
-      try {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        /* ignore */
-      }
-      return {};
-    });
-  }, []);
+    setOverrides(EMPTY_OVERRIDES);
+  }, [setOverrides]);
 
   const count = Object.keys(overrides).length;
 

@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Rocket, Star } from "lucide-react";
+import { Bot, Rocket, Star } from "lucide-react";
 import {
   Accordion,
   Alert,
@@ -9,10 +9,12 @@ import {
   Button,
   Card,
   Checkbox,
+  EmptyState,
   Input,
   RadioGroup,
   SegmentedControl,
   Select as UISelect,
+  Slider,
   Stat,
   Switch,
   Tabs,
@@ -655,6 +657,75 @@ function AccordionPlayground() {
   );
 }
 
+function EmptyStatePlayground() {
+  const [withSecondary, setWithSecondary] = React.useState(true);
+  const code = `<EmptyState
+  icon={Bot}
+  title="No automations yet"
+  description="Start from a template above, or build your own rule from scratch."
+  action={{ label: "Create automation", onClick: onCreate }}${
+    withSecondary ? '\n  secondaryAction={{ label: "Browse templates", onClick: onBrowse }}' : ""
+  }
+/>`;
+  return (
+    <Playground
+      title="EmptyState"
+      preview={
+        <div className="w-full max-w-[440px]">
+          <EmptyState
+            icon={Bot}
+            title="No automations yet"
+            description="Start from a template above, or build your own rule from scratch."
+            action={{ label: "Create automation", onClick: () => {} }}
+            secondaryAction={withSecondary ? { label: "Browse templates", onClick: () => {} } : undefined}
+          />
+        </div>
+      }
+      controls={
+        <ControlRow label="secondaryAction">
+          <Switch checked={withSecondary} onChange={setWithSecondary} size="sm" />
+        </ControlRow>
+      }
+      code={code}
+    />
+  );
+}
+
+function SliderPlayground() {
+  const [value, setValue] = React.useState(50);
+  const code = `<Slider
+  value={${value}}
+  onChange={setValue}
+  min={0}
+  max={100}
+  label="Entry price"
+  formatValue={(v) => \`$\${v}\`}
+/>`;
+  return (
+    <Playground
+      title="Slider"
+      preview={
+        <div className="w-full max-w-[320px]">
+          <Slider
+            value={value}
+            onChange={setValue}
+            min={0}
+            max={100}
+            label="Entry price"
+            formatValue={(v) => `$${v}`}
+          />
+        </div>
+      }
+      controls={
+        <ControlRow label="value">
+          <span className="text-[12px] text-sub nums">{value}</span>
+        </ControlRow>
+      }
+      code={code}
+    />
+  );
+}
+
 export function ComponentsSection() {
   return (
     <Section
@@ -682,6 +753,8 @@ export function ComponentsSection() {
         <TooltipPlayground />
         <CardPlayground />
         <StatPlayground />
+        <EmptyStatePlayground />
+        <SliderPlayground />
       </div>
     </Section>
   );

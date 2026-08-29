@@ -2,7 +2,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Check, ChevronDown, Crown, Flame, Gift, Sparkles, Trophy, User, X } from "lucide-react";
+import { Check, ChevronDown, Crown, Flame, Gift, Palette, Sparkles, Trophy, User, X } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { usd, usdCompact, pct } from "@/lib/format";
@@ -68,7 +68,11 @@ export function ProfileMenu() {
 function LevelUpToast({ level }: { level: number }) {
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="pointer-events-none fixed inset-x-0 top-20 z-[60] flex justify-center">
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 top-20 z-[60] flex justify-center"
+    >
       <div className="pop flex items-center gap-3 rounded-[16px] bg-gradient-to-br from-purple-500 to-purple-700 px-5 py-3 text-white shadow-[0_16px_40px_rgba(96,31,255,0.4)]">
         <span className="grid h-10 w-10 place-items-center rounded-full bg-white/20">
           <Sparkles size={22} />
@@ -158,7 +162,11 @@ function ProfilePopover({ onClose, onLeaderboard }: { onClose: () => void; onLea
       {/* daily claim */}
       <div className="p-3">
         {justClaimed > 0 ? (
-          <div className="flex items-center justify-center gap-2 rounded-[12px] bg-green-100 py-3 text-[13px] font-bold text-green-700">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center justify-center gap-2 rounded-[12px] bg-green-100 py-3 text-[13px] font-bold text-green-700"
+          >
             <Check size={16} /> +{usd(justClaimed)} claimed!
           </div>
         ) : (
@@ -189,6 +197,13 @@ function ProfilePopover({ onClose, onLeaderboard }: { onClose: () => void; onLea
         >
           <Trophy size={14} className="text-gold-600" /> View leaderboard
         </button>
+        <Link
+          href="/system"
+          onClick={onClose}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 text-[11px] font-medium text-sub hover:text-ink"
+        >
+          <Palette size={12} /> Design system
+        </Link>
       </div>
     </div>
   );

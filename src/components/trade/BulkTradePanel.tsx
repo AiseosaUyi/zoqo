@@ -46,13 +46,12 @@ export function BulkTradePanel({
     return list.slice().sort((a, b) => a.durationMs - b.durationMs || a.openTime - b.openTime);
   }, [snapshot]);
 
-  // Default selection = every currently-live market (one per duration), matching
-  // the Figma default of "all checked".
-  React.useEffect(() => {
-    if (selected === null && tradable.length > 0) {
-      setSelected(new Set(tradable.filter((m) => m.status === "live").map((m) => m.id)));
-    }
-  }, [selected, tradable]);
+  // Default selection = every currently-live market (one per duration),
+  // matching the Figma default of "all checked" — own local state, so this
+  // uses React's "adjust state during render" pattern instead of an effect.
+  if (selected === null && tradable.length > 0) {
+    setSelected(new Set(tradable.filter((m) => m.status === "live").map((m) => m.id)));
+  }
 
   const sel = selected ?? new Set<string>();
   const selectedMarkets = tradable.filter((m) => sel.has(m.id));
@@ -107,10 +106,16 @@ export function BulkTradePanel({
   // before signup credits the bonus — wait for a fresh render once signed in.
   const [retryRun, setRetryRun] = React.useState(false);
   React.useEffect(() => {
+    // run() calls buy()/sell() from useZoqo(), which set state on the
+    // ZoqoProvider ancestor — needs an effect for the same reason as
+    // TradeCard's retryTrade (see its comment): can't update a different
+    // component's state mid-render.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (retryRun && signedIn) {
       setRetryRun(false);
       run();
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryRun, signedIn]);
 

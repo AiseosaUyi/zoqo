@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "polymarket-analyzer": {
+      "source": "mjunaidca/polymarket-skills",
+      "sourceType": "github",
+      "skillPath": "polymarket-analyzer/SKILL.md",
+      "computedHash": "387ce79d12ccc86d970e756960f7235476f061528ffb893f16aac29786468f92"
+    },
+    "polymarket-live-executor": {
+      "source": "mjunaidca/polymarket-skills",
+      "sourceType": "github",
+      "skillPath": "polymarket-live-executor/SKILL.md",
+      "computedHash": "8245caa631fb0a52922134cb0915e3983c407ca102acaecd0af30907565cf72f"
+    },
+    "polymarket-monitor": {
+      "source": "mjunaidca/polymarket-skills",
+      "sourceType": "github",
+      "skillPath": "polymarket-monitor/SKILL.md",
+      "computedHash": "7ef34c052edd0127f4fde7d2aee1d72eb644e5059adf40ac6631d8ba76ebea66"
+    },
+    "polymarket-paper-trader": {
+      "source": "mjunaidca/polymarket-skills",
+      "sourceType": "github",
+      "skillPath": "polymarket-paper-trader/SKILL.md",
+      "computedHash": "c7bd51c92d80a6933a0f21f29d4fa0fccde1c7067471f30949d20b304ee56e1d"
+    },
+    "polymarket-scanner": {
+      "source": "mjunaidca/polymarket-skills",
+      "sourceType": "github",
+      "skillPath": "polymarket-scanner/SKILL.md",
+      "computedHash": "e5df6678f72a425acdfafcb5b6e46e20913c49999bc88e0d0fb7ed727ed08627"
+    },
+    "polymarket-strategy-advisor": {
+      "source": "mjunaidca/polymarket-skills",
+      "sourceType": "github",
+      "skillPath": "polymarket-strategy-advisor/SKILL.md",
+      "computedHash": "1b2c8398f452a17315f0641981427c04daabeff42068f462718d75c7a124f916"
+    }
+  }
+}

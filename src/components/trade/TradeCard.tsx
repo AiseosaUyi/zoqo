@@ -49,11 +49,17 @@ export function TradeCard({
   const isOneTap = mode === "buy" && orderType === "oneTap";
   const price = isLimit && limitPrice > 0 ? limitPrice : marketPrice;
 
-  // default the limit price to the live price when entering limit mode
-  React.useEffect(() => {
-    if (isLimit && limitPrice === 0) setLimitPrice(round1(marketPrice));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLimit]);
+  // Default the limit price to the live price when entering limit mode —
+  // React's "adjust state during render" pattern (own local state, no
+  // side effects on other components), gated on isLimit so it only fires
+  // once per mode-entry rather than every render.
+  const [limitDefaultedFor, setLimitDefaultedFor] = React.useState(false);
+  if (isLimit && limitPrice === 0 && !limitDefaultedFor) {
+    setLimitDefaultedFor(true);
+    setLimitPrice(round1(marketPrice));
+  } else if (!isLimit && limitDefaultedFor) {
+    setLimitDefaultedFor(false);
+  }
 
   const shares = unit === "USD" ? (price > 0 ? amount / (price / 100) : 0) : amount;
   const cost = unit === "USD" ? amount : shares * (price / 100);
@@ -90,10 +96,18 @@ export function TradeCard({
   }
 
   React.useEffect(() => {
+    // doTrade() calls buy()/sell() from useZoqo(), which set state on the
+    // ZoqoProvider ancestor — genuinely needs an effect, not a render-time
+    // adjustment: calling it during this component's own render would be
+    // updating a different component's state mid-render, which React
+    // explicitly disallows (unlike this component adjusting its own local
+    // state, e.g. the limitPrice default above).
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (retryTrade && signedIn) {
       setRetryTrade(false);
       doTrade();
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryTrade, signedIn]);
 
@@ -118,11 +132,15 @@ export function TradeCard({
     setTimeout(() => setFlash(false), 700);
   }
   React.useEffect(() => {
+    // Same reasoning as the retryTrade effect above: doOneTap() calls buy(),
+    // which sets state on the ZoqoProvider ancestor.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (retryOneTapAmt != null && signedIn) {
       const amt = retryOneTapAmt;
       setRetryOneTapAmt(null);
       doOneTap(amt);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryOneTapAmt, signedIn]);
   function tapPreset(amt: number) {

@@ -14,6 +14,8 @@ import {
   HeaderBell,
   HeaderDepositButton,
   HeaderLogo,
+  HeaderMobileNav,
+  HeaderMobileNavTrigger,
   HeaderNav,
   HeaderStats,
 } from "@/components/trade/HeaderChrome";
@@ -30,6 +32,7 @@ export function ProfileTopNav() {
   const { automations } = useAutomations();
   const activeAutomations = automations.filter((a) => a.enabled).length;
   const [depositOpen, setDepositOpen] = React.useState(false);
+  const [navOpen, setNavOpen] = React.useState(false);
   const [justClaimed, setJustClaimed] = React.useState(0);
   const { locked, remainingH } = useDepositCooldown(nextDepositAt);
 
@@ -46,6 +49,7 @@ export function ProfileTopNav() {
 
   return (
     <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b bg-surface/90 px-3 backdrop-blur-md sm:px-4">
+      <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} />
       <HeaderLogo />
 
       <HeaderNav activeAutomations={activeAutomations} className="mx-auto" />
@@ -65,7 +69,11 @@ export function ProfileTopNav() {
                 <Gift size={16} />
               </button>
               {justClaimed > 0 && (
-                <span className="pop absolute top-9 right-0 z-10 whitespace-nowrap rounded-full bg-green-500 px-2 py-1 text-[11px] font-bold text-white shadow-e1">
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className="pop absolute top-9 right-0 z-10 whitespace-nowrap rounded-full bg-green-500 px-2 py-1 text-[11px] font-bold text-white shadow-e1"
+                >
                   +{usd(justClaimed)} claimed!
                 </span>
               )}
@@ -81,6 +89,15 @@ export function ProfileTopNav() {
         {ready && !signedIn && <HeaderAuthButtons onOpenAuth={openAuth} />}
       </div>
 
+      <HeaderMobileNav
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        activeAutomations={activeAutomations}
+        signedIn={!!signedIn}
+        portfolioValue={signedIn ? portfolioValue : undefined}
+        cash={signedIn ? cash : undefined}
+        onOpenAuth={openAuth}
+      />
       {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>
   );
