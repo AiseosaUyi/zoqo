@@ -49,16 +49,20 @@ useBtc (real BTC price)  →  ZoqoProvider (store.tsx, ticks @600ms)  →  Marke
 ## Routes
 
 ```
-/              →  redirects to /system  (next.config.ts, default landing)
-/system        →  design-system explorer (live-editable tokens, export)
-/trade         →  multi-market trading UI  ← this is the product
-/market/[id]   →  single-market deep view
-/automations   →  create/manage mocked trading automations
+/              →  redirects to /terminal  (next.config.ts, default landing)
+/system        →  design-system explorer (live-editable tokens, export) — not linked from nav, direct URL only
+/terminal      →  multi-asset MT5-style trading terminal (crypto/gold/forex)  ← the landing product
+/trade         →  BTC Up/Down prediction market UI ("Predict" in nav)
+/market/[id]   →  single-market deep view (prediction market)
+/learn         →  Zoqo Academy — skill tree, lesson player
+/leaderboard   →  P&L + Academy XP boards
+/automations   →  create/manage trading automations (real trigger engine, Phase C)
 /profile       →  trader profile, portfolio stats, calendar heatmap
 /referrals     →  rewards/referral program
+/settings      →  MCP API key management, email digest preferences
 ```
 
-`(app)/layout.tsx` wraps every route above except `/system` with `ZoqoProvider`, `ProfileProvider`, `SettlementToast`, and `AuthModal` (the app-wide auth modal, opened via `requireAuth`). The `/` → `/system` redirect in `next.config.ts` is intentional; the product lives at `/trade` so navigating to it never loops.
+`(app)/layout.tsx` wraps every route above except `/system` with `ZoqoProvider`, `ProfileProvider`, `SettlementToast`, and `AuthModal` (the app-wide auth modal, opened via `requireAuth`). The `/` → `/terminal` redirect in `next.config.ts` is intentional — `/terminal` is the professional-trader-facing front door; `/system` stays reachable by direct URL for internal design-system work but is deliberately not the landing page or in nav.
 
 ## The multi-market timeline (non-obvious coupling)
 
