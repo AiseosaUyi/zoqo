@@ -60,6 +60,7 @@ export function ReferralsTopNav() {
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}
         onOpenAuth={openAuth}
+        showPrimaryNav={false}
       />
       {signedIn && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </header>

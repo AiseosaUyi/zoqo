@@ -2,7 +2,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Check, ChevronDown, Crown, Flame, Gift, Palette, Sparkles, Trophy, User, X } from "lucide-react";
+import { Check, ChevronDown, Crown, Flame, Gift, Palette, Settings, Sparkles, Trophy, User, X } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { usd, usdCompact, pct } from "@/lib/format";
@@ -190,6 +190,13 @@ function ProfilePopover({ onClose, onLeaderboard }: { onClose: () => void; onLea
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border py-2 text-[12px] font-semibold hover:bg-gray-50"
         >
           <User size={14} className="text-sub" /> View Profile
+        </Link>
+        <Link
+          href="/settings"
+          onClick={onClose}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border py-2 text-[12px] font-semibold hover:bg-gray-50"
+        >
+          <Settings size={14} className="text-sub" /> Settings
         </Link>
         <button
           onClick={onLeaderboard}

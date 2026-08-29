@@ -55,7 +55,14 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
             <ArrowLeft size={15} /> Back
           </Link>
         ) : (
-          <button className="ml-2 inline-flex items-center gap-1.5 rounded-[8px] bg-muted px-2.5 py-1.5 text-[13px] font-semibold">
+          // Hidden below lg: non-functional today (no asset switcher behind
+          // it, /trade is BTC-only) and there's no room for it once the
+          // hamburger + logo + auth buttons all need to fit one 390px-wide
+          // row too — confirmed via a live mobile QA pass, it was
+          // overlapping the auth buttons on the right. The mobile-only
+          // duration row right below this header already carries the
+          // market context this badge duplicated.
+          <button className="ml-2 hidden items-center gap-1.5 rounded-[8px] bg-muted px-2.5 py-1.5 text-[13px] font-semibold lg:inline-flex">
             <span className="grid h-4 w-4 place-items-center rounded-full bg-orange-500 text-[9px] font-black text-white">
               ₿
             </span>
@@ -85,11 +92,15 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
           its own edge inward rather than colliding with the center nav. */}
       <div className="flex min-w-0 items-center justify-end gap-3">
         {ready && (
+          // Hidden below lg: the hamburger drawer (HeaderMobileNav, default
+          // showPrimaryNav) has its own "Rewards & referrals" entry, and
+          // this icon was one of the things overlapping the auth buttons in
+          // the crowded mobile row — no need for both.
           <Link
             href="/referrals"
             aria-label="Rewards & referrals"
             title="Rewards & referrals"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-100 hover:bg-gold-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-1"
+            className="hidden h-8 w-8 shrink-0 place-items-center rounded-full bg-gold-100 hover:bg-gold-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-1 lg:grid"
           >
             <Gift size={16} className="text-gold-700" />
           </Link>

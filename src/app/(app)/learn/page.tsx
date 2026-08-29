@@ -70,12 +70,12 @@ function LearnPageContent() {
     <>
       <AppHeader />
       <div className={cn("mx-auto max-w-3xl px-4 pt-8 lg:pb-8", MOBILE_NAV_SAFE_PADDING)}>
-        <div className="mb-6 flex items-center justify-between">
-          <div>
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <h1 className="font-display text-[24px] font-black text-ink">Zoqo Academy</h1>
             <p className="text-[13px] text-sub">Zero to confident in ~3 months. 15 minutes a day.</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-4">
             <div className="flex items-center gap-1.5 text-orange-600">
               <Flame size={18} fill="currentColor" />
               <span className="text-[15px] font-bold nums">{streak}</span>
