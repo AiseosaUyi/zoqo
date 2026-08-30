@@ -41,7 +41,7 @@ export function DataTablesPanel({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="overflow-x-auto scroll-thin">
+      <div className="overflow-x-auto scroll-thin px-4">
         <Tabs
           value={tab}
           onChange={setTab}

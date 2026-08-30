@@ -135,7 +135,8 @@ export const TerminalChart = React.forwardRef<
       grid: { vertLines: { color: "#eeeeee" }, horzLines: { color: "#eeeeee" } },
       rightPriceScale: { borderColor: "#e5e5e5" },
       timeScale: { borderColor: "#e5e5e5", timeVisible: true, secondsVisible: false },
-      autoSize: true,
+      width: containerRef.current.clientWidth,
+      height: containerRef.current.clientHeight,
     });
     const series = chart.addSeries(CandlestickSeries, {
       upColor: "#16a34a",
@@ -198,7 +199,24 @@ export const TerminalChart = React.forwardRef<
     };
     chart.subscribeClick(onPlacementClick);
 
+    // Explicit ResizeObserver instead of `autoSize: true` — the panel system
+    // (react-resizable-panels) resizes this container via flex-basis %
+    // changes on drag/collapse/hide, and lightweight-charts' own autoSize
+    // observer has missed those transitions in practice (chart keeps its
+    // stale width, so the right price scale renders off the visible edge
+    // until something else forces a reflow). Driving `chart.resize()`
+    // ourselves off the same container guarantees it tracks every layout
+    // change, not just ones autoSize happens to catch.
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) chart.resize(width, height);
+    });
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       chart.unsubscribeClick(onPlacementClick);
       offAdded();
       offRemoved();

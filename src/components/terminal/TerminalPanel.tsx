@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { Panel, usePanelRef } from "react-resizable-panels";
-import { PanelFrame } from "./PanelFrame";
+import { PanelFrame } from "@/components/ui";
 
 /** Combines react-resizable-panels' `Panel` (resize/collapse mechanics) with
  *  `PanelFrame` (the visible header/toolbar), so TerminalShell doesn't have

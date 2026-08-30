@@ -9,12 +9,14 @@ import { PositionsTable } from "@/components/trade/PositionsTable";
 import { RightRail } from "@/components/trade/RightRail";
 import { MarketDepth } from "@/components/trade/MarketDepth";
 import { MobileTradeBar } from "@/components/trade/MobileTradeBar";
+import { TradeStatusBar } from "@/components/trade/TradeStatusBar";
 import { useMeasure } from "@/components/trade/useMeasure";
-import { LiveDot } from "@/components/ui";
+import { LiveDot, PanelFrame } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { DEFAULT_DURATION, MD_BY_KEY } from "@/lib/timeframe";
 import { PAD_LEFT, PAD_RIGHT, plotWidth, timeToX, type TimelineGeo } from "@/lib/chartGeo";
 import { clamp } from "@/lib/math";
+import { cn } from "@/lib/cn";
 import { btc, btc2 } from "@/lib/format";
 import { DurationMenu } from "@/components/trade/DurationMenu";
 
@@ -119,81 +121,83 @@ export default function MultiMarketPage() {
             <ChartSkeleton />
           ) : (
             <>
-              <div
-                ref={tlRef}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
-                onClickCapture={onClickCapture}
-                className={dragging ? "cursor-grabbing select-none" : "cursor-grab"}
-              >
-                {/* Hidden below lg — this row duplicates info the Target/BTC
-                    row and the chart itself already show, its one unique
-                    interaction (double-click a past market to open it)
-                    doesn't translate to a reliable touch gesture anyway, and
-                    trading screens need the vertical space more than a
-                    historical-markets strip does (a live mobile QA pass
-                    flagged this exact row as UX debt). Desktop keeps it —
-                    there's room, and mouse users get the double-click. */}
-                <div className="hidden lg:block">
-                  <MarketColumns
-                    markets={markets}
-                    geo={geo}
-                    now={snapshot.now}
-                    liveMarketId={live}
-                    selectedId={tradingId}
-                    canOlder={canOlder}
-                    canNewer={canNewer}
-                    onStep={stepMarkets}
-                    onHover={setHoverId}
-                    onSelect={setSelected}
-                    onActivate={open}
-                  />
-                </div>
-                <div className="pb-1 pt-3">
-                  <div className="mb-2 flex items-center gap-3 text-[12px]">
-                    <DurationMenu value={duration} onChange={setDuration} />
-                    <span className="text-sub">
-                      Target{" "}
-                      <b className="text-ink nums">{focusMarket ? btc(focusMarket.strike) : "—"}</b>
-                    </span>
-                    <span className="text-sub">
-                      BTC <b className="text-purple-600 nums">{price ? btc2(price) : "—"}</b>
-                    </span>
-                    <LiveDot source={source} connected={connected} />
-                  </div>
-                  <div className="relative">
-                    <MarketChart
-                      mode="multi"
-                      showColumns
-                      viewStart={t0}
-                      viewEnd={t1}
-                      now={snapshot.now}
-                      height={340}
-                      priceSeries={priceSeries}
+              <PanelFrame title="Chart · BTC/USD" className="rounded-card border border-line">
+                <div
+                  ref={tlRef}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={endDrag}
+                  onPointerCancel={endDrag}
+                  onClickCapture={onClickCapture}
+                  className={cn("p-3", dragging ? "cursor-grabbing select-none" : "cursor-grab")}
+                >
+                  {/* Hidden below lg — this row duplicates info the Target/BTC
+                      row and the chart itself already show, its one unique
+                      interaction (double-click a past market to open it)
+                      doesn't translate to a reliable touch gesture anyway, and
+                      trading screens need the vertical space more than a
+                      historical-markets strip does (a live mobile QA pass
+                      flagged this exact row as UX debt). Desktop keeps it —
+                      there's room, and mouse users get the double-click. */}
+                  <div className="hidden lg:block">
+                    <MarketColumns
                       markets={markets}
+                      geo={geo}
+                      now={snapshot.now}
                       liveMarketId={live}
-                      focusMarketId={tradingId}
-                      onColumnActivate={open}
+                      selectedId={tradingId}
+                      canOlder={canOlder}
+                      canNewer={canNewer}
+                      onStep={stepMarkets}
+                      onHover={setHoverId}
+                      onSelect={setSelected}
+                      onActivate={open}
                     />
-                    {hoverMarket && geo.width > 0 && (
-                      <MarketActivityCard
-                        market={hoverMarket}
-                        position={hoverPos}
-                        history={hoverHist}
-                        volumeUsd={hoverMarket.volumeUsd}
-                        bigTrades={(snapshot.spikesByMarket[hoverMarket.id] ?? []).length}
-                        now={snapshot.now}
-                        style={{ left: hoverX, top: 8 }}
-                      />
-                    )}
                   </div>
-                  <p className="mt-1 text-[11px] text-sub">
-                    Tip: drag the timeline to see earlier markets · double-click a market to open it.
-                  </p>
+                  <div className="pb-1 pt-3">
+                    <div className="mb-2 flex items-center gap-3 text-[12px]">
+                      <DurationMenu value={duration} onChange={setDuration} />
+                      <span className="text-sub">
+                        Target{" "}
+                        <b className="text-ink nums">{focusMarket ? btc(focusMarket.strike) : "—"}</b>
+                      </span>
+                      <span className="text-sub">
+                        BTC <b className="text-purple-600 nums">{price ? btc2(price) : "—"}</b>
+                      </span>
+                      <LiveDot source={source} connected={connected} />
+                    </div>
+                    <div className="relative">
+                      <MarketChart
+                        mode="multi"
+                        showColumns
+                        viewStart={t0}
+                        viewEnd={t1}
+                        now={snapshot.now}
+                        height={340}
+                        priceSeries={priceSeries}
+                        markets={markets}
+                        liveMarketId={live}
+                        focusMarketId={tradingId}
+                        onColumnActivate={open}
+                      />
+                      {hoverMarket && geo.width > 0 && (
+                        <MarketActivityCard
+                          market={hoverMarket}
+                          position={hoverPos}
+                          history={hoverHist}
+                          volumeUsd={hoverMarket.volumeUsd}
+                          bigTrades={(snapshot.spikesByMarket[hoverMarket.id] ?? []).length}
+                          now={snapshot.now}
+                          style={{ left: hoverX, top: 8 }}
+                        />
+                      )}
+                    </div>
+                    <p className="mt-1 text-[11px] text-sub">
+                      Tip: drag the timeline to see earlier markets · double-click a market to open it.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </PanelFrame>
               <div className="border-t">
                 <PositionsTable />
               </div>
@@ -213,6 +217,7 @@ export default function MultiMarketPage() {
           </aside>
         )}
       </div>
+      <TradeStatusBar />
       {ready && tradingId && (
         <MobileTradeBar marketId={tradingId} side={side} onSideChange={setSide} />
       )}

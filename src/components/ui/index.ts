@@ -11,6 +11,8 @@ export { Input } from "./Input";
 export { Tooltip } from "./Tooltip";
 export { Stat } from "./Stat";
 export { LiveDot } from "./LiveDot";
+export { PanelFrame } from "./PanelFrame";
+export type { PanelFrameProps } from "./PanelFrame";
 
 // Loaders
 export { Skeleton } from "./Skeleton";

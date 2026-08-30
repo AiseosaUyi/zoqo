@@ -33,6 +33,12 @@ function OrderBookView({ marketId }: { marketId: string }) {
 
   return (
     <div className="text-[12px]">
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <span className="text-[10.5px] font-medium text-sub">Live depth</span>
+        <Badge color="gray" size="sm">
+          Simulated
+        </Badge>
+      </div>
       <div className="mb-1 grid grid-cols-3 px-1 text-[10.5px] font-medium text-sub">
         <span>Price</span>
         <span className="text-right">Shares</span>
