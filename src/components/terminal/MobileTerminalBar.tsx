@@ -5,7 +5,7 @@ import { TrendingDown, TrendingUp, X } from "lucide-react";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { price as formatPrice } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { OrderTicket } from "./OrderTicket";
+import { OrderTicket, type SubmitOrderOptions } from "./OrderTicket";
 
 /** Reservation for this bar's own ~64px (py-2.5 top+bottom + the button
  *  row) plus its safe-area inset, so TerminalShell's chart/positions column
@@ -29,7 +29,7 @@ export function MobileTerminalBar({
   assetId: string;
   price: number | null;
   cash: number;
-  onSubmit: (side: "long" | "short", qty: number, stopLoss?: number, takeProfit?: number) => boolean;
+  onSubmit: (side: "long" | "short", qty: number, opts?: SubmitOrderOptions) => boolean;
 }) {
   const asset = ASSET_BY_ID[assetId];
   const decimals = asset?.decimals ?? 2;
@@ -72,8 +72,8 @@ export function MobileTerminalBar({
           side={side}
           price={price}
           cash={cash}
-          onSubmit={(s, qty, sl, tp) => {
-            const ok = onSubmit(s, qty, sl, tp);
+          onSubmit={(s, qty, opts) => {
+            const ok = onSubmit(s, qty, opts);
             if (ok) setOpen(false);
             return ok;
           }}
@@ -131,7 +131,7 @@ function TerminalSheet({
   side: "long" | "short";
   price: number | null;
   cash: number;
-  onSubmit: (side: "long" | "short", qty: number, stopLoss?: number, takeProfit?: number) => boolean;
+  onSubmit: (side: "long" | "short", qty: number, opts?: SubmitOrderOptions) => boolean;
   onClose: () => void;
 }) {
   const asset = ASSET_BY_ID[assetId];

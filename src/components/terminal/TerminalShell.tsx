@@ -1,16 +1,23 @@
 "use client";
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
 import { Button } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { TerminalProvider, useTerminal } from "@/lib/terminalStore";
 import { useAssetPrice } from "@/lib/useAssetPrice";
 import { useTicker } from "@/lib/useTicker";
+import { useIsDesktop } from "@/lib/useIsDesktop";
+import { useHiddenPanels, useRowOrder, ssrSafeLayoutStorage } from "@/lib/terminalLayout";
 import { ASSETS, ASSET_BY_ID, DEFAULT_ASSET_ID } from "@/lib/assets";
 import { Watchlist } from "./Watchlist";
 import { OrderTicket } from "./OrderTicket";
-import { PositionsPanel } from "./PositionsPanel";
-import { TerminalChart } from "./TerminalChart";
+import { DataTablesPanel } from "./DataTablesPanel";
+import { TerminalOrderBook } from "./TerminalOrderBook";
+import { TerminalChart, type TerminalChartHandle } from "./TerminalChart";
+import { TerminalPanel } from "./TerminalPanel";
+import { PanelsMenu } from "./PanelsMenu";
+import { TerminalStatusBar } from "./TerminalStatusBar";
 import { MobileAssetCarousel } from "./MobileAssetCarousel";
 import { MobileTerminalBar, MOBILE_TERMINAL_CONTENT_SAFE_PADDING } from "./MobileTerminalBar";
 import { cn } from "@/lib/cn";
@@ -22,6 +29,27 @@ import {
   setMockTradeResult,
   type MockTradePending,
 } from "@/lib/mockTrade";
+
+const ROW1_PANEL_IDS = ["watchlist", "chart", "orderbook", "orderticket"];
+const PANEL_LABELS: Record<string, string> = {
+  watchlist: "Watchlist",
+  chart: "Chart",
+  orderbook: "Order Book",
+  orderticket: "Trade Form",
+  dataTables: "Data Tables",
+};
+
+function resetTerminalLayout() {
+  try {
+    localStorage.removeItem("react-resizable-panels:terminal-root");
+    localStorage.removeItem("react-resizable-panels:terminal-row1");
+    localStorage.removeItem("zoqo-terminal-hidden-panels-v1");
+    localStorage.removeItem("zoqo-terminal-row1-order-v1");
+  } catch {
+    /* ignore */
+  }
+  window.location.reload();
+}
 
 // Candles are maintained incrementally (candles.ts's upsertTick), not
 // rebucketed from a raw tick list — that was the old approach and it's what
@@ -76,7 +104,8 @@ function TerminalInner() {
   const searchParams = useSearchParams();
   const mockLessonParam = searchParams.get("mockLesson");
   const { cash } = useZoqo();
-  const { openPosition, markToMarket, checkStops } = useTerminal();
+  const { positions, orders, openPosition, markToMarket, checkStops, placeLimitOrder, checkLimitOrders } =
+    useTerminal();
   const [activeMock, setActiveMock] = React.useState<MockTradePending | null>(() =>
     resolvePendingMockTrade(mockLessonParam),
   );
@@ -137,21 +166,33 @@ function TerminalInner() {
   // React's "adjust state during render" pattern (comparing against state
   // tracking the last-seen price), not an effect, so there's no setState
   // call outside a handler/callback.
-  const [lastTick, setLastTick] = React.useState<{ assetId: string; price: number } | null>(null);
+  const [lastTick, setLastTick] = React.useState<{ assetId: string; price: number; at: number } | null>(null);
   if (activePrice != null && (!lastTick || lastTick.assetId !== assetId || lastTick.price !== activePrice)) {
-    setLastTick({ assetId, price: activePrice });
+    setLastTick({ assetId, price: activePrice, at: nowMs });
     setCandlesByAsset((prev) => {
       const existing = prev[assetId];
       const base = existing && existing.length > 0 ? existing : seedCandles1m(assetId, activePrice, nowMs, SEED_CANDLES);
       return { ...prev, [assetId]: upsertTick(base, nowMs, activePrice, MAX_CANDLES) };
     });
   }
+  // "Feed" age for the status bar — ms since the active asset's price last
+  // genuinely changed, not a fabricated network ping (ZOQO has no way to
+  // measure real round-trip latency to an upstream exchange).
+  const feedAgeMs = lastTick && lastTick.assetId === assetId ? Math.max(0, nowMs - lastTick.at) : null;
 
   const priceMap: Record<string, number | null> = {};
   for (const a of ASSETS) priceMap[a.id] = prices[a.id]?.price ?? null;
   const priceMapForMtm: Record<string, number> = {};
   for (const k in priceMap) if (priceMap[k]) priceMapForMtm[k] = priceMap[k]!;
   const { unrealizedPnl, equity } = markToMarket(priceMapForMtm);
+
+  const longsNotional = positions
+    .filter((p) => p.side === "long")
+    .reduce((s, p) => s + p.qty * (priceMap[p.assetId] ?? p.entryPrice), 0);
+  const shortsNotional = positions
+    .filter((p) => p.side === "short")
+    .reduce((s, p) => s + p.qty * (priceMap[p.assetId] ?? p.entryPrice), 0);
+  const ordersNotional = orders.reduce((s, o) => s + o.qty * o.limitPrice, 0);
 
   // Stop-loss/take-profit are stored on the position when a trade opens but
   // otherwise inert — nothing was ever checking a resting position's mark
@@ -165,17 +206,57 @@ function TerminalInner() {
       const label = t.reason === "stop-loss" ? "Stop-loss hit" : "Take-profit hit";
       showToast(`${label} — ${asset?.symbol ?? t.assetId} closed ${signedUsd(t.pnl)}`, t.pnl >= 0 ? "up" : "down");
     }
+    const filled = checkLimitOrders(priceMapForMtm);
+    for (const f of filled) {
+      const asset = ASSET_BY_ID[f.assetId];
+      const decimals = asset?.decimals ?? 2;
+      showToast(
+        `Limit order filled — ${f.side === "long" ? "bought" : "sold"} ${asset?.symbol ?? f.assetId} @ ${formatPrice(f.price, decimals)}`,
+        f.side === "long" ? "up" : "down",
+      );
+    }
     // priceMapForMtm is a fresh object every render by construction (same as
     // the pre-existing priceMap/markToMarket call above) — that's intentional
     // here, it's what drives checking on every price tick rather than once.
-  }, [priceMapForMtm, checkStops, showToast]);
+  }, [priceMapForMtm, checkStops, checkLimitOrders, showToast]);
 
-  const submitOrder = (side: "long" | "short", qty: number, sl?: number, tp?: number) => {
+  const submitOrder = (
+    side: "long" | "short",
+    qty: number,
+    opts?: {
+      stopLoss?: number;
+      takeProfit?: number;
+      orderType?: "market" | "limit";
+      limitPrice?: number;
+      reduceOnly?: boolean;
+    },
+  ) => {
+    const asset = ASSET_BY_ID[assetId];
+    const decimals = asset?.decimals ?? 2;
+
+    if (opts?.orderType === "limit") {
+      if (!opts.limitPrice) return false;
+      const ok = placeLimitOrder(assetId, side, qty, opts.limitPrice, {
+        stopLoss: opts.stopLoss,
+        takeProfit: opts.takeProfit,
+        reduceOnly: opts.reduceOnly,
+      });
+      if (ok) {
+        showToast(
+          `Limit order placed — ${side === "long" ? "buy" : "sell"} ${asset?.symbol ?? assetId} @ ${formatPrice(opts.limitPrice, decimals)}`,
+          side === "long" ? "up" : "down",
+        );
+      }
+      return ok;
+    }
+
     if (!activePrice) return false;
-    const ok = openPosition(assetId, side, qty, activePrice, { stopLoss: sl, takeProfit: tp });
+    const ok = openPosition(assetId, side, qty, activePrice, {
+      stopLoss: opts?.stopLoss,
+      takeProfit: opts?.takeProfit,
+      reduceOnly: opts?.reduceOnly,
+    });
     if (ok) {
-      const asset = ASSET_BY_ID[assetId];
-      const decimals = asset?.decimals ?? 2;
       showToast(
         `${side === "long" ? "Bought" : "Sold"} ${asset?.symbol ?? assetId} @ ${formatPrice(activePrice, decimals)}`,
         side === "long" ? "up" : "down",
@@ -183,8 +264,8 @@ function TerminalInner() {
 
       if (activeMock && activeMock.assetId === assetId && !mockGraded) {
         const sizePct = cash > 0 ? ((qty * activePrice) / cash) * 100 : 0;
-        const slPct = sl != null ? (Math.abs(activePrice - sl) / activePrice) * 100 : null;
-        const tpPct = tp != null ? (Math.abs(tp - activePrice) / activePrice) * 100 : null;
+        const slPct = opts?.stopLoss != null ? (Math.abs(activePrice - opts.stopLoss) / activePrice) * 100 : null;
+        const tpPct = opts?.takeProfit != null ? (Math.abs(opts.takeProfit - activePrice) / activePrice) * 100 : null;
         const inRange = (v: number, range: { min: number; max: number }) => v >= range.min && v <= range.max;
         setMockTradeResult({
           lessonId: activeMock.lessonId,
@@ -198,6 +279,65 @@ function TerminalInner() {
       }
     }
     return ok;
+  };
+
+  const isDesktop = useIsDesktop();
+  const { hidden, isHidden, hide, show } = useHiddenPanels();
+  const { order: row1Order, moveBefore } = useRowOrder(ROW1_PANEL_IDS);
+  const dragIdRef = React.useRef<string | null>(null);
+  const chartHandleRef = React.useRef<TerminalChartHandle>(null);
+  const rootLayout = useDefaultLayout({ id: "terminal-root", storage: ssrSafeLayoutStorage });
+  const row1Layout = useDefaultLayout({ id: "terminal-row1", storage: ssrSafeLayoutStorage });
+
+  const handleChartScreenshot = () => {
+    const canvas = chartHandleRef.current?.screenshot();
+    if (!canvas) return;
+    const asset = ASSET_BY_ID[assetId];
+    const link = document.createElement("a");
+    link.download = `zoqo-${asset?.id ?? assetId}-chart.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
+
+  const chartEl = (
+    <TerminalChart
+      ref={chartHandleRef}
+      assetId={assetId}
+      candles={candlesByAsset[assetId] ?? []}
+      source={prices[assetId]?.source}
+      connected={prices[assetId]?.connected}
+    />
+  );
+  const dataTablesEl = (
+    <DataTablesPanel prices={priceMap} cash={cash} equity={equity} unrealizedPnl={unrealizedPnl} />
+  );
+
+  const ROW1_CONFIG: Record<string, { defaultSize: number; minSize: number; node: React.ReactNode }> = {
+    watchlist: {
+      defaultSize: 15,
+      minSize: 10,
+      node: <Watchlist activeId={assetId} onSelect={setAssetId} prices={prices} />,
+    },
+    chart: { defaultSize: 45, minSize: 20, node: chartEl },
+    orderbook: {
+      defaultSize: 20,
+      minSize: 14,
+      node: <TerminalOrderBook assetId={assetId} price={activePrice} />,
+    },
+    orderticket: {
+      defaultSize: 20,
+      minSize: 16,
+      node: (
+        <OrderTicket
+          assetId={assetId}
+          price={activePrice}
+          cash={cash}
+          onSubmit={submitOrder}
+          source={prices[assetId]?.source}
+          connected={prices[assetId]?.connected}
+        />
+      ),
+    },
   };
 
   return (
@@ -254,6 +394,22 @@ function TerminalInner() {
             tone={unrealizedPnl >= 0 ? "up" : "down"}
           />
         </div>
+        {isDesktop && (
+          <div className="flex items-center gap-2">
+            <PanelsMenu
+              panels={[...ROW1_PANEL_IDS, "dataTables"].map((id) => ({ id, label: PANEL_LABELS[id] }))}
+              hidden={hidden}
+              onShow={show}
+            />
+            <button
+              type="button"
+              onClick={resetTerminalLayout}
+              className="rounded-chip border border-line px-2.5 py-1 text-[11.5px] font-semibold text-sub transition-colors hover:text-ink"
+            >
+              Reset Layout
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile: swipeable symbol strip above the chart (TERMINAL_SPEC.md §5 —
@@ -263,41 +419,81 @@ function TerminalInner() {
         <MobileAssetCarousel activeId={assetId} onSelect={setAssetId} prices={prices} />
       </div>
 
-      <div
-        className={cn(
-          "grid flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[220px_1fr_280px]",
-          MOBILE_TERMINAL_CONTENT_SAFE_PADDING,
-        )}
-      >
-        <div className="hidden border-r border-line lg:block">
-          <Watchlist activeId={assetId} onSelect={setAssetId} prices={prices} />
-        </div>
-
-        <div className="flex flex-col overflow-hidden">
-          <div className="min-h-[280px] flex-1">
-            <TerminalChart
-              assetId={assetId}
-              candles={candlesByAsset[assetId] ?? []}
-              source={prices[assetId]?.source}
-              connected={prices[assetId]?.connected}
-            />
+      {isDesktop ? (
+        <Group
+          id="terminal-root"
+          orientation="vertical"
+          defaultLayout={rootLayout.defaultLayout}
+          onLayoutChanged={rootLayout.onLayoutChanged}
+          className="flex-1 overflow-hidden"
+        >
+          <Panel id="row1" defaultSize={isHidden("dataTables") ? 100 : 70} minSize={30}>
+            <Group
+              id="terminal-row1"
+              orientation="horizontal"
+              defaultLayout={row1Layout.defaultLayout}
+              onLayoutChanged={row1Layout.onLayoutChanged}
+              className="h-full"
+            >
+              {row1Order
+                .filter((id) => !isHidden(id))
+                .map((id, i) => {
+                  const cfg = ROW1_CONFIG[id];
+                  return (
+                    <React.Fragment key={id}>
+                      {i > 0 && <Separator className="w-1 shrink-0 bg-line transition-colors hover:bg-purple-200" />}
+                      <TerminalPanel
+                        id={id}
+                        title={PANEL_LABELS[id]}
+                        defaultSize={cfg.defaultSize}
+                        minSize={cfg.minSize}
+                        onClose={() => hide(id)}
+                        onRefresh={id === "chart" ? () => chartHandleRef.current?.fitContent() : undefined}
+                        onScreenshot={id === "chart" ? handleChartScreenshot : undefined}
+                        draggable
+                        onDragStart={() => {
+                          dragIdRef.current = id;
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => {
+                          if (dragIdRef.current) moveBefore(dragIdRef.current, id);
+                          dragIdRef.current = null;
+                        }}
+                      >
+                        {cfg.node}
+                      </TerminalPanel>
+                    </React.Fragment>
+                  );
+                })}
+            </Group>
+          </Panel>
+          {!isHidden("dataTables") && (
+            <>
+              <Separator className="h-1 shrink-0 bg-line transition-colors hover:bg-purple-200" />
+              <TerminalPanel id="dataTables" title="Data Tables" defaultSize={30} minSize={15} onClose={() => hide("dataTables")}>
+                {dataTablesEl}
+              </TerminalPanel>
+            </>
+          )}
+        </Group>
+      ) : (
+        <div className={cn("grid flex-1 grid-cols-1 overflow-hidden", MOBILE_TERMINAL_CONTENT_SAFE_PADDING)}>
+          <div className="flex flex-col overflow-hidden">
+            <div className="min-h-[280px] flex-1">{chartEl}</div>
+            <div className="h-[260px] border-t border-line">{dataTablesEl}</div>
           </div>
-          <div className="h-[220px] border-t border-line">
-            <PositionsPanel prices={priceMap} />
-          </div>
         </div>
+      )}
 
-        <div className="hidden border-l border-line lg:block">
-          <OrderTicket
-            assetId={assetId}
-            price={activePrice}
-            cash={cash}
-            onSubmit={submitOrder}
-            source={prices[assetId]?.source}
-            connected={prices[assetId]?.connected}
-          />
-        </div>
-      </div>
+      <TerminalStatusBar
+        openCount={positions.length}
+        longsNotional={longsNotional}
+        shortsNotional={shortsNotional}
+        unrealizedPnl={unrealizedPnl}
+        ordersCount={orders.length}
+        ordersNotional={ordersNotional}
+        feedAgeMs={feedAgeMs}
+      />
 
       {/* Mobile: sticky Long/Short bar + slide-up order ticket sheet, docked
           at the screen's true bottom edge — generalized from

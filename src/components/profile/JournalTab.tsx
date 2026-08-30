@@ -3,9 +3,7 @@ import * as React from "react";
 import { Badge, Card, SegmentedControl } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { signedUsd } from "@/lib/format";
-import { useZoqo } from "@/lib/store";
-import { useTerminalHistory } from "@/lib/terminalStore";
-import { mergeJournal, journalTotals, type JournalSource } from "@/lib/tradeJournal";
+import { useTradeJournal, type JournalSource } from "@/lib/tradeJournal";
 
 const SCOPES = [
   { value: "all", label: "All" },
@@ -17,16 +15,8 @@ const SCOPES = [
  *  one wallet, one journal. Aggregate P&L up top, every closed trade from
  *  either product as its own row below, newest first. */
 export function JournalTab() {
-  const { tradeHistory } = useZoqo();
-  const terminalHistory = useTerminalHistory();
   const [scope, setScope] = React.useState<"all" | JournalSource>("all");
-
-  const journal = React.useMemo(() => mergeJournal(tradeHistory, terminalHistory), [tradeHistory, terminalHistory]);
-  const filtered = React.useMemo(
-    () => (scope === "all" ? journal : journal.filter((e) => e.source === scope)),
-    [journal, scope],
-  );
-  const totals = React.useMemo(() => journalTotals(filtered), [filtered]);
+  const { filtered, totals } = useTradeJournal(scope);
 
   return (
     <div className="flex flex-col gap-3">

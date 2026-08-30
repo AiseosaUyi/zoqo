@@ -24,6 +24,11 @@ export interface AssetDef {
   syntheticVolPerTick?: number;
   /** Binance/Coinbase product ids for the crypto WS feeds. */
   ws?: { binance: string; coinbase: string };
+  /** Price-grouping tick sizes offered by the terminal's simulated order
+   *  book (finest → coarsest), e.g. BTC's book can bucket into $1/$10/$100
+   *  bands. Explicit per asset rather than derived from `decimals` so the
+   *  options stay sane numbers a trader would actually pick from. */
+  bookTicks: number[];
 }
 
 export const ASSETS: AssetDef[] = [
@@ -34,6 +39,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "crypto",
     decimals: 2,
     ws: { binance: "btcusdt@trade", coinbase: "BTC-USD" },
+    bookTicks: [1, 10, 100, 1000],
   },
   {
     id: "ethusd",
@@ -42,6 +48,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "crypto",
     decimals: 2,
     ws: { binance: "ethusdt@trade", coinbase: "ETH-USD" },
+    bookTicks: [0.1, 1, 10, 100],
   },
   {
     id: "solusd",
@@ -50,6 +57,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "crypto",
     decimals: 2,
     ws: { binance: "solusdt@trade", coinbase: "SOL-USD" },
+    bookTicks: [0.01, 0.1, 1, 10],
   },
   {
     id: "xauusd",
@@ -58,6 +66,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "gold",
     decimals: 2,
     syntheticVolPerTick: 0.00006,
+    bookTicks: [0.1, 1, 10],
   },
   {
     id: "eurusd",
@@ -66,6 +75,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "forex",
     decimals: 5,
     syntheticVolPerTick: 0.00002,
+    bookTicks: [0.00001, 0.0001, 0.001],
   },
   {
     id: "gbpusd",
@@ -74,6 +84,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "forex",
     decimals: 5,
     syntheticVolPerTick: 0.00003,
+    bookTicks: [0.00001, 0.0001, 0.001],
   },
   {
     id: "usdjpy",
@@ -82,6 +93,7 @@ export const ASSETS: AssetDef[] = [
     assetClass: "forex",
     decimals: 3,
     syntheticVolPerTick: 0.00002,
+    bookTicks: [0.001, 0.01, 0.1],
   },
 ];
 

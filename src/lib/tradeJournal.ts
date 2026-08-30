@@ -1,10 +1,13 @@
+"use client";
 // Unifies the two closed-trade histories that share ZOQO's one wallet — the
 // BTC prediction market (HistoryEntry) and the multi-asset Terminal
 // (TerminalHistoryEntry) — into a single chronological journal. Nothing here
 // is fabricated; it's a pure merge/sort of the two real localStorage-backed
 // histories.
+import * as React from "react";
 import type { HistoryEntry } from "./types";
-import type { TerminalHistoryEntry } from "./terminalStore";
+import { useTerminalHistory, type TerminalHistoryEntry } from "./terminalStore";
+import { useZoqo } from "./store";
 import { ASSET_BY_ID } from "./assets";
 
 export type JournalSource = "predict" | "terminal";
@@ -79,4 +82,20 @@ export function journalTotals(entries: JournalEntry[]): JournalTotals {
   const pnl = entries.reduce((s, e) => s + e.pnl, 0);
   const wins = entries.reduce((s, e) => s + (e.won ? 1 : 0), 0);
   return { pnl, trades: entries.length, winRate: wins / entries.length };
+}
+
+/** Shared hook for anywhere the merged journal is needed (profile's Journal
+ *  tab, the terminal's Data Tables panel) — reads both real histories and
+ *  derives the merge/filter/totals once, so consumers don't each re-derive
+ *  the same two useMemos. */
+export function useTradeJournal(scope: "all" | JournalSource = "all") {
+  const { tradeHistory } = useZoqo();
+  const terminalHistory = useTerminalHistory();
+  const journal = React.useMemo(() => mergeJournal(tradeHistory, terminalHistory), [tradeHistory, terminalHistory]);
+  const filtered = React.useMemo(
+    () => (scope === "all" ? journal : journal.filter((e) => e.source === scope)),
+    [journal, scope],
+  );
+  const totals = React.useMemo(() => journalTotals(filtered), [filtered]);
+  return { journal, filtered, totals };
 }
