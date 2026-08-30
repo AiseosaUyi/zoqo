@@ -2,6 +2,7 @@
 import * as React from "react";
 import { SegmentedControl, Avatar, Badge } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { clamp } from "@/lib/math";
 import { ageShort, cents, hhmmss, usdCompact } from "@/lib/format";
 import { useZoqo } from "@/lib/store";
 import type { OrderBook, OrderBookLevel } from "@/lib/types";
@@ -24,20 +25,55 @@ export function MarketDepth({ marketId }: { marketId: string }) {
   );
 }
 
+/** Mirror an Up-outcome book level to the Down outcome: price inverts
+ *  (100 - p) and asks/bids swap sides, since Down is just the same market
+ *  seen from the other outcome — same underlying data, not fabricated. */
+function mirrorLevel(l: OrderBookLevel): OrderBookLevel {
+  return { ...l, price: 100 - l.price };
+}
+
 function OrderBookView({ marketId }: { marketId: string }) {
   const { snapshot } = useZoqo();
+  const [side, setSide] = React.useState<"Up" | "Down">("Down");
   const book: OrderBook | undefined = snapshot?.orderBookByMarket[marketId];
   if (!book) return <Empty />;
-  const asks = book.asks.slice(0, 6).reverse();
-  const bids = book.bids.slice(0, 6);
+
+  const down = side === "Down";
+  const asks = (down ? book.bids : book.asks).slice(0, 6).map((l) => (down ? mirrorLevel(l) : l)).reverse();
+  const bids = (down ? book.asks : book.bids).slice(0, 6).map((l) => (down ? mirrorLevel(l) : l));
+  const last = down ? 100 - book.last : book.last;
+  const upPct = clamp(book.last, 0, 100);
 
   return (
     <div className="text-[12px]">
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <span className="text-[10.5px] font-medium text-sub">Live depth</span>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="inline-flex items-center overflow-hidden rounded-full border border-line text-[11.5px] font-semibold">
+          <button
+            onClick={() => setSide("Up")}
+            className={cn(
+              "px-3 py-1 transition-colors",
+              side === "Up" ? "bg-green-500 text-white" : "text-sub hover:bg-muted",
+            )}
+          >
+            Up
+          </button>
+          <button
+            onClick={() => setSide("Down")}
+            className={cn(
+              "px-3 py-1 transition-colors",
+              side === "Down" ? "bg-red-500 text-white" : "text-sub hover:bg-muted",
+            )}
+          >
+            Down
+          </button>
+        </div>
         <Badge color="gray" size="sm">
           Simulated
         </Badge>
+      </div>
+      {/* thin sentiment bar — split at the real last-traded price */}
+      <div className="mb-2 flex h-1.5 overflow-hidden rounded-full bg-red-200">
+        <div className="h-full bg-green-500" style={{ width: `${upPct}%` }} />
       </div>
       <div className="mb-1 grid grid-cols-3 px-1 text-[10.5px] font-medium text-sub">
         <span>Price</span>
@@ -51,7 +87,7 @@ function OrderBookView({ marketId }: { marketId: string }) {
       </div>
       <div className="my-1.5 flex items-center justify-between rounded-[8px] border border-line bg-muted px-2 py-1.5">
         <span className="font-bebas text-[15px] tracking-wide text-ink nums">
-          {cents(book.last)}{" "}
+          {cents(last)}{" "}
           <span className="font-sans text-[10.5px] font-normal text-sub">({ageShort(book.lastAgeSec * 1000)})</span>
         </span>
         <span className="text-[11px] text-sub nums">Spread {cents(book.spread)}</span>

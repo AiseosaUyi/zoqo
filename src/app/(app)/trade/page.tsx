@@ -11,13 +11,14 @@ import { MarketDepth } from "@/components/trade/MarketDepth";
 import { MobileTradeBar } from "@/components/trade/MobileTradeBar";
 import { TradeStatusBar } from "@/components/trade/TradeStatusBar";
 import { useMeasure } from "@/components/trade/useMeasure";
-import { LiveDot, PanelFrame } from "@/components/ui";
+import { Bitcoin, RotateCcw } from "lucide-react";
+import { LiveDot, PanelFrame, Stat } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { DEFAULT_DURATION, MD_BY_KEY } from "@/lib/timeframe";
 import { PAD_LEFT, PAD_RIGHT, plotWidth, timeToX, type TimelineGeo } from "@/lib/chartGeo";
 import { clamp } from "@/lib/math";
 import { cn } from "@/lib/cn";
-import { btc, btc2 } from "@/lib/format";
+import { btc, btc2, usd } from "@/lib/format";
 import { DurationMenu } from "@/components/trade/DurationMenu";
 
 const TARGET_COL = 168; // aim for ~168px-wide market cards; fewer columns when narrow
@@ -155,16 +156,33 @@ export default function MultiMarketPage() {
                     />
                   </div>
                   <div className="pb-1 pt-3">
-                    <div className="mb-2 flex items-center gap-3 text-[12px]">
+                    <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2">
                       <DurationMenu value={duration} onChange={setDuration} />
-                      <span className="text-sub">
-                        Target{" "}
-                        <b className="text-ink nums">{focusMarket ? btc(focusMarket.strike) : "—"}</b>
-                      </span>
-                      <span className="text-sub">
-                        BTC <b className="text-purple-600 nums">{price ? btc2(price) : "—"}</b>
-                      </span>
-                      <LiveDot source={source} connected={connected} />
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange-100">
+                          <Bitcoin size={17} className="text-orange-600" />
+                        </span>
+                        <Stat label="Target Price" value={focusMarket ? btc(focusMarket.strike) : "—"} />
+                        <Stat
+                          label="End Price"
+                          value={price ? btc2(price) : "—"}
+                          valueColor="brand"
+                        />
+                        <Stat
+                          label="Gap"
+                          value={
+                            focusMarket && price ? usd(Math.abs(price - focusMarket.strike)) : "—"
+                          }
+                          valueColor={
+                            focusMarket && price
+                              ? price >= focusMarket.strike
+                                ? "up"
+                                : "down"
+                              : "ink"
+                          }
+                        />
+                      </div>
+                      <LiveDot source={source} connected={connected} className="ml-auto" />
                     </div>
                     <div className="relative">
                       <MarketChart
@@ -190,6 +208,16 @@ export default function MultiMarketPage() {
                           now={snapshot.now}
                           style={{ left: hoverX, top: 8 }}
                         />
+                      )}
+                      {pan > 0 && (
+                        <button
+                          data-no-pan
+                          onClick={() => setPanMs(0)}
+                          className="absolute left-1/2 top-1/2 z-20 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[12.5px] font-semibold text-ink shadow-e2 transition-colors hover:bg-muted"
+                        >
+                          <RotateCcw size={14} className="text-purple-600" />
+                          Go to live market
+                        </button>
                       )}
                     </div>
                     <p className="mt-1 text-[11px] text-sub">

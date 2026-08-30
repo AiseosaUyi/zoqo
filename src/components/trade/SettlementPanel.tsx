@@ -183,7 +183,7 @@ export function SettlementPanel({ marketId }: { marketId: string }) {
 /* ------------------------------------------------------------------ helpers */
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-[16px] border bg-surface p-5">{children}</div>;
+  return <div className="flex flex-col">{children}</div>;
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -197,7 +197,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function SettlementSkeleton() {
   return (
-    <div className="rounded-[16px] border bg-surface p-5">
+    <div>
       <Skeleton width={120} height={12} rounded={6} />
       <Skeleton width={170} height={42} rounded={10} className="mt-3" />
       <Skeleton width={140} height={14} rounded={6} className="mt-2.5" />
