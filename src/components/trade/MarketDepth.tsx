@@ -11,7 +11,7 @@ export function MarketDepth({ marketId }: { marketId: string }) {
   return (
     <div className="flex flex-col gap-3">
       <SegmentedControl
-        data={["Order Book", "Live Trades", "Top Holders"]}
+        data={["Order Book", "Live Trades", "Holders"]}
         value={tab}
         onChange={setTab}
         size="sm"
@@ -19,7 +19,7 @@ export function MarketDepth({ marketId }: { marketId: string }) {
       />
       {tab === "Order Book" && <OrderBookView marketId={marketId} />}
       {tab === "Live Trades" && <LiveTradesView marketId={marketId} />}
-      {tab === "Top Holders" && <TopHoldersView marketId={marketId} />}
+      {tab === "Holders" && <TopHoldersView marketId={marketId} />}
     </div>
   );
 }
@@ -43,12 +43,12 @@ function OrderBookView({ marketId }: { marketId: string }) {
           <DepthRow key={`a${i}`} l={l} max={book.maxCumulative} tone="down" />
         ))}
       </div>
-      <div className="my-1.5 flex items-center justify-between rounded-[8px] bg-muted px-2 py-1">
-        <span className="font-bold text-ink nums">
-          Last {cents(book.last)}{" "}
-          <span className="font-normal text-sub">({ageShort(book.lastAgeSec * 1000)})</span>
+      <div className="my-1.5 flex items-center justify-between rounded-[8px] border border-line bg-muted px-2 py-1.5">
+        <span className="font-bebas text-[15px] tracking-wide text-ink nums">
+          {cents(book.last)}{" "}
+          <span className="font-sans text-[10.5px] font-normal text-sub">({ageShort(book.lastAgeSec * 1000)})</span>
         </span>
-        <span className="text-sub nums">Spread {cents(book.spread)}</span>
+        <span className="text-[11px] text-sub nums">Spread {cents(book.spread)}</span>
       </div>
       <div className="flex flex-col gap-px">
         {bids.map((l, i) => (
@@ -62,12 +62,15 @@ function OrderBookView({ marketId }: { marketId: string }) {
 function DepthRow({ l, max, tone }: { l: OrderBookLevel; max: number; tone: "up" | "down" }) {
   const w = Math.min(100, (l.cumulative / max) * 100);
   return (
-    <div className="relative grid grid-cols-3 items-center px-1 py-1 nums">
+    <div className="relative grid grid-cols-3 items-center rounded-[6px] px-1.5 py-1 nums transition-colors hover:bg-muted">
       <div
-        className={cn("absolute inset-y-0 right-0", tone === "up" ? "bg-green-100" : "bg-red-100")}
+        className={cn(
+          "absolute inset-y-0 right-0 bg-gradient-to-l",
+          tone === "up" ? "from-green-100 to-green-100/0" : "from-red-100 to-red-100/0",
+        )}
         style={{ width: `${w}%` }}
       />
-      <span className={cn("relative font-semibold", tone === "up" ? "text-green-600" : "text-red-600")}>
+      <span className={cn("relative font-bold", tone === "up" ? "text-green-600" : "text-red-600")}>
         {cents(l.price)}
       </span>
       <span className="relative text-right text-ink">{l.shares.toLocaleString()}</span>

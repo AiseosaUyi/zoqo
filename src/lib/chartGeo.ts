@@ -11,8 +11,8 @@ export interface TimelineGeo {
   t1: number; // domain end (epoch ms) — right edge of the plot
 }
 
-/** Left/right gutters. With signals on, the chart reserves a left ¢-axis. */
-export const padLeftFor = (showSignals: boolean) => (showSignals ? 44 : 8);
+/** Left/right gutters shared by the column header and the price chart. */
+export const PAD_LEFT = 8;
 export const PAD_RIGHT = 64;
 
 /** Plot width = the band region between the two gutters. */

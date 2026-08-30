@@ -10,12 +10,13 @@ import { RightRail } from "@/components/trade/RightRail";
 import { MarketDepth } from "@/components/trade/MarketDepth";
 import { MobileTradeBar } from "@/components/trade/MobileTradeBar";
 import { useMeasure } from "@/components/trade/useMeasure";
-import { LiveDot, SegmentedControl, Switch } from "@/components/ui";
+import { LiveDot } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
-import { DEFAULT_DURATION, MARKET_DURATIONS, MD_BY_KEY } from "@/lib/timeframe";
-import { PAD_RIGHT, padLeftFor, plotWidth, timeToX, type TimelineGeo } from "@/lib/chartGeo";
+import { DEFAULT_DURATION, MD_BY_KEY } from "@/lib/timeframe";
+import { PAD_LEFT, PAD_RIGHT, plotWidth, timeToX, type TimelineGeo } from "@/lib/chartGeo";
 import { clamp } from "@/lib/math";
 import { btc, btc2 } from "@/lib/format";
+import { DurationMenu } from "@/components/trade/DurationMenu";
 
 const TARGET_COL = 168; // aim for ~168px-wide market cards; fewer columns when narrow
 
@@ -23,7 +24,6 @@ export default function MultiMarketPage() {
   const router = useRouter();
   const { ready, snapshot, priceSeries, positions, tradeHistory, btc: price, source, connected } = useZoqo();
   const [duration, setDuration] = React.useState(DEFAULT_DURATION); // which market
-  const [showSignals, setShowSignals] = React.useState(false);
   const [selected, setSelected] = React.useState<string | undefined>();
   const [side, setSide] = React.useState<"up" | "down">("up");
   const [panMs, setPanMs] = React.useState(0); // 0 = latest; >0 = panned into the past
@@ -41,13 +41,10 @@ export default function MultiMarketPage() {
   const tradingId = selected && markets.some((m) => m.id === selected) ? selected : live;
   const open = (id: string) => router.push(`/market/${encodeURIComponent(id)}`);
   const focusMarket = markets.find((m) => m.id === tradingId);
-  const focusProb = (tradingId && snapshot?.probByMarket[tradingId]) || [];
-  const focusVolume = (tradingId && snapshot?.volumeByMarket[tradingId]) || [];
-  const focusSpikes = (tradingId && snapshot?.spikesByMarket[tradingId]) || [];
 
   // ---- timeline geometry: header + chart share one time→x mapping ----
   const { ref: tlRef, width: tlWidth } = useMeasure<HTMLDivElement>();
-  const padL = padLeftFor(showSignals);
+  const padL = PAD_LEFT;
   // how many markets fit at a readable width (fewer on narrow screens)
   const view = tlWidth > 0 ? clamp(Math.round((tlWidth - padL - PAD_RIGHT) / TARGET_COL), 3, 6) : 6;
   const span = view * durMs; // visible time span
@@ -115,23 +112,13 @@ export default function MultiMarketPage() {
 
   return (
     <div className="min-h-screen">
-      <TopNav duration={duration} onDuration={setDuration} />
+      <TopNav />
       <div className="mx-auto flex max-w-[1440px] flex-col gap-0 px-3 py-3 lg:flex-row">
         <main className="flex min-w-0 flex-1 flex-col pb-20 lg:pb-0 lg:pr-4">
           {!ready || !snapshot ? (
             <ChartSkeleton />
           ) : (
             <>
-              {/* mobile-only market-duration selector (hidden in the nav below lg) */}
-              <div className="mb-2 lg:hidden">
-                <SegmentedControl
-                  data={MARKET_DURATIONS.map((d) => ({ value: d.key, label: d.label }))}
-                  value={duration}
-                  onChange={setDuration}
-                  size="sm"
-                  fullWidth
-                />
-              </div>
               <div
                 ref={tlRef}
                 onPointerDown={onPointerDown}
@@ -165,42 +152,29 @@ export default function MultiMarketPage() {
                   />
                 </div>
                 <div className="pb-1 pt-3">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className="ml-1 flex items-center gap-3 text-[12px]">
-                      <span className="text-sub">
-                        Target{" "}
-                        <b className="text-ink nums">{focusMarket ? btc(focusMarket.strike) : "—"}</b>
-                      </span>
-                      <span className="text-sub">
-                        BTC <b className="text-purple-600 nums">{price ? btc2(price) : "—"}</b>
-                      </span>
-                      <LiveDot source={source} connected={connected} />
+                  <div className="mb-2 flex items-center gap-3 text-[12px]">
+                    <DurationMenu value={duration} onChange={setDuration} />
+                    <span className="text-sub">
+                      Target{" "}
+                      <b className="text-ink nums">{focusMarket ? btc(focusMarket.strike) : "—"}</b>
                     </span>
-                    <span data-no-pan>
-                      <Switch
-                        checked={showSignals}
-                        onChange={setShowSignals}
-                        label={<span className="font-medium">Signals</span>}
-                      />
+                    <span className="text-sub">
+                      BTC <b className="text-purple-600 nums">{price ? btc2(price) : "—"}</b>
                     </span>
+                    <LiveDot source={source} connected={connected} />
                   </div>
                   <div className="relative">
                     <MarketChart
                       mode="multi"
                       showColumns
-                      showSignals={showSignals}
                       viewStart={t0}
                       viewEnd={t1}
                       now={snapshot.now}
-                      probSide={side}
                       height={340}
                       priceSeries={priceSeries}
                       markets={markets}
                       liveMarketId={live}
                       focusMarketId={tradingId}
-                      prob={focusProb}
-                      volume={focusVolume}
-                      spikes={focusSpikes}
                       onColumnActivate={open}
                     />
                     {hoverMarket && geo.width > 0 && (

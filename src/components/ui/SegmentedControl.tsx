@@ -64,7 +64,7 @@ export function SegmentedControl({
     <div
       role="tablist"
       className={cn(
-        "inline-flex items-center rounded-[10px] bg-muted",
+        "inline-flex items-center overflow-hidden rounded-[10px] bg-muted",
         SIZES[size],
         fullWidth && "flex w-full",
         className,
@@ -84,7 +84,7 @@ export function SegmentedControl({
             onKeyDown={(e) => onKeyDown(e, idx)}
             onClick={() => onChange(it.value)}
             className={cn(
-              "inline-flex flex-1 items-center justify-center gap-1.5 rounded-[8px] px-3 font-medium whitespace-nowrap transition-all duration-150",
+              "inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 truncate rounded-[8px] px-3 font-medium transition-all duration-150",
               "h-full",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-1",
               active ? ACTIVE[color] : "text-sub hover:text-ink",

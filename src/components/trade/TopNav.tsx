@@ -1,13 +1,11 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Gift } from "lucide-react";
-import { SegmentedControl } from "@/components/ui";
+import { ArrowLeft, Gift } from "lucide-react";
 import { useZoqo } from "@/lib/store";
 import { useProfile } from "@/lib/profile";
 import { useAutomations } from "@/lib/automations";
 import { useDepositCooldown } from "@/lib/useDepositCooldown";
-import { MARKET_DURATIONS } from "@/lib/timeframe";
 import { DepositModal } from "./DepositModal";
 import { ProfileMenu } from "./ProfileMenu";
 import {
@@ -23,12 +21,18 @@ import {
 
 export interface TopNavProps {
   showBack?: boolean;
-  duration: string; // selected market duration (5m/10m/15m/30m/1h)
-  onDuration: (d: string) => void;
 }
 
-export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
-  const { portfolioValue, cash, btc, nextDepositAt, settlements } = useZoqo();
+/** Same flat flex layout as AutomationsHeader/ProfileTopNav/ReferralsTopNav
+ *  — this used to be the one header still on a 3-column grid (to center a
+ *  wider nav + BTC badge + duration tabs), which was the actual source of
+ *  "some links live in a middle column, some on the right" drift between
+ *  headers. Now that /trade owns its own duration control and the BTC badge
+ *  is gone (single-asset — a picker for one asset was never real UI), the
+ *  nav is short enough to just sit left of the account cluster like
+ *  everywhere else. */
+export function TopNav({ showBack }: TopNavProps) {
+  const { portfolioValue, cash, nextDepositAt, settlements } = useZoqo();
   const { ready, signedIn, openAuth } = useProfile();
   const { automations } = useAutomations();
   const activeAutomations = automations.filter((a) => a.enabled).length;
@@ -38,58 +42,21 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
   const unread = settlements.length;
 
   return (
-    <header className="sticky top-0 z-30 grid h-[60px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:gap-3 sm:px-4">
-      {/* Left: nav trigger/logo/market context controls. min-w-0 so this
-          column can shrink instead of forcing the grid wider than the
-          viewport when everything (BTC selector + duration switcher) is
-          visible at once. */}
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <HeaderLogo />
+    <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b bg-surface/90 px-3 backdrop-blur-md sm:px-4">
+      <HeaderLogo />
 
-        {showBack ? (
-          <Link
-            href="/trade"
-            className="ml-2 inline-flex items-center gap-1 rounded-[8px] px-2 py-1 text-[13px] font-medium text-sub hover:bg-gray-100 hover:text-ink"
-          >
-            <ArrowLeft size={15} /> Back
-          </Link>
-        ) : (
-          // Hidden below lg: non-functional today (no asset switcher behind
-          // it, /trade is BTC-only) and there's no room for it once the
-          // hamburger + logo + auth buttons all need to fit one 390px-wide
-          // row too — confirmed via a live mobile QA pass, it was
-          // overlapping the auth buttons on the right. The mobile-only
-          // duration row right below this header already carries the
-          // market context this badge duplicated.
-          <button className="ml-2 hidden items-center gap-1.5 rounded-[8px] bg-muted px-2.5 py-1.5 text-[13px] font-semibold lg:inline-flex">
-            <span className="grid h-4 w-4 place-items-center rounded-full bg-orange-500 text-[9px] font-black text-white">
-              ₿
-            </span>
-            BTC
-            <ChevronDown size={14} className="text-sub" />
-          </button>
-        )}
+      {showBack && (
+        <Link
+          href="/trade"
+          className="ml-1 inline-flex items-center gap-1 rounded-[8px] px-2 py-1 text-[13px] font-medium text-sub hover:bg-gray-100 hover:text-ink"
+        >
+          <ArrowLeft size={15} /> Back
+        </Link>
+      )}
 
-        <SegmentedControl
-          data={MARKET_DURATIONS.map((d) => ({ value: d.key, label: d.label }))}
-          value={duration}
-          onChange={onDuration}
-          size="sm"
-          className="ml-1 hidden lg:inline-flex"
-        />
-      </div>
+      <HeaderNav activeAutomations={activeAutomations} visibleFrom="lg" className="ml-2" />
 
-      {/* Center: Market/Terminal/Learn/Leaderboard/Automations. A real grid
-          track (not absolute positioning) — the left/right columns are each
-          `1fr`, so this always lands in the true center of the header AND
-          can never overlap either side, unlike the old absolute-positioned
-          version which did once the nav grew from 2 links to 5. Active link
-          is derived from the route inside HeaderNav itself. */}
-      <HeaderNav activeAutomations={activeAutomations} visibleFrom="lg" />
-
-      {/* Right: account cluster. min-w-0 + justify-end so it can shrink from
-          its own edge inward rather than colliding with the center nav. */}
-      <div className="flex min-w-0 items-center justify-end gap-3">
+      <div className="ml-auto flex min-w-0 items-center gap-3">
         {ready && (
           // Hidden below lg: the hamburger drawer (HeaderMobileNav, default
           // showPrimaryNav) has its own "Rewards & referrals" entry, and
@@ -123,8 +90,6 @@ export function TopNav({ showBack, duration, onDuration }: TopNavProps) {
 
         <HeaderMobileNavTrigger onClick={() => setNavOpen(true)} breakpoint="lg" />
       </div>
-      {/* live BTC ticker tucked for accessibility */}
-      <span className="sr-only">BTC {btc ?? "—"}</span>
       <HeaderMobileNav
         open={navOpen}
         onClose={() => setNavOpen(false)}

@@ -278,20 +278,20 @@ export function TradeCard({
           />
 
           {/* amount */}
-          <div className="rounded-[12px] border bg-surface px-3 py-2">
+          <div className="rounded-[12px] border bg-surface px-3 py-2 transition-colors focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-sub">Amount</span>
               <span className="text-[11px] text-sub nums">Bal {usd(cash)}</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-[26px] font-bold text-sub">{unit === "USD" ? "$" : ""}</span>
+              <span className="font-bebas text-[28px] text-sub">{unit === "USD" ? "$" : ""}</span>
               <input
                 type="number"
                 min={0}
                 value={amount || ""}
                 placeholder="0"
                 onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))}
-                className="w-full bg-transparent text-[30px] font-bold text-ink outline-none placeholder:text-gray-300 nums"
+                className="w-full bg-transparent font-bebas text-[32px] tracking-wide text-ink outline-none placeholder:text-gray-300 nums"
               />
             </div>
           </div>
@@ -302,7 +302,7 @@ export function TradeCard({
               <button
                 key={v}
                 onClick={() => setAmount((a) => a + v)}
-                className="rounded-[8px] border bg-surface py-1.5 text-[12px] font-semibold text-ink hover:bg-gray-50 nums"
+                className="rounded-[8px] border bg-surface py-1.5 text-[12px] font-semibold text-ink transition-colors hover:border-purple-200 hover:bg-purple-50 nums"
               >
                 +{unit === "USD" ? "$" : ""}
                 {v}
@@ -312,7 +312,7 @@ export function TradeCard({
               onClick={() =>
                 setAmount(unit === "USD" ? Math.floor(cash) : Math.floor(cash / (price / 100)))
               }
-              className="rounded-[8px] border border-purple-200 bg-purple-50 py-1.5 text-[12px] font-bold text-purple-700 hover:bg-purple-100"
+              className="rounded-[8px] border border-purple-200 bg-purple-50 py-1.5 text-[12px] font-bold text-purple-700 transition-colors hover:bg-purple-100"
             >
               Max
             </button>

@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { Bell, Bot, Gift, GraduationCap, Lock, Menu, Palette, Plus, Settings as SettingsIcon, Target, Terminal as TerminalIcon, Trophy, User, X } from "lucide-react";
+import { Bell, Bot, Gift, Lock, Menu, Palette, Plus, Settings as SettingsIcon, Target, Terminal as TerminalIcon, User, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
 
@@ -18,9 +18,7 @@ import { usd } from "@/lib/format";
 
 export const NAV_ITEMS = [
   { key: "market", href: "/trade", label: "Predict", icon: Target },
-  { key: "terminal", href: "/terminal", label: "Terminal", icon: TerminalIcon },
-  { key: "learn", href: "/learn", label: "Learn", icon: GraduationCap },
-  { key: "leaderboard", href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { key: "terminal", href: "/terminal", label: "Trade", icon: TerminalIcon },
   { key: "automations", href: "/automations", label: "Automations", icon: Bot },
 ] as const;
 

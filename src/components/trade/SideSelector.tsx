@@ -60,20 +60,27 @@ function SideButton({
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-start gap-0.5 rounded-[12px] border-2 px-3 py-2.5 transition-all",
+        "flex flex-col items-start gap-0.5 rounded-[12px] border-2 px-3 py-2.5 transition-all duration-150",
         active
           ? up
-            ? "border-green-500 bg-green-500 text-white"
-            : "border-red-500 bg-red-500 text-white"
+            ? "border-green-500 bg-gradient-to-b from-green-500 to-green-600 text-white shadow-e2"
+            : "border-red-500 bg-gradient-to-b from-red-500 to-red-600 text-white shadow-e2"
           : up
-            ? "border-line bg-surface text-green-600 hover:border-green-300"
-            : "border-line bg-surface text-red-600 hover:border-red-300",
+            ? "border-line bg-surface text-green-600 hover:border-green-300 hover:bg-green-50/50"
+            : "border-line bg-surface text-red-600 hover:border-red-300 hover:bg-red-50/50",
       )}
     >
-      <span className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-wide">
+      <span
+        className={cn(
+          "flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide",
+          active ? "text-white/85" : "opacity-80",
+        )}
+      >
         {icon} {label}
       </span>
-      {price != null && <span className="text-[20px] font-black leading-none nums">{cents(price)}</span>}
+      {price != null && (
+        <span className="font-bebas text-[26px] leading-none tracking-wide nums">{cents(price)}</span>
+      )}
     </button>
   );
 }

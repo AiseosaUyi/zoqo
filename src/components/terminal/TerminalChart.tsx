@@ -209,7 +209,7 @@ export function TerminalChart({
           size="xs"
         />
       </div>
-      <div className="relative flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <DrawingToolbar
           activeTool={activeTool}
           onSelectTool={setActiveTool}

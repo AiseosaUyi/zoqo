@@ -2,7 +2,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Check, ChevronDown, Crown, Flame, Gift, Palette, Settings, Sparkles, Trophy, User, X } from "lucide-react";
+import { Check, Crown, Flame, GraduationCap, Gift, Palette, Settings, Sparkles, Trophy, User, X } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { usd, usdCompact, pct } from "@/lib/format";
@@ -10,7 +10,7 @@ import { useProfile } from "@/lib/profile";
 import { useZoqo } from "@/lib/store";
 
 export function ProfileMenu() {
-  const { ready, handle, avatarSeed, level, streak, canClaimToday, dailyBonus, claimDaily, myRank, justLeveledTo } =
+  const { ready, handle, avatarSeed, canClaimToday, dailyBonus, claimDaily, myRank, justLeveledTo } =
     useProfile();
   const [open, setOpen] = React.useState(false);
   const [board, setBoard] = React.useState(false);
@@ -30,19 +30,10 @@ export function ProfileMenu() {
     <div ref={rootRef} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-full border bg-surface py-1 pl-1 pr-2 hover:bg-gray-50"
+        aria-label={`${handle} — account menu`}
+        className="block rounded-full transition-shadow hover:ring-2 hover:ring-purple-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-1"
       >
         <Avatar name={avatarSeed} size="md" />
-        <div className="hidden flex-col items-start leading-none sm:flex">
-          <span className="text-[12px] font-bold text-ink">{handle}</span>
-          <span className="text-[10px] text-sub">Lv {level}</span>
-        </div>
-        {streak > 0 && (
-          <span className="hidden items-center gap-0.5 rounded-full bg-orange-100 px-1.5 py-0.5 text-[11px] font-bold text-orange-700 sm:inline-flex nums">
-            <Flame size={11} /> {streak}
-          </span>
-        )}
-        <ChevronDown size={14} className="text-sub" />
       </button>
 
       {open && (
@@ -190,6 +181,13 @@ function ProfilePopover({ onClose, onLeaderboard }: { onClose: () => void; onLea
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border py-2 text-[12px] font-semibold hover:bg-gray-50"
         >
           <User size={14} className="text-sub" /> View Profile
+        </Link>
+        <Link
+          href="/learn"
+          onClick={onClose}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border py-2 text-[12px] font-semibold hover:bg-gray-50"
+        >
+          <GraduationCap size={14} className="text-sub" /> Zoqo Academy
         </Link>
         <Link
           href="/settings"

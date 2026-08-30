@@ -60,7 +60,7 @@ export function DrawingToolbar({
   onClearAll: () => void;
 }) {
   return (
-    <div className="hidden w-9 shrink-0 flex-col items-center gap-1 border-r border-line bg-surface py-2 lg:flex">
+    <div className="hidden w-9 min-h-0 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-line bg-surface py-2 scroll-thin lg:flex">
       <ToolButton
         label="Cursor (Esc)"
         active={activeTool === null}

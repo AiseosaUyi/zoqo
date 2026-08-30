@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui";
 import { useZoqo } from "@/lib/store";
 import { useChartSeries } from "@/lib/useBtc";
 import { ChartToolbar } from "@/components/trade/ChartToolbar";
-import { MARKET_DURATIONS, MD_BY_KEY, DEFAULT_DURATION } from "@/lib/timeframe";
 import { btc2, countdown, hhmm, pct, usdCompact } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -29,22 +28,10 @@ export default function SingleMarketPage() {
   const live = snapshot?.markets.find(
     (m) => m.durationMs === market?.durationMs && m.status === "live",
   )?.id;
-  const durKey =
-    MARKET_DURATIONS.find((d) => d.ms === market?.durationMs)?.key ?? DEFAULT_DURATION;
-  const onDuration = (key: string) => {
-    const liveId = snapshot?.markets.find(
-      (m) => m.durationMs === MD_BY_KEY[key] && m.status === "live",
-    )?.id;
-    if (liveId) router.push(`/market/${encodeURIComponent(liveId)}`);
-  };
-  // this market's own window signals (YES odds from 50¢ → close)
-  const focusProb = snapshot?.probByMarket[id] ?? [];
-  const focusVolume = snapshot?.volumeByMarket[id] ?? [];
-  const focusSpikes = snapshot?.spikesByMarket[id] ?? [];
 
   return (
     <div className="min-h-screen">
-      <TopNav showBack duration={durKey} onDuration={onDuration} />
+      <TopNav showBack />
       <div className="mx-auto flex max-w-[1440px] gap-0 px-3 py-3">
         <main className="flex min-w-0 flex-1 flex-col pr-0 xl:pr-4">
           {!ready || !snapshot || !market ? (
@@ -115,17 +102,12 @@ export default function SingleMarketPage() {
                   <MarketChart
                     mode="single"
                     showColumns={false}
-                    showSignals
                     rangeMs={rangeMs}
-                    probSide={side}
                     height={380}
                     priceSeries={chartSeries}
                     markets={snapshot.markets}
                     liveMarketId={live}
                     focusMarketId={id}
-                    prob={focusProb}
-                    volume={focusVolume}
-                    spikes={focusSpikes}
                   />
                   </div>
                 </div>
