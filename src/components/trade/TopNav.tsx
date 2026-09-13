@@ -6,6 +6,7 @@ import { useZoqo } from "@/lib/store";
 import { useProfile } from "@/lib/profile";
 import { useAutomations } from "@/lib/automations";
 import { useDepositCooldown } from "@/lib/useDepositCooldown";
+import { useAlphaUnread } from "@/lib/alpha/useAlphaUnread";
 import { DepositModal } from "./DepositModal";
 import { ProfileMenu } from "./ProfileMenu";
 import {
@@ -36,6 +37,7 @@ export function TopNav({ showBack }: TopNavProps) {
   const { ready, signedIn, openAuth } = useProfile();
   const { automations } = useAutomations();
   const activeAutomations = automations.filter((a) => a.enabled).length;
+  const alphaUnread = useAlphaUnread(!!signedIn);
   const [depositOpen, setDepositOpen] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const { locked, remainingH } = useDepositCooldown(nextDepositAt);
@@ -54,7 +56,7 @@ export function TopNav({ showBack }: TopNavProps) {
         </Link>
       )}
 
-      <HeaderNav activeAutomations={activeAutomations} visibleFrom="lg" className="ml-2" />
+      <HeaderNav activeAutomations={activeAutomations} alphaUnread={alphaUnread} visibleFrom="lg" className="ml-2" />
 
       <div className="ml-auto flex min-w-0 items-center gap-3">
         {ready && (
@@ -94,6 +96,7 @@ export function TopNav({ showBack }: TopNavProps) {
         open={navOpen}
         onClose={() => setNavOpen(false)}
         activeAutomations={activeAutomations}
+        alphaUnread={alphaUnread}
         signedIn={!!signedIn}
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}

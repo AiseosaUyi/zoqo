@@ -20,9 +20,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "limit must be a positive number" }, { status: 400 });
   }
 
+  const kindsParam = searchParams.get("kinds");
   const events = await service.listEvents(supabase, user.id, {
     since: searchParams.get("since") ?? undefined,
     limit,
+    kinds: kindsParam ? kindsParam.split(",").map((k) => k.trim()).filter(Boolean) : undefined,
+    unacknowledgedOnly: searchParams.get("unacknowledged") === "1",
   });
   return NextResponse.json(events);
 }

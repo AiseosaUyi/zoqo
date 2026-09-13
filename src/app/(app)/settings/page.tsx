@@ -18,10 +18,10 @@ interface ApiKeyRow {
 }
 
 const ALPHA_SCOPES = [
-  { value: "alpha:read", label: "Alpha: read" },
-  { value: "alpha:run", label: "Alpha: run" },
-  { value: "alpha:manage", label: "Alpha: manage" },
-  { value: "alpha:credentials", label: "Alpha: credentials" },
+  { value: "alpha:read", label: "Alpha: read", hint: "See strategies, venues, balances, decisions, and the leaderboard." },
+  { value: "alpha:run", label: "Alpha: run", hint: "Trigger a strategy run, place or cancel an order, force a settlement pass." },
+  { value: "alpha:manage", label: "Alpha: manage", hint: "Create/edit strategies and venues, flip the kill switch, apply proposals." },
+  { value: "alpha:credentials", label: "Alpha: credentials", hint: "Set or rotate a venue's API key — never returns the secret back." },
 ] as const;
 
 /** Generate/revoke API keys for the Zoqo MCP server (TERMINAL_SPEC.md §7,
@@ -96,7 +96,13 @@ export default function SettingsPage() {
 
       <div className="mx-auto max-w-[720px] px-4 py-8 sm:px-6">
         <h1 className="font-display text-[26px] font-black text-ink">Settings</h1>
-        <p className="mt-1 text-[13.5px] text-sub">API keys for connecting agents to your Zoqo account.</p>
+        <p className="mt-1 text-[13.5px] text-sub">
+          API keys for connecting agents to your Zoqo account, including{" "}
+          <a href="/alpha" className="font-semibold text-purple-600 hover:underline">
+            Alpha
+          </a>
+          &apos;s strategies, venues, and kill switch.
+        </p>
 
         {!ready && <div className="mt-6 h-40 animate-pulse rounded-[16px] bg-gray-100" />}
 
@@ -140,21 +146,23 @@ export default function SettingsPage() {
                   Lets an agent control strategies, venues, and the kill switch via MCP. Keep{" "}
                   <span className="font-semibold">alpha:credentials</span> keys single-purpose.
                 </p>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                <div className="mt-2 flex flex-col gap-2">
                   {ALPHA_SCOPES.map((s) => (
-                    <Checkbox
-                      key={s.value}
-                      checked={alphaScopes.has(s.value)}
-                      onChange={(checked) => {
-                        setAlphaScopes((prev) => {
-                          const next = new Set(prev);
-                          if (checked) next.add(s.value);
-                          else next.delete(s.value);
-                          return next;
-                        });
-                      }}
-                      label={s.label}
-                    />
+                    <div key={s.value}>
+                      <Checkbox
+                        checked={alphaScopes.has(s.value)}
+                        onChange={(checked) => {
+                          setAlphaScopes((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(s.value);
+                            else next.delete(s.value);
+                            return next;
+                          });
+                        }}
+                        label={s.label}
+                      />
+                      <p className="ml-6 text-[11px] text-sub">{s.hint}</p>
+                    </div>
                   ))}
                 </div>
               </div>

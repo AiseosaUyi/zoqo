@@ -6,6 +6,7 @@ import { useZoqo } from "@/lib/store";
 import { useProfile } from "@/lib/profile";
 import { useAutomations } from "@/lib/automations";
 import { useDepositCooldown } from "@/lib/useDepositCooldown";
+import { useAlphaUnread } from "@/lib/alpha/useAlphaUnread";
 import { DepositModal } from "@/components/trade/DepositModal";
 import { ProfileMenu } from "@/components/trade/ProfileMenu";
 import {
@@ -23,14 +24,14 @@ import {
  *  every other page's header composes from HeaderChrome.tsx, matching
  *  AutomationsHeader's shape exactly since /alpha sits alongside
  *  /automations conceptually (both are "set it and forget it" trading
- *  surfaces). Not in NAV_ITEMS (Phase 1 doesn't add Alpha to primary nav —
- *  out of this phase's scope), so it's only reachable by direct URL, same
- *  as /system. */
+ *  surfaces). In `NAV_ITEMS` (added phase-7-finish §1) so it's reachable
+ *  from every header, not just direct URL. */
 export function AlphaHeader() {
   const { portfolioValue, cash, nextDepositAt, settlements } = useZoqo();
   const { ready, signedIn, openAuth } = useProfile();
   const { automations } = useAutomations();
   const activeAutomations = automations.filter((a) => a.enabled).length;
+  const alphaUnread = useAlphaUnread(!!signedIn);
   const [depositOpen, setDepositOpen] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const { locked, remainingH } = useDepositCooldown(nextDepositAt);
@@ -41,7 +42,7 @@ export function AlphaHeader() {
       <div className="flex h-[60px] items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <HeaderLogo />
 
-        <HeaderNav activeAutomations={activeAutomations} className="ml-2" />
+        <HeaderNav activeAutomations={activeAutomations} alphaUnread={alphaUnread} className="ml-2" />
 
         <div className="ml-auto flex items-center gap-3">
           {ready && signedIn && (
@@ -68,6 +69,7 @@ export function AlphaHeader() {
         open={navOpen}
         onClose={() => setNavOpen(false)}
         activeAutomations={activeAutomations}
+        alphaUnread={alphaUnread}
         signedIn={!!signedIn}
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}

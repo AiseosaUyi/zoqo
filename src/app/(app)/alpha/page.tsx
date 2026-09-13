@@ -5,6 +5,7 @@ import { useProfile } from "@/lib/profile";
 import { BACKEND_ENABLED } from "@/lib/getDataStore";
 import { AlphaHeader, AlphaBackRow } from "@/components/alpha/AlphaHeader";
 import { AlphaEmptyState } from "@/components/alpha/AlphaEmptyState";
+import { AlphaGettingStarted } from "@/components/alpha/AlphaGettingStarted";
 import { KillSwitchCard } from "@/components/alpha/KillSwitchCard";
 import { VenuesSection } from "@/components/alpha/VenuesSection";
 import { StrategiesSection } from "@/components/alpha/StrategiesSection";
@@ -25,6 +26,7 @@ import type {
   AlphaProposalDto,
   AlphaSlipSelection,
   AlphaSlipResultDto,
+  AlphaHealthDto,
 } from "@/components/alpha/types";
 
 /** ZOQO Alpha's dashboard (docs/alpha/03-architecture.md §9, scoped down to
@@ -61,13 +63,14 @@ export default function AlphaPage() {
   const [proposals, setProposals] = React.useState<AlphaProposalDto[]>([]);
   const [fixtures, setFixtures] = React.useState<AlphaFixtureDto[]>([]);
   const [credentials, setCredentials] = React.useState<AlphaCredentialDto[]>([]);
+  const [health, setHealth] = React.useState<AlphaHealthDto | null>(null);
   const [slipResult, setSlipResult] = React.useState<AlphaSlipResultDto | null>(null);
   const [slipLoading, setSlipLoading] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
 
   const loadAll = React.useCallback(async () => {
-    const [s, v, st, tpl, dec, ev, prop, fx, cred] = await Promise.all([
+    const [s, v, st, tpl, dec, ev, prop, fx, cred, hp] = await Promise.all([
       fetchJson<AlphaSettingsDto>("/api/alpha/settings"),
       fetchJson<AlphaVenueDto[]>("/api/alpha/venues"),
       fetchJson<AlphaStrategyDto[]>("/api/alpha/strategies"),
@@ -77,6 +80,7 @@ export default function AlphaPage() {
       fetchJson<AlphaProposalDto[]>("/api/alpha/proposals"),
       fetchJson<AlphaFixtureDto[]>("/api/alpha/fixtures?limit=20"),
       fetchJson<AlphaCredentialDto[]>("/api/alpha/credentials"),
+      fetchJson<AlphaHealthDto>("/api/alpha/health"),
     ]);
     if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || prop == null || fx == null || cred == null) {
       setLoadFailed(true);
@@ -92,6 +96,7 @@ export default function AlphaPage() {
     setProposals(prop);
     setFixtures(fx);
     setCredentials(cred);
+    setHealth(hp); // best-effort — a null health fetch just hides the needs-setup panel, not a page-level failure
     setLoadFailed(false);
     setLoaded(true);
   }, []);
@@ -236,6 +241,7 @@ export default function AlphaPage() {
 
         {loaded && !loadFailed && settings && (
           <div className="mt-6 flex flex-col gap-8">
+            <AlphaGettingStarted venues={venues} strategies={strategies} credentials={health?.credentials} />
             <KillSwitchCard settings={settings} onToggle={setKillSwitch} />
             <VenuesSection venues={venues} onSave={saveVenue} />
             <CredentialsSection credentials={credentials} />

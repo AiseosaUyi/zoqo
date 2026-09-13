@@ -4,6 +4,7 @@ import { useZoqo } from "@/lib/store";
 import { useProfile } from "@/lib/profile";
 import { useAutomations } from "@/lib/automations";
 import { useDepositCooldown } from "@/lib/useDepositCooldown";
+import { useAlphaUnread } from "@/lib/alpha/useAlphaUnread";
 import { DepositModal } from "./DepositModal";
 import { ProfileMenu } from "./ProfileMenu";
 import {
@@ -29,6 +30,7 @@ export function AppHeader() {
   const { ready, signedIn, openAuth } = useProfile();
   const { automations } = useAutomations();
   const activeAutomations = automations.filter((a) => a.enabled).length;
+  const alphaUnread = useAlphaUnread(!!signedIn);
   const [depositOpen, setDepositOpen] = React.useState(false);
   const [navOpen, setNavOpen] = React.useState(false);
   const { locked, remainingH } = useDepositCooldown(nextDepositAt);
@@ -37,7 +39,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-[56px] items-center gap-3 border-b bg-surface/90 px-4 backdrop-blur-md">
       <HeaderLogo />
-      <HeaderNav activeAutomations={activeAutomations} visibleFrom="sm" className="ml-4" />
+      <HeaderNav activeAutomations={activeAutomations} alphaUnread={alphaUnread} visibleFrom="sm" className="ml-4" />
       <div className="ml-auto flex items-center gap-3">
         {ready && signedIn && (
           <>
@@ -60,6 +62,7 @@ export function AppHeader() {
         open={navOpen}
         onClose={() => setNavOpen(false)}
         activeAutomations={activeAutomations}
+        alphaUnread={alphaUnread}
         signedIn={!!signedIn}
         portfolioValue={signedIn ? portfolioValue : undefined}
         cash={signedIn ? cash : undefined}

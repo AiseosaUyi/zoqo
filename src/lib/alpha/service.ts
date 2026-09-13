@@ -3,6 +3,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { VenueId } from "./core/venue";
 import type { RiskGateStrategyConfig, RiskGateVenueConfig } from "./risk";
 import { listStrategyTemplates as registryTemplates, getStrategyTemplate } from "./strategies";
+import { getCredentialStatus, type CredentialStatus } from "./setupStatus";
 
 /** The one service layer every door (the `/api/alpha/*` route handlers for
  *  the UI, the `/api/cron/alpha-*` routes for the scheduler, and — from
@@ -298,9 +299,15 @@ export async function listDecisions(
   return data ?? [];
 }
 
-export async function listEvents(supabase: Client, userId: string, filters: { since?: string; limit?: number } = {}) {
+export async function listEvents(
+  supabase: Client,
+  userId: string,
+  filters: { since?: string; limit?: number; kinds?: string[]; unacknowledgedOnly?: boolean } = {},
+) {
   let q = supabase.from("alpha_events").select("*").eq("user_id", userId).order("created_at", { ascending: false });
   if (filters.since) q = q.gte("created_at", filters.since);
+  if (filters.kinds && filters.kinds.length > 0) q = q.in("kind", filters.kinds);
+  if (filters.unacknowledgedOnly) q = q.eq("acknowledged", false);
   const { data } = await q.limit(filters.limit ?? 50);
   return data ?? [];
 }
@@ -429,6 +436,7 @@ export interface HealthJobStatus {
 export interface HealthReport {
   jobs: HealthJobStatus[];
   rateBudgets: { provider: string; remaining: number; limitPerWindow: number; windowSeconds: number; windowStart: string }[];
+  credentials: CredentialStatus[];
 }
 
 function jobStatus(name: string, lastTick: string | null, now: number): HealthJobStatus {
@@ -483,6 +491,7 @@ export async function getHealth(supabase: Client, userId: string): Promise<Healt
       windowSeconds: r.window_seconds,
       windowStart: r.window_start,
     })),
+    credentials: getCredentialStatus(),
   };
 }
 

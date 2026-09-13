@@ -158,3 +158,18 @@ export interface AlphaSlipResultDto {
   placed?: { decisionId: string; orderId: string | null; status: string };
   error?: string;
 }
+
+export interface AlphaHealthCredentialDto {
+  id: string;
+  label: string;
+  kind: "venue" | "provider";
+  envVar: string;
+  signupUrl: string;
+  configured: boolean;
+}
+
+export interface AlphaHealthDto {
+  jobs: { name: string; lastTick: string | null; staleAfterMs: number; stale: boolean }[];
+  rateBudgets: { provider: string; remaining: number; limitPerWindow: number; windowSeconds: number; windowStart: string }[];
+  credentials: AlphaHealthCredentialDto[];
+}

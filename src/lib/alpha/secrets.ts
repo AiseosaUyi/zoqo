@@ -12,7 +12,10 @@ const VENUE_ENV_KEY: Record<string, string> = {
   manifold: "MANIFOLD_API_KEY",
 };
 
-function envVarNameFor(venue: string): string {
+/** Exported so `setupStatus.ts` (the "needs setup" panel on `/alpha` and the
+ *  `get_health` MCP tool) can report the exact env var name a venue needs
+ *  without duplicating this naming convention — one source of truth. */
+export function envVarNameFor(venue: string): string {
   return VENUE_ENV_KEY[venue] ?? `${venue.toUpperCase().replace(/-/g, "_")}_API_KEY`;
 }
 

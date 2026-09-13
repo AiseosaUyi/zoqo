@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { Bell, Bot, Gift, Lock, Menu, Palette, Plus, Settings as SettingsIcon, Target, Terminal as TerminalIcon, User, X } from "lucide-react";
+import { Bell, Bot, Gift, Lock, Menu, Palette, Plus, Settings as SettingsIcon, Sparkles, Target, Terminal as TerminalIcon, User, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { usd } from "@/lib/format";
 
@@ -20,6 +20,7 @@ export const NAV_ITEMS = [
   { key: "market", href: "/trade", label: "Predict", icon: Target },
   { key: "terminal", href: "/terminal", label: "Trade", icon: TerminalIcon },
   { key: "automations", href: "/automations", label: "Automations", icon: Bot },
+  { key: "alpha", href: "/alpha", label: "Alpha", icon: Sparkles },
 ] as const;
 
 /** Single source of truth for which nav item the current route belongs to.
@@ -56,10 +57,17 @@ export function HeaderLogo() {
 
 export function HeaderNav({
   activeAutomations,
+  alphaUnread = 0,
   visibleFrom = "sm",
   className,
 }: {
   activeAutomations: number;
+  /** count of unacknowledged `alpha_events` (kind proposal/paused/error/kill)
+   *  — same red-pill visual as `activeAutomations`, different meaning
+   *  (needs-attention count, not enabled-count), per
+   *  docs/alpha/PROMPT-alpha-finish.md §1. Optional so every existing caller
+   *  keeps compiling untouched; defaults to no badge. */
+  alphaUnread?: number;
   /** breakpoint the nav appears at — TopNav's crowded left side (BTC/duration
    *  selector) needs the extra room of `lg`; the lighter headers fit at `sm`. */
   visibleFrom?: "sm" | "lg";
@@ -76,6 +84,7 @@ export function HeaderNav({
     >
       {NAV_ITEMS.map((item) => {
         const isActive = active === item.key;
+        const badgeCount = item.key === "automations" ? activeAutomations : item.key === "alpha" ? alphaUnread : 0;
         return (
           <Link
             key={item.key}
@@ -88,9 +97,9 @@ export function HeaderNav({
             )}
           >
             {item.label}
-            {item.key === "automations" && activeAutomations > 0 && (
+            {badgeCount > 0 && (
               <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {activeAutomations}
+                {badgeCount}
               </span>
             )}
           </Link>
@@ -142,6 +151,7 @@ export function HeaderMobileNav({
   open,
   onClose,
   activeAutomations,
+  alphaUnread = 0,
   signedIn,
   portfolioValue,
   cash,
@@ -150,6 +160,8 @@ export function HeaderMobileNav({
   open: boolean;
   onClose: () => void;
   activeAutomations: number;
+  /** see `HeaderNav`'s `alphaUnread` for what this counts. */
+  alphaUnread?: number;
   signedIn: boolean;
   portfolioValue?: number;
   cash?: number;
@@ -190,6 +202,7 @@ export function HeaderMobileNav({
           {NAV_ITEMS.map((item) => {
             const isActive = active === item.key;
             const Icon = item.icon;
+            const badgeCount = item.key === "automations" ? activeAutomations : item.key === "alpha" ? alphaUnread : 0;
             return (
               <Link
                 key={item.key}
@@ -204,9 +217,9 @@ export function HeaderMobileNav({
               >
                 <Icon size={17} className={isActive ? "text-purple-600" : "text-sub"} />
                 {item.label}
-                {item.key === "automations" && activeAutomations > 0 && (
+                {badgeCount > 0 && (
                   <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                    {activeAutomations}
+                    {badgeCount}
                   </span>
                 )}
               </Link>
