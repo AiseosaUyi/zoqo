@@ -77,6 +77,33 @@ export interface AlphaEventDto {
   created_at: string;
 }
 
+// --- Proposals (Phase 5 — docs/alpha/03-architecture.md §7 Level 4) ---
+
+export interface AlphaProposalPayloadDto {
+  strategyId?: string;
+  currentParams?: Record<string, unknown>;
+  proposedParams?: Record<string, unknown>;
+  expectedImprovement?: number;
+  baselineRoi?: number;
+  candidateRoi?: number;
+  fitSampleSize?: number;
+  testSampleSize?: number;
+  note?: string;
+}
+
+/** Same shape as `AlphaEventDto` (proposals ARE `alpha_events` rows, kind
+ *  `"proposal"`) with `payload` narrowed to its actual proposal shape —
+ *  kept as a separate type rather than widening `AlphaEventDto.payload`
+ *  since every OTHER event kind's payload has a different shape. */
+export interface AlphaProposalDto {
+  id: string;
+  strategy_id: string | null;
+  kind: string;
+  payload: AlphaProposalPayloadDto;
+  acknowledged: boolean;
+  created_at: string;
+}
+
 // --- Football (Phase 3) ---
 
 export interface AlphaFixturePredictionDto {

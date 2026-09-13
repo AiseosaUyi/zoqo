@@ -66,6 +66,7 @@ async function mockAlphaApi(page: Page) {
     ],
     "**/api/alpha/decisions**": [],
     "**/api/alpha/events**": [],
+    "**/api/alpha/proposals**": [],
     "**/api/alpha/fixtures**": [],
     "**/api/alpha/credentials": [],
   };

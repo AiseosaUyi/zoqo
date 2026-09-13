@@ -36,6 +36,23 @@ export const terminalHourlyMomentum: Strategy = {
   venues: ["zoqo-terminal"],
   schedule: { kind: "interval", everyMin: DEFAULT_PARAMS.everyMin },
   defaultParams: DEFAULT_PARAMS,
+  // Level 4 weekly param search (docs/alpha/03-architecture.md §7,
+  // src/lib/alpha/paramSearch.ts) — only `minReturnAbs` is searched, not
+  // `atrMultiple`, even though both are real tunables. `minReturnAbs` is a
+  // pure threshold checked against a feature (`return4h`) this strategy
+  // already logs verbatim on every decision, so `paramSearch.ts`'s
+  // re-scoring approximation can honestly filter already-fired decisions by
+  // it. `atrMultiple` only changes the stop-loss DISTANCE on a trade that's
+  // already been taken — its effect on realized pnl depends on the exact
+  // price path after entry, which isn't reconstructable from what's logged
+  // (`features` only has `{price, atr, return4h}`, not a price path) — see
+  // paramSearch.ts's module header for this exact limitation.
+  paramSpace: { minReturnAbs: [0.001, 0.0015, 0.002, 0.0025, 0.003, 0.004] },
+  // `minReturnAbs` (the param) is checked against `return4h` (the logged
+  // feature) — different names, so paramSearch.ts needs this explicit
+  // mapping rather than assuming they match (see core/strategy.ts's
+  // `paramFeatureKeys` doc).
+  paramFeatureKeys: { minReturnAbs: "return4h" },
 
   async evaluate(ctx) {
     const params = { ...DEFAULT_PARAMS, ...(ctx.params as Partial<Params>) };

@@ -487,6 +487,63 @@ const handler = createMcpHandler((server) => {
       return alphaTools.buildSlip(userIdOf(ctx), args);
     },
   );
+
+  // ---------------------------------------------------------------------
+  // ZOQO Alpha: Phase 5 — proposals, per-strategy stats, scheduler health
+  // (docs/alpha/03-architecture.md §7 Level 4, docs/alpha/05-mcp-spec.md)
+  // ---------------------------------------------------------------------
+
+  server.registerTool(
+    "list_proposals",
+    { title: "List Proposals", description: "Unacknowledged parameter-search proposals awaiting review. Requires alpha:read.", inputSchema: z.object({}) },
+    async (_args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.listProposals(userIdOf(ctx));
+    },
+  );
+
+  server.registerTool(
+    "apply_proposal",
+    {
+      title: "Apply Proposal",
+      description: "Applies a proposal's proposed params to its strategy and logs an 'applied' event. Requires alpha:manage.",
+      inputSchema: z.object({ eventId: z.string() }),
+    },
+    async ({ eventId }, ctx) => {
+      const denied = requireScope(ctx, "alpha:manage");
+      if (denied) return errorContent(denied);
+      return alphaTools.applyProposal(userIdOf(ctx), eventId);
+    },
+  );
+
+  server.registerTool(
+    "get_strategy_stats",
+    {
+      title: "Get Strategy Stats",
+      description: "Daily alpha_strategy_stats rows (ROI CI, hit rate, Brier, RPS, CLV, drawdown, Sharpe, budget) for one of your strategies, optionally date-ranged. Requires alpha:read.",
+      inputSchema: z.object({ strategyId: z.string(), from: z.string().optional(), to: z.string().optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getStrategyStats(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "get_health",
+    {
+      title: "Get Health",
+      description: "Scheduler last-tick per cron job, rate budgets remaining per provider, and stale-data warnings. Requires alpha:read.",
+      inputSchema: z.object({}),
+    },
+    async (_args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getHealth(userIdOf(ctx));
+    },
+  );
 });
 
 const authHandler = withMcpAuth(

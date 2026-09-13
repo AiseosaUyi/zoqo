@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/brevo";
 import { makeUnsubscribeToken } from "@/lib/unsubscribeToken";
+import { getLeaderboard as getAlphaLeaderboard } from "@/lib/alpha/service";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,16 @@ export const dynamic = "force-dynamic";
  *  to follow" nudge sourced from the real leaderboard_pnl view — no
  *  ranking/similarity logic beyond "top cash," which is what the spec
  *  itself leaves undefined; see leaderboard/page.tsx's own precedent for
- *  being explicit about what's illustrative vs. real. */
+ *  being explicit about what's illustrative vs. real.
+ *
+ *  Phase 5 adds an Alpha section (docs/alpha/plans/phase-5-learning-loop.md):
+ *  yesterday's Alpha strategy leaderboard (top 3 by pnl, via
+ *  `service.getLeaderboard` — the same function `/alpha` itself calls) plus
+ *  any new `proposal`/`paused` `alpha_events` since yesterday. Built the
+ *  same "compute, degrade to nothing on failure, never throw" way the rest
+ *  of this route already treats Brevo being unconfigured — a user with no
+ *  Alpha strategies (the common case pre-Phase-5) or a query failure just
+ *  gets no Alpha section, not a broken digest. */
 
 function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -112,12 +122,46 @@ async function handle(req: NextRequest) {
       }
     }
 
+    let alphaHtml = "";
+    try {
+      const alphaLeaderboard = await getAlphaLeaderboard(supabase, profile.user_id);
+      const top3 = alphaLeaderboard.slice(0, 3);
+      const { data: alphaEvents } = await supabase
+        .from("alpha_events")
+        .select("kind")
+        .eq("user_id", profile.user_id)
+        .in("kind", ["proposal", "paused"])
+        .gte("created_at", yesterdayStart.toISOString())
+        .lt("created_at", todayStart.toISOString());
+      const proposalCount = (alphaEvents ?? []).filter((e) => e.kind === "proposal").length;
+      const pausedCount = (alphaEvents ?? []).filter((e) => e.kind === "paused").length;
+
+      if (top3.length > 0 || proposalCount > 0 || pausedCount > 0) {
+        const leaderboardHtml = top3.length
+          ? `<p><strong>Alpha leaderboard (top 3 by P&amp;L)</strong>: ${top3
+              .map((s) => `${s.name} (${s.pnlTotal >= 0 ? "+" : ""}$${s.pnlTotal.toFixed(2)})`)
+              .join(", ")}.</p>`
+          : "";
+        const activityParts: string[] = [];
+        if (proposalCount > 0) activityParts.push(`${proposalCount} new parameter-search proposal${proposalCount === 1 ? "" : "s"} awaiting review`);
+        if (pausedCount > 0) activityParts.push(`${pausedCount} strateg${pausedCount === 1 ? "y" : "ies"} auto-paused on a confirmed loss`);
+        const activityHtml = activityParts.length ? `<p><strong>Alpha activity</strong>: ${activityParts.join("; ")}.</p>` : "";
+        alphaHtml = `${leaderboardHtml}${activityHtml}`;
+      }
+    } catch {
+      // Alpha tables/queries failing must never block the core digest — same
+      // "log, don't throw, degrade to nothing" discipline this route already
+      // applies to a missing BREVO_API_KEY.
+      alphaHtml = "";
+    }
+
     const unsubToken = makeUnsubscribeToken(profile.user_id);
     const html = `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#111">
         <h2>ZOQO — your daily recap</h2>
         <p>Yesterday: ${snapshot.xp} XP, ${snapshot.lessons_completed} lesson${snapshot.lessons_completed === 1 ? "" : "s"}, ${snapshot.pnl >= 0 ? "+" : ""}$${snapshot.pnl.toFixed(2)} on paper.</p>
         ${nudgeHtml}
+        ${alphaHtml}
         <p style="margin-top:24px;font-size:12px;color:#666">
           <a href="${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/unsubscribe?token=${unsubToken}">Unsubscribe</a> from this digest.
         </p>

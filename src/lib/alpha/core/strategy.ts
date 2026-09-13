@@ -47,5 +47,26 @@ export interface Strategy {
   venues: import("./venue").VenueId[];
   schedule: StrategySchedule;
   defaultParams: Record<string, unknown>;
+  /** Optional weekly walk-forward parameter search space (docs/alpha/03-
+   *  architecture.md §7 Level 4, `src/lib/alpha/paramSearch.ts`). Additive —
+   *  a strategy that omits this is simply never considered for a search,
+   *  which is the safe default, not a broken one. Each key should name a
+   *  real `defaultParams` tunable; `paramSearch.ts` caps the Cartesian
+   *  product it searches, so this isn't an invitation to declare a huge
+   *  space. See `paramSearch.ts`'s `scoreCandidate` for which param SHAPES
+   *  (threshold-like `min*`/`max*` names matching a logged feature) can
+   *  actually be re-scored from history — declaring a non-threshold param
+   *  here (e.g. a window size) is honest but won't move the search's score. */
+  paramSpace?: Record<string, number[]>;
+  /** Maps a `paramSpace` key to the `alpha_decisions.features` key
+   *  `paramSearch.ts`'s `scoreCandidate` should compare it against — needed
+   *  because a strategy's tunable param name and the feature name it logs
+   *  are not always identical (e.g. `terminalHourlyMomentum`'s
+   *  `minReturnAbs` param is checked against its own `return4h` feature,
+   *  not a feature literally named `minReturnAbs`). A `paramSpace` key with
+   *  no entry here falls back to matching a feature of the exact same name
+   *  — the right default for a strategy where the threshold's name already
+   *  matches what it logs. Only meaningful alongside `paramSpace`. */
+  paramFeatureKeys?: Record<string, string>;
   evaluate(ctx: StrategyCtx): Promise<Intent[]>;
 }

@@ -214,3 +214,37 @@ export async function killSwitch(userId: string, on: boolean, reason?: string) {
   await service.setKillSwitch(supabase, userId, on, reason);
   return text({ ok: true, killSwitch: on });
 }
+
+// ---------------------------------------------------------------------------
+// Phase 5: proposals, per-strategy stats, and scheduler health
+// (docs/alpha/05-mcp-spec.md) — same thin-wrapper-over-service.ts shape as
+// every tool above.
+// ---------------------------------------------------------------------------
+
+export async function listProposals(userId: string) {
+  const supabase = createServiceRoleClient();
+  return text(await service.listProposals(supabase, userId));
+}
+
+export async function applyProposal(userId: string, eventId: string) {
+  const supabase = createServiceRoleClient();
+  try {
+    return text(await service.applyProposal(supabase, userId, eventId));
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "apply failed");
+  }
+}
+
+export async function getStrategyStats(userId: string, args: { strategyId: string; from?: string; to?: string }) {
+  const supabase = createServiceRoleClient();
+  try {
+    return text(await service.getStrategyStats(supabase, userId, args));
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "lookup failed");
+  }
+}
+
+export async function getHealth(userId: string) {
+  const supabase = createServiceRoleClient();
+  return text(await service.getHealth(supabase, userId));
+}

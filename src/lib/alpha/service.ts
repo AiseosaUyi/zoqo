@@ -310,6 +310,183 @@ export async function ackEvent(supabase: Client, userId: string, id: string): Pr
 }
 
 // ---------------------------------------------------------------------------
+// Proposals (docs/alpha/03-architecture.md §7 Level 4) — `kind='proposal'`
+// alpha_events rows written by `paramSearch.ts`, applied or dismissed here.
+// Never writes `alpha_strategies.params` from anywhere else in this program.
+// ---------------------------------------------------------------------------
+
+/** Shape of a `proposal` event's `payload`, as written by
+ *  `paramSearch.ts`'s `runParamSearch` — kept loose (most fields optional)
+ *  since `payload` is jsonb and this is read back, not enforced by the DB. */
+export interface ProposalPayload {
+  strategyId?: string;
+  currentParams?: Record<string, unknown>;
+  proposedParams?: Record<string, unknown>;
+  expectedImprovement?: number;
+  [key: string]: unknown;
+}
+
+export async function listProposals(supabase: Client, userId: string) {
+  const { data } = await supabase
+    .from("alpha_events")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("kind", "proposal")
+    .eq("acknowledged", false)
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/** Applies `eventId`'s proposed params onto its strategy's live `params`
+ *  (merged, not replaced — `paramSpace` may cover only a subset of a
+ *  strategy's tunables, and every strategy's `evaluate()` already reads
+ *  `{...DEFAULT_PARAMS, ...ctx.params}`, so a partial merge is the correct
+ *  "apply just what was proposed" semantics), marks the proposal
+ *  acknowledged, and logs a new `applied` event. Ownership-checked twice:
+ *  once on the event row (`user_id` + `kind` + not-yet-acknowledged), once
+ *  again on the strategy the event's payload names — belt-and-braces per
+ *  this phase's "never trust a client-supplied strategy id" rule, since the
+ *  strategy id here comes out of a JSONB payload, not a typed column. */
+export async function applyProposal(supabase: Client, userId: string, eventId: string): Promise<{ ok: true; strategyId: string; newParams: Record<string, unknown> }> {
+  const { data: event } = await supabase
+    .from("alpha_events")
+    .select("*")
+    .eq("id", eventId)
+    .eq("user_id", userId)
+    .eq("kind", "proposal")
+    .eq("acknowledged", false)
+    .maybeSingle();
+  if (!event) throw new Error("proposal not found, already handled, or not owned by this user");
+
+  const payload = (event.payload as ProposalPayload | null) ?? {};
+  const strategyId = payload.strategyId ?? event.strategy_id ?? undefined;
+  if (!strategyId) throw new Error("proposal event has no strategyId");
+  if (!payload.proposedParams || typeof payload.proposedParams !== "object") throw new Error("proposal event has no proposedParams");
+
+  const { data: strategy } = await supabase.from("alpha_strategies").select("id, params").eq("id", strategyId).eq("user_id", userId).maybeSingle();
+  if (!strategy) throw new Error("strategy not found or not owned by this user");
+
+  const previousParams = (strategy.params as Record<string, unknown>) ?? {};
+  const newParams = { ...previousParams, ...payload.proposedParams };
+
+  await supabase.from("alpha_strategies").update({ params: newParams as never }).eq("id", strategyId).eq("user_id", userId);
+  await supabase.from("alpha_events").update({ acknowledged: true }).eq("id", eventId).eq("user_id", userId);
+  await supabase.from("alpha_events").insert({
+    user_id: userId,
+    strategy_id: strategyId,
+    kind: "applied",
+    payload: { sourceEventId: eventId, previousParams, newParams } as never,
+  });
+
+  return { ok: true, strategyId, newParams };
+}
+
+/** Dismisses a proposal without applying it — just marks it acknowledged, no
+ *  `applied` event (nothing changed). */
+export async function dismissProposal(supabase: Client, userId: string, eventId: string): Promise<void> {
+  const { error } = await supabase.from("alpha_events").update({ acknowledged: true }).eq("id", eventId).eq("user_id", userId).eq("kind", "proposal");
+  if (error) throw new Error(error.message);
+}
+
+// ---------------------------------------------------------------------------
+// Per-strategy stats lookup (MCP `get_strategy_stats`) — ownership-checked
+// the same way every other per-strategy function here is.
+// ---------------------------------------------------------------------------
+
+export async function getStrategyStats(supabase: Client, userId: string, filters: { strategyId: string; from?: string; to?: string }) {
+  const { data: strategy } = await supabase.from("alpha_strategies").select("id").eq("id", filters.strategyId).eq("user_id", userId).maybeSingle();
+  if (!strategy) throw new Error("strategy not found or not owned by this user");
+
+  let q = supabase.from("alpha_strategy_stats").select("*").eq("strategy_id", filters.strategyId).order("day", { ascending: true });
+  if (filters.from) q = q.gte("day", filters.from);
+  if (filters.to) q = q.lte("day", filters.to);
+  const { data } = await q;
+  return data ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Health (MCP `get_health`) — scheduler last-tick per cron job (proxied from
+// each job's own tables, since there's no separate "last run" ledger table),
+// rate budgets remaining, and a stale-data warning at 2x each job's own
+// interval — cheap enough signals a real cron-monitoring table would be
+// overkill for this phase.
+// ---------------------------------------------------------------------------
+
+const JOB_INTERVAL_MS: Record<string, number> = {
+  "alpha-run": 60_000,
+  "alpha-settle": 5 * 60_000,
+  "alpha-ingest": 15 * 60_000,
+  "alpha-evaluate": 24 * 60 * 60_000,
+};
+
+export interface HealthJobStatus {
+  name: string;
+  lastTick: string | null;
+  staleAfterMs: number;
+  stale: boolean;
+}
+
+export interface HealthReport {
+  jobs: HealthJobStatus[];
+  rateBudgets: { provider: string; remaining: number; limitPerWindow: number; windowSeconds: number; windowStart: string }[];
+}
+
+function jobStatus(name: string, lastTick: string | null, now: number): HealthJobStatus {
+  const staleAfterMs = JOB_INTERVAL_MS[name] * 2;
+  const stale = lastTick == null || now - new Date(lastTick).getTime() > staleAfterMs;
+  return { name, lastTick, staleAfterMs, stale };
+}
+
+export async function getHealth(supabase: Client, userId: string): Promise<HealthReport> {
+  const strategies = await listStrategies(supabase, userId);
+  const strategyIds = strategies.map((s) => s.id);
+  const now = Date.now();
+
+  let lastRunAt: string | null = null;
+  if (strategyIds.length > 0) {
+    const { data } = await supabase.from("alpha_runs").select("started_at").in("strategy_id", strategyIds).order("started_at", { ascending: false }).limit(1).maybeSingle();
+    lastRunAt = data?.started_at ?? null;
+  }
+
+  const { data: lastSettled } = await supabase
+    .from("alpha_orders")
+    .select("settled_at")
+    .eq("user_id", userId)
+    .not("settled_at", "is", null)
+    .order("settled_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Ingest data (fixtures/odds) is shared across users, not per-owner — its
+  // "last tick" is whichever ingest pass most recently touched anything.
+  const { data: lastFixture } = await supabase.from("alpha_fixtures").select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+
+  let lastEvalDay: string | null = null;
+  if (strategyIds.length > 0) {
+    const { data } = await supabase.from("alpha_strategy_stats").select("day").in("strategy_id", strategyIds).order("day", { ascending: false }).limit(1).maybeSingle();
+    lastEvalDay = data?.day ?? null;
+  }
+
+  const { data: rateBudgetRows } = await supabase.from("alpha_rate_budget").select("*");
+
+  return {
+    jobs: [
+      jobStatus("alpha-run", lastRunAt, now),
+      jobStatus("alpha-settle", lastSettled?.settled_at ?? null, now),
+      jobStatus("alpha-ingest", lastFixture?.updated_at ?? null, now),
+      jobStatus("alpha-evaluate", lastEvalDay ? new Date(lastEvalDay).toISOString() : null, now),
+    ],
+    rateBudgets: (rateBudgetRows ?? []).map((r) => ({
+      provider: r.provider,
+      remaining: Math.max(0, r.limit_per_window - r.used),
+      limitPerWindow: r.limit_per_window,
+      windowSeconds: r.window_seconds,
+      windowStart: r.window_start,
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Leaderboard (Phase 1 stub — real ROI-CI/Brier/RPS/CLV land in Phase 5)
 // ---------------------------------------------------------------------------
 

@@ -12,6 +12,7 @@ import { DecisionsFeed } from "@/components/alpha/DecisionsFeed";
 import { EventsFeed } from "@/components/alpha/EventsFeed";
 import { FixturesSection } from "@/components/alpha/FixturesSection";
 import { CredentialsSection, type AlphaCredentialDto } from "@/components/alpha/CredentialsSection";
+import { ProposalsInbox } from "@/components/alpha/ProposalsInbox";
 import type { CreateStrategyInput } from "@/components/alpha/CreateStrategyModal";
 import type {
   AlphaSettingsDto,
@@ -21,6 +22,7 @@ import type {
   AlphaDecisionDto,
   AlphaEventDto,
   AlphaFixtureDto,
+  AlphaProposalDto,
   AlphaSlipSelection,
   AlphaSlipResultDto,
 } from "@/components/alpha/types";
@@ -56,6 +58,7 @@ export default function AlphaPage() {
   const [templates, setTemplates] = React.useState<AlphaTemplateDto[]>([]);
   const [decisions, setDecisions] = React.useState<AlphaDecisionDto[]>([]);
   const [events, setEvents] = React.useState<AlphaEventDto[]>([]);
+  const [proposals, setProposals] = React.useState<AlphaProposalDto[]>([]);
   const [fixtures, setFixtures] = React.useState<AlphaFixtureDto[]>([]);
   const [credentials, setCredentials] = React.useState<AlphaCredentialDto[]>([]);
   const [slipResult, setSlipResult] = React.useState<AlphaSlipResultDto | null>(null);
@@ -64,17 +67,18 @@ export default function AlphaPage() {
   const [loaded, setLoaded] = React.useState(false);
 
   const loadAll = React.useCallback(async () => {
-    const [s, v, st, tpl, dec, ev, fx, cred] = await Promise.all([
+    const [s, v, st, tpl, dec, ev, prop, fx, cred] = await Promise.all([
       fetchJson<AlphaSettingsDto>("/api/alpha/settings"),
       fetchJson<AlphaVenueDto[]>("/api/alpha/venues"),
       fetchJson<AlphaStrategyDto[]>("/api/alpha/strategies"),
       fetchJson<AlphaTemplateDto[]>("/api/alpha/strategy-templates"),
       fetchJson<AlphaDecisionDto[]>("/api/alpha/decisions?limit=25"),
       fetchJson<AlphaEventDto[]>("/api/alpha/events?limit=25"),
+      fetchJson<AlphaProposalDto[]>("/api/alpha/proposals"),
       fetchJson<AlphaFixtureDto[]>("/api/alpha/fixtures?limit=20"),
       fetchJson<AlphaCredentialDto[]>("/api/alpha/credentials"),
     ]);
-    if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || fx == null || cred == null) {
+    if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || prop == null || fx == null || cred == null) {
       setLoadFailed(true);
       setLoaded(true);
       return;
@@ -85,6 +89,7 @@ export default function AlphaPage() {
     setTemplates(tpl);
     setDecisions(dec);
     setEvents(ev);
+    setProposals(prop);
     setFixtures(fx);
     setCredentials(cred);
     setLoadFailed(false);
@@ -137,6 +142,17 @@ export default function AlphaPage() {
   async function ackEvent(id: string) {
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, acknowledged: true } : e)));
     await fetch(`/api/alpha/events/${id}/ack`, { method: "POST" });
+  }
+
+  async function applyProposal(id: string) {
+    setProposals((prev) => prev.filter((p) => p.id !== id));
+    await fetch(`/api/alpha/proposals/${id}/apply`, { method: "POST" });
+    void loadAll(); // strategy params changed — refresh strategies too
+  }
+
+  async function dismissProposal(id: string) {
+    setProposals((prev) => prev.filter((p) => p.id !== id));
+    await fetch(`/api/alpha/proposals/${id}/dismiss`, { method: "POST" });
   }
 
   async function buildSlip(selections: AlphaSlipSelection[]) {
@@ -232,6 +248,7 @@ export default function AlphaPage() {
               onResume={resume}
             />
             <FixturesSection fixtures={fixtures} onBuildSlip={buildSlip} slipResult={slipResult} slipLoading={slipLoading} />
+            <ProposalsInbox proposals={proposals} onApply={applyProposal} onDismiss={dismissProposal} />
             <DecisionsFeed decisions={decisions} />
             <EventsFeed events={events} onAck={ackEvent} />
           </div>
