@@ -14,11 +14,14 @@ This build environment has **no live Supabase project link and no venue API cred
 
 ## Done
 
-- Phase 0: migration written (14 tables, `pg_cron`/`pg_net` extensions, `api_keys`/`automations` constraint widening, `downsample_price_history()` function), `price_history` retention raised 24h → 30d with 5-minute downsampling after 48h, Vitest added (`test:unit` script) with a first suite for `orderExecution.ts` (13 tests, green), `database.types.ts` hand-augmented for the new tables.
+- Phase 0: migration written (14 tables, `pg_cron`/`pg_net` extensions, `api_keys`/`automations` constraint widening, `downsample_price_history()` function), `price_history` retention raised 24h → 30d with 5-minute downsampling after 48h, Vitest added (`test:unit` script) with a first suite for `orderExecution.ts` (13 tests, green), `database.types.ts` hand-augmented for the new tables. Committed `53ef2cf`.
+- Phase 1: core interfaces, 7-point risk gate, Kelly sizing, `service.ts`/`runner.ts`/`settle.ts`/`evaluate.ts` (stub metrics), `zoqo-terminal` venue adapter (wraps `terminalExecution.ts` unchanged), `terminal-ma-cross` + `terminal-hourly-momentum` strategies, three cron routes, session-scoped `/api/alpha/*` CRUD, the `/alpha` page (kill switch, venues, strategies, decisions feed, events feed), and the automations `schedule`/`run-strategy` bridge. 53 Vitest tests, `tsc`/`eslint`/`playwright` (5/5)/production build all green. Committed `d16fe38`.
+- Phase 6 scaffold: `alpha-worker/` README + a `if: false`-gated GitHub Actions workflow (no training code — gated on Phase 3 having 4+ weeks of real data first, per the build plan). Committed alongside Phase 1.
+- Phase 2: MCP scopes generalized (`api_keys.scopes[]`, `requireScope`, settings page now issues multi-scope keys), 14 new `alpha:*` MCP tools registered, `manifold` venue adapter (REST via `fetch`, no SDK) with an honest documented approximation for share-based settlement P&L, `marketFeatures.ts`, 3 strategies (`manifold-mean-reversion`, `manifold-longshot-fade`, `manifold-control` — the last a seeded-PRNG noise baseline, not `Math.random()`), and a shared venue conformance-test harness (Manifold's 4 tests `skip` — no `MANIFOLD_API_KEY` here). `secrets.ts` implements the env-var fallback only; Vault lands in Phase 4. 57 Vitest tests (53 pass + 4 skip), `tsc`/`eslint`/`playwright` (5/5)/build all green.
 
 ## Next
 
-- Phase 1: Alpha core (service/runner/risk gate/decisions/`/alpha` shell).
+- Phase 3: football data layer + NGN paper sportsbook (`docs/alpha/plans/phase-3-football.md`).
 
 ## Needs Aise (human-only, exact URLs)
 

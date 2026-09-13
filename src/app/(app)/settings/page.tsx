@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { KeyRound, Trash2, Check, Copy } from "lucide-react";
-import { Button, Card, Input, Select, Switch, Tag, EmptyState } from "@/components/ui";
+import { Button, Card, Checkbox, Input, Select, Switch, Tag, EmptyState } from "@/components/ui";
 import { useProfile } from "@/lib/profile";
 import { SettingsTopNav } from "@/components/settings/SettingsTopNav";
 import { cn } from "@/lib/cn";
@@ -11,10 +11,18 @@ interface ApiKeyRow {
   name: string;
   key_prefix: string;
   scope: "read" | "trade";
+  scopes: string[] | null;
   last_used_at: string | null;
   revoked_at: string | null;
   created_at: string;
 }
+
+const ALPHA_SCOPES = [
+  { value: "alpha:read", label: "Alpha: read" },
+  { value: "alpha:run", label: "Alpha: run" },
+  { value: "alpha:manage", label: "Alpha: manage" },
+  { value: "alpha:credentials", label: "Alpha: credentials" },
+] as const;
 
 /** Generate/revoke API keys for the Zoqo MCP server (TERMINAL_SPEC.md §7,
  *  src/app/api/mcp/route.ts) — the settings surface PHASE_C_HANDOFF.md's C3
@@ -26,6 +34,7 @@ export default function SettingsPage() {
   const [keys, setKeys] = React.useState<ApiKeyRow[] | null>(null);
   const [name, setName] = React.useState("");
   const [scope, setScope] = React.useState<"read" | "trade">("read");
+  const [alphaScopes, setAlphaScopes] = React.useState<Set<string>>(new Set());
   const [creating, setCreating] = React.useState(false);
   const [justCreated, setJustCreated] = React.useState<{ rawKey: string; name: string } | null>(null);
   const [copied, setCopied] = React.useState(false);
@@ -62,12 +71,13 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings/api-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), scope }),
+        body: JSON.stringify({ name: name.trim(), scopes: [scope, ...alphaScopes] }),
       });
       if (res.ok) {
         const created = await res.json();
         setJustCreated({ rawKey: created.rawKey, name: created.name });
         setName("");
+        setAlphaScopes(new Set());
         load();
       }
     } finally {
@@ -123,6 +133,31 @@ export default function SettingsPage() {
                   Generate key
                 </Button>
               </div>
+
+              <div className="mt-4 border-t border-border pt-4">
+                <p className="text-[12.5px] font-semibold text-ink">Also grant ZOQO Alpha scopes (optional)</p>
+                <p className="mt-0.5 text-[11.5px] text-sub">
+                  Lets an agent control strategies, venues, and the kill switch via MCP. Keep{" "}
+                  <span className="font-semibold">alpha:credentials</span> keys single-purpose.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                  {ALPHA_SCOPES.map((s) => (
+                    <Checkbox
+                      key={s.value}
+                      checked={alphaScopes.has(s.value)}
+                      onChange={(checked) => {
+                        setAlphaScopes((prev) => {
+                          const next = new Set(prev);
+                          if (checked) next.add(s.value);
+                          else next.delete(s.value);
+                          return next;
+                        });
+                      }}
+                      label={s.label}
+                    />
+                  ))}
+                </div>
+              </div>
             </Card>
 
             {justCreated && (
@@ -159,11 +194,13 @@ export default function SettingsPage() {
                 {keys?.map((k) => (
                   <Card key={k.id} padding="md" className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="truncate text-[13.5px] font-semibold text-ink">{k.name}</span>
-                        <Tag color={k.scope === "trade" ? "gold" : "gray"} size="sm">
-                          {k.scope}
-                        </Tag>
+                        {(k.scopes && k.scopes.length > 0 ? k.scopes : [k.scope]).map((s) => (
+                          <Tag key={s} color={s === "trade" || s === "alpha:manage" ? "gold" : "gray"} size="sm">
+                            {s}
+                          </Tag>
+                        ))}
                         {k.revoked_at && (
                           <Tag color="gray" size="sm">
                             Revoked

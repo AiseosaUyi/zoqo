@@ -17,11 +17,13 @@ export async function GET() {
 
   const { data } = await supabase
     .from("api_keys")
-    .select("id, name, key_prefix, scope, last_used_at, revoked_at, created_at")
+    .select("id, name, key_prefix, scope, scopes, last_used_at, revoked_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
   return NextResponse.json(data ?? []);
 }
+
+const VALID_SCOPES = new Set(["read", "trade", "alpha:read", "alpha:run", "alpha:manage", "alpha:credentials"]);
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -30,16 +32,25 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { name, scope } = (await req.json()) as { name: string; scope: "read" | "trade" };
-  if (!name?.trim() || (scope !== "read" && scope !== "trade")) {
-    return NextResponse.json({ error: "name and a valid scope (read|trade) are required" }, { status: 400 });
+  // `scopes` (array, preferred — docs/alpha/05-mcp-spec.md: "Settings UI
+  // lets a key carry multiple scopes") with `scope` (single) as a
+  // backward-compatible fallback for anything still posting the old shape.
+  const body = (await req.json()) as { name?: string; scope?: string; scopes?: string[] };
+  const name = body.name?.trim();
+  const scopes = Array.isArray(body.scopes) && body.scopes.length > 0 ? body.scopes : body.scope ? [body.scope] : [];
+  if (!name || scopes.length === 0 || !scopes.every((s) => VALID_SCOPES.has(s))) {
+    return NextResponse.json({ error: `name and at least one valid scope are required (${[...VALID_SCOPES].join(", ")})` }, { status: 400 });
   }
+  // `scope` (legacy single column, still has a NOT NULL + check constraint)
+  // holds the first selected scope so old code paths that only ever read
+  // `.scope` keep working; `scopes` is the full set this key actually has.
+  const legacyScope = scopes[0] as "read" | "trade" | "alpha:read" | "alpha:run" | "alpha:manage" | "alpha:credentials";
 
   const { raw, hash, prefix } = generateApiKey();
   const { data, error } = await supabase
     .from("api_keys")
-    .insert({ user_id: user.id, name: name.trim(), key_hash: hash, key_prefix: prefix, scope })
-    .select("id, name, key_prefix, scope, created_at")
+    .insert({ user_id: user.id, name, key_hash: hash, key_prefix: prefix, scope: legacyScope, scopes })
+    .select("id, name, key_prefix, scope, scopes, created_at")
     .single();
   if (error || !data) return NextResponse.json({ error: error?.message ?? "insert failed" }, { status: 500 });
 
