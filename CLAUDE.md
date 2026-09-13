@@ -12,9 +12,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # dev server on http://localhost:3000 (Turbopack)
 npm run build    # production build
 npm run lint     # eslint (flat config, eslint-config-next)
+npx playwright test   # e2e/ — currently just auth-otp.spec.ts (see below)
 ```
 
-There is **no test framework** configured. Verify changes by running the app and exercising it in the browser.
+There is **no unit/component test framework** configured — verify most changes by running the app and exercising it in the browser. Playwright was added 2026-09-13 narrowly for the auth OTP error-visibility flow (`e2e/auth-otp.spec.ts`), not as a blanket new testing mandate. Its config (`playwright.config.ts`) runs against a **production build** (`next build && next start`), not `next dev` — in some sandboxed/constrained environments `next dev`'s Turbopack HMR websocket can fail its handshake and stall client hydration entirely (confirmed while authoring that suite: a plain `useEffect` counter never advanced). If the app appears to not hydrate at all during manual browser testing, try a production build before assuming an app bug.
 
 Path alias: `@/*` → `src/*`. **No env vars are required to run `npm run dev`** — see "Backend" below; `.env.example` documents every optional key and what happens when each is absent (all of them degrade gracefully, none block local dev).
 
@@ -27,7 +28,7 @@ ZOQO is a paper-trading platform with two trading surfaces sharing one wallet/en
 
 Both surfaces also drive **Zoqo Academy** (`/learn` — a real 90-lesson curriculum across seven skills, `src/lib/lessons/*`), a real **automation trigger engine** (not a stub — see below), and an **MCP server** so an external AI agent can read the same account state and place orders under a scoped API key.
 
-`TERMINAL_SPEC.md` (repo root) is the original architecture/product spec this was built from — read it for the "why" behind the multi-asset terminal, Academy mechanics, and MCP design. `CLAUDE_CODE_HANDOFF.md` and `PHASE_C_HANDOFF.md` are session handoff docs (their own headers date them) — **treat their "what's done" claims as a snapshot, not current truth**; the Phase C (automations + MCP) and Phase F (email digests) work they describe as "next" has since shipped (see `git log`). When in doubt, trust the code over any of these docs.
+`TERMINAL_SPEC.md` (repo root) is the original architecture/product spec this was built from — read it for the "why" behind the multi-asset terminal, Academy mechanics, and MCP design. `CLAUDE_CODE_HANDOFF.md`, `PHASE_C_HANDOFF.md`, and `HANDOFF-2026-09-13-tester-report.md` are session handoff docs (their own headers date them) — **treat their "what's done" claims as a snapshot, not current truth**; the Phase C (automations + MCP) and Phase F (email digests) work they describe as "next" has since shipped (see `git log`). When in doubt, trust the code over any of these docs. **If the user says "resume" with no other context, check for the newest `HANDOFF-*.md` file first** — it means there's in-progress work from a prior session to pick back up (see that file for status, and `TODOS.md` for the backlog it feeds).
 
 ## Backend: real, but feature-flagged off by default
 

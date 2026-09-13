@@ -4,54 +4,77 @@
 
 Originally deferred out of the P0 auth fix per eng-review Step 0 scope split
 (D1, 2026-09-13); most were then implemented directly per user request
-(2026-09-13). See `## Completed` below. Remaining items still need a product
-decision or further investigation before they're buildable.
+(2026-09-13). A second pass (2026-09-13, same day, "let's finish up all")
+shipped the drawing-triggered live order tracking item below and
+investigated the remaining two. See `## Completed` below.
 
-### [Product decision needed] Drawing-triggered live order tracking
-
-**What:** Whether a drawn Long/Short annotation should actually place/track a real order (wire into `terminalStore.tsx`/`terminalExecution.ts`), not just display a static box.
-
-**Why:** The tester's literal ask ("track when market has triggered it and its moving") implies live behavior, not a static drawing. This is a new trust/risk-control surface — it would need to route through the same `maxOrderSize`/`dailyCap` enforcement `terminalExecution.ts` already centralizes for the OrderTicket path, or risk becoming a second, uncapped order-entry path.
-
-**Context:** Needs a product conversation before any code: is "draw an order on the chart" a desired product direction at all? If yes, scope as its own plan with its own eng review — this is not a toolbar tweak. The static Long/Short annotation tool itself (no live order tracking) already shipped — see Completed.
-
-**Effort:** XL
-**Priority:** P3
-**Depends on:** Product decision
-
-### Daily/weekly/monthly timeframes (1D, 1W, 1M) — pending data investigation
+### Daily/weekly/monthly timeframes (1D, 1W, 1M) — investigated, not yet built
 
 **What:** Add 1D/1W/1M to the timeframe set.
 
-**Why:** Tester request, but blocked on confirming `price_history`/candle retention — these need OHLC data reaching back much further than intraday timeframes require. `TerminalShell.tsx`'s `MAX_CANDLES` currently caps retained 1m history at 24 hours, which is enough for the intraday timeframes shipped (up to H4) but not for daily/weekly/monthly bars, which need weeks-to-months of history.
+**Why:** Tester request, but blocked on confirming candle retention — these
+need OHLC data reaching back much further than intraday timeframes require.
+`TerminalShell.tsx`'s `MAX_CANDLES` caps retained 1m history at 24 hours
+(enough for the intraday timeframes shipped, up to H4, but not daily+).
 
-**Context:** Investigate raising `MAX_CANDLES`/`SEED_CANDLES` (memory/perf cost of a much larger seeded history) or backfilling from a real historical OHLC source, before scoping this as buildable.
+**Investigation findings (2026-09-13):** Raising `MAX_CANDLES`/`SEED_CANDLES`
+to cover weeks/months of 1-minute candles is the wrong direction (memory —
+tens of thousands of candles per asset just to group them down into a few
+daily bars). A real historical-data path already exists and is unused by
+`/terminal`: **`src/app/api/btc/history/route.ts`** fetches genuine OHLC
+history for BTC (Binance klines → Coinbase → Bitstamp → CoinGecko fallback
+chain, same pattern as everywhere else in this codebase) and already accepts
+`interval=1d` — `/trade`'s `useChartSeries` (`src/lib/useBtc.ts`'s
+`fetchHistory`) is the only current caller. The right design: (1) generalize
+`fromBinance`/`fromBitstamp`/`fromCoinGecko` in that route to take an asset
+param instead of hardcoding BTCUSDT/btcusd/bitcoin (Binance: ETHUSDT/SOLUSDT;
+Bitstamp: ethusd/solusd; CoinGecko: ids already mapped in
+`serverPriceFeed.ts`'s `COINGECKO_ID`) so ETH/SOL get real history too; (2)
+for forex/gold/silver, TwelveData's `time_series` endpoint (same env var,
+`TWELVE_DATA_API_KEY`, already used for live quotes in `serverPriceFeed.ts`)
+supports real `interval=1day` history — needs the same "labeled mock
+fallback when the key is absent" pattern the rest of that file already uses;
+(3) fetch real daily bars once per asset (e.g. last ~400 days) and derive
+1W/1M by grouping them into calendar-aligned week/month buckets client-side
+(a new `groupCalendarCandles` helper, distinct from `candles.ts`'s existing
+minute-bucket `groupCandles`) rather than fetching three separate ranges.
+This keeps 1D/1W/1M genuinely real (not synthetic backfill), consistent with
+this app's "real anchor" convention elsewhere, and reuses the existing
+multi-source fallback chains instead of inventing a new one.
 
-**Effort:** M (pending investigation — could be L if backfill is needed)
+**Effort:** L (new/generalized API route + client-side calendar grouping +
+wiring into `TerminalChart`'s timeframe switch)
 **Priority:** P3
-**Depends on:** Candle retention investigation
+**Depends on:** None — investigation above is enough to scope a build
 
 ### More crypto pairs beyond BTC/ETH/SOL
 
-**What:** Add additional crypto pairs.
+**Status (2026-09-13): scoped, and turned out much smaller than originally estimated — 2 pairs (XRP, DOGE) shipped, see Completed.**
 
-**Why:** Tester request, but each pair needs its own exchange WS/REST wiring — the BTC price path (`useBtc.ts`)/`useAssetPrice.ts`'s crypto branch is fairly bespoke per-asset (Binance/Coinbase/Bitstamp WS feeds + `/api/crypto/[symbol]` poll fallback), unlike the generalized forex/gold Twelve Data path that just shipped 5 new pairs.
+**What was assumed:** each pair needs "bespoke exchange WS/REST wiring."
 
-**Context:** Treat as a separate, larger ticket per asset rather than bundling with the forex/gold pair additions (already shipped — see Completed).
+**What's actually true, on inspection:** `useAssetPrice.ts`'s crypto branch and `serverPriceFeed.ts`'s `getCryptoPrice` are both already generalized over any asset — there's no per-asset code path, only per-asset **config**. Adding a pair is: (1) an `assets.ts` entry with `ws: { binance: "<sym>usdt@trade", coinbase: "<SYM>-USD" }` (Binance/Coinbase use standard, predictable symbol formats for any listed coin); (2) a `COINGECKO_ID` entry in `serverPriceFeed.ts` (Bitstamp's pair name already matches the asset's own `id`, e.g. `xrpusd`, no separate mapping needed); (3) a `HISTORY_VOL` entry in `candles.ts` for seed volatility. The one real per-asset **verification** step (not code) is confirming Bitstamp actually lists that pair (`https://www.bitstamp.net/api/v2/ticker/<pair>/`) — not every coin is, so check before adding.
 
-**Effort:** L (per pair)
+**Remaining candidates** (Bitstamp-verified reachable as of 2026-09-13, not yet added): ADA/USD (`adausd`). Binance/Coinbase symbol formats are standard enough to assume support without per-pair verification, but confirm before shipping if adding a less-common coin.
+
+**Effort:** S per pair (was overestimated as L)
 **Priority:** P3
 **Depends on:** None
 
-### Colorblind-safe swatch selection + aria-labels on new drawing-tool icons
+## Investigate — not part of this session's scope (2026-09-13)
 
-**What:** (a) Add a non-color-only indicator (checkmark/ring) to the style-panel color swatches for colorblind users. (b) Add `aria-label`s to the new icon-only drawing-tool toolbar buttons.
+### Candle history doesn't fully seed on some page loads
 
-**Why:** Flagged in the 2026-09-13 design review (Pass 6, accessibility). (a) already shipped as part of the style panel implementation (a white dot + ring marks the selected swatch, not just a color change) — this item now just covers (b), the aria-labels for the 4 new toolbar tool buttons (horizontal-ray, long-position, short-position, path). Note: `DrawingToolbar.tsx`'s `Tooltip` wrapper provides a visible label already; confirm it's also exposed to screen readers (`aria-label` on the button itself, not just a hover tooltip) for all tools, not just the 4 new ones.
+**What:** On at least one clean `next start` production-server session (no drawings, no other state), `/terminal`'s chart repeatedly rendered only ~1 candle instead of the ~8-hour synthetic backfill `seedCandles1m`/`SEED_CANDLES` (`TerminalShell.tsx`) should produce on first price tick — reproduced across multiple fresh page loads and fresh browser tabs, with zero console errors.
 
-**Effort:** S
-**Priority:** P2
-**Depends on:** None
+**Why it matters:** `seedCandles1m` is a pure, deterministic function of `(assetId, anchorPrice, nowMs, count)` — nothing about it should be able to produce only 1 candle from `count=480`. If real, this would affect every timeframe, not just the 1D/1W/1M work above.
+
+**Why this wasn't root-caused today:** found late, while browser-verifying the drawing-triggered order feature below; a focused re-read of `TerminalShell.tsx`'s `candlesByAsset` state-adjustment block didn't surface an obvious cause, and further live debugging would have required more browser-automation time than remained in scope. Not caused by this session's code changes — reproduced identically on a totally clean tab with zero drawing/order state, before and unrelated to any of today's edits.
+
+**Context:** Next session should try to reproduce with a normal `npm run dev`/manual browser session (not the CDP-driven automation used today — see the gotcha below) before assuming it's automation-specific; if it reproduces under normal manual use too, it's a real regression worth bisecting.
+
+**Effort:** Unknown (investigation only, not yet started)
+**Priority:** P1 if it reproduces under normal manual use (core chart experience); P4 if automation-specific
 
 ## Completed (2026-09-13)
 
@@ -68,5 +91,12 @@ inspection) on `/terminal`.
 - **Fractal indicator + generalized EMA periods** — `src/lib/indicators.ts`: Bill Williams 5-bar fractal (rendered as chart markers via `createSeriesMarkers`), EMA periods 9/30/50/100/200 replacing the old fixed 20/50. Verified visually (fractal arrows render correctly on BTC/USD M1).
 - **More intraday timeframes (3m, 45m, 2H, 4H)** — added to `CANDLE_TIMEFRAMES`; segmented control wrapped in a horizontal-scroll container since 9 timeframes don't always fit the panel width (same fix pattern as a prior terminal toolbar overflow bug).
 - **More forex/gold asset pairs** — added AUD/USD, USD/CAD, USD/CHF, NZD/USD (forex) and XAG/USD/Silver (metals) to `assets.ts`, `serverPriceFeed.ts` (Twelve Data symbols + mock fallback prices), and `candles.ts` (seed volatility).
+- **Aria-labels on all drawing-tool toolbar buttons** — `DrawingToolbar.tsx`'s `ToolButton` now sets `aria-label`/`aria-pressed` on the underlying `<button>` (previously only a hover `Tooltip`, not exposed to screen readers) — covers all 15 tools plus cursor/delete/clear-all, not just the 4 new ones from the prior pass.
+
+## Completed (2026-09-13, second pass — "let's finish up all")
+
+- **Drawing-triggered live order tracking** — a drawn Long/Short position box (`DrawingToolbar.tsx`'s `long-position`/`short-position` tools) now becomes a real, capped resting order, not just a static annotation. `lightweight-charts-drawing`'s `LongPosition`/`ShortPosition` shapes already carry real entry/stop/target anchors (`getPositionInfo()`) — new `PositionOrderPanel.tsx` (same floating/anchored pattern as `DrawingStylePanel.tsx`) shows them plus a size input, and `TerminalChart.tsx` auto-selects a long/short shape the instant it's drawn so the panel appears immediately. Placing the order calls `terminalStore.tsx`'s existing `placeLimitOrder` — the exact same `MAX_POSITION_PCT`-capped path a human's Limit order in `OrderTicket` already goes through, so this is not a second, uncapped order-entry surface as flagged in the original product-decision item. Once placed, the existing per-tick `checkLimitOrders`/`checkStops` loop (`TerminalShell.tsx`) tracks it live with **no new evaluator code** — it fills and can hit stop/target exactly like a manually-placed Limit order. Cancelling from the panel cancels the real order (`cancelOrder`) and removes the drawing so a dead box can't look live. `placeLimitOrder`'s return type changed from `boolean` to `string | false` (the new order id, so the chart can remember which order a drawing is tracking) — the one other caller (`OrderTicket`'s flow in `TerminalShell.tsx`) was updated accordingly.
+  - **Verification:** typecheck/lint/production build/Playwright all clean. Full click-to-draw browser verification was **not achieved this session** — see the candle-seeding item above; separately, automated clicks on the chart canvas didn't register anchors at all in this environment, reproduced identically on the pre-existing, previously-human-verified Rectangle tool (not something this change broke). Verified instead via: (a) tracing every type/API against the installed library's actual `.d.ts` and compiled registry source (`requiredAnchors: 3` confirmed for both position tools); (b) injecting a valid `SerializedDrawing` directly into `localStorage`'s `zoqo-drawings-v1` (the same code path the app uses to restore drawings on load) to exercise rendering. **Recommend a manual test** (real mouse, not automation) before relying on this in production: select Long Position, click 3 points (entry, stop, target), confirm the panel appears and Place/Cancel work.
+- **XRP/USD and DOGE/USD crypto pairs** — added to `assets.ts` (Binance/Coinbase WS config), `serverPriceFeed.ts` (`COINGECKO_ID`), and `candles.ts` (seed volatility). Bitstamp pair availability verified directly (`xrpusd`/`dogeusd` both live) before adding — see the crypto-pairs item above for the corrected (much smaller than originally estimated) per-pair effort.
 
 **Completed:** unreleased (2026-09-13)
