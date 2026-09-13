@@ -14,6 +14,8 @@ const COINGECKO_ID: Record<string, string> = {
   btcusd: "bitcoin",
   ethusd: "ethereum",
   solusd: "solana",
+  xrpusd: "ripple",
+  dogeusd: "dogecoin",
 };
 
 async function bitstamp(pair: string): Promise<number> {
@@ -42,7 +44,7 @@ export interface PriceResult {
   mock?: boolean;
 }
 
-/** btcusd/ethusd/solusd only. No app-enforced rate limit — Bitstamp/
+/** Any asset with a COINGECKO_ID entry above. No app-enforced rate limit — Bitstamp/
  *  CoinGecko have no documented per-key ceiling the way TwelveData does. */
 export async function getCryptoPrice(assetId: string): Promise<PriceResult | null> {
   const coingeckoId = COINGECKO_ID[assetId];

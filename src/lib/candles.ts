@@ -37,6 +37,8 @@ const HISTORY_VOL: Record<string, number> = {
   btcusd: 0.0015,
   ethusd: 0.002,
   solusd: 0.003,
+  xrpusd: 0.0035,
+  dogeusd: 0.004,
   xauusd: 0.0006,
   eurusd: 0.0003,
   gbpusd: 0.0004,
