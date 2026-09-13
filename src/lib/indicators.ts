@@ -30,6 +30,10 @@ export interface MacdPoint {
   signal: number;
   hist: number;
 }
+export interface FractalPoint {
+  time: number;
+  type: "high" | "low";
+}
 
 const toSec = (c: Candle) => Math.floor(c.t / 1000);
 
@@ -137,7 +141,36 @@ export function macd(candles: Candle[], fast = 12, slow = 26, signalPeriod = 9):
   return out;
 }
 
-export type IndicatorId = "sma20" | "sma50" | "ema20" | "ema50" | "bb20" | "rsi14" | "macd";
+/** Bill Williams' fractal: a 5-bar pattern where the middle bar's high (or
+ *  low) is more extreme than the 2 bars on either side of it. Sparse point
+ *  markers, not a continuous line — rendered via lightweight-charts' series
+ *  markers plugin (`createSeriesMarkers`) rather than a Line series. */
+export function fractal(candles: Candle[]): FractalPoint[] {
+  const out: FractalPoint[] = [];
+  for (let i = 2; i < candles.length - 2; i++) {
+    const c = candles[i];
+    const isHigh =
+      c.h > candles[i - 2].h && c.h > candles[i - 1].h && c.h > candles[i + 1].h && c.h > candles[i + 2].h;
+    const isLow =
+      c.l < candles[i - 2].l && c.l < candles[i - 1].l && c.l < candles[i + 1].l && c.l < candles[i + 2].l;
+    if (isHigh) out.push({ time: toSec(c), type: "high" });
+    if (isLow) out.push({ time: toSec(c), type: "low" });
+  }
+  return out;
+}
+
+export type IndicatorId =
+  | "sma20"
+  | "sma50"
+  | "ema9"
+  | "ema30"
+  | "ema50"
+  | "ema100"
+  | "ema200"
+  | "bb20"
+  | "rsi14"
+  | "macd"
+  | "fractal";
 
 export interface IndicatorDef {
   id: IndicatorId;
@@ -146,15 +179,20 @@ export interface IndicatorDef {
   pane: "price" | "rsi" | "macd";
 }
 
-/** A curated 7, not TradingView's full library of hundreds — same "curated
+/** A curated set, not TradingView's full library of hundreds — same "curated
  *  subset over a flat wall of options" call DrawingToolbar already made for
- *  drawing tools, for the same reason. */
+ *  drawing tools, for the same reason. EMA periods (9/30/50/100/200) match
+ *  what traders actually reach for, not an arbitrary round-number pair. */
 export const INDICATOR_DEFS: IndicatorDef[] = [
   { id: "sma20", label: "SMA (20)", group: "Overlays", pane: "price" },
   { id: "sma50", label: "SMA (50)", group: "Overlays", pane: "price" },
-  { id: "ema20", label: "EMA (20)", group: "Overlays", pane: "price" },
+  { id: "ema9", label: "EMA (9)", group: "Overlays", pane: "price" },
+  { id: "ema30", label: "EMA (30)", group: "Overlays", pane: "price" },
   { id: "ema50", label: "EMA (50)", group: "Overlays", pane: "price" },
+  { id: "ema100", label: "EMA (100)", group: "Overlays", pane: "price" },
+  { id: "ema200", label: "EMA (200)", group: "Overlays", pane: "price" },
   { id: "bb20", label: "Bollinger Bands (20, 2)", group: "Overlays", pane: "price" },
+  { id: "fractal", label: "Fractal", group: "Overlays", pane: "price" },
   { id: "rsi14", label: "RSI (14)", group: "Oscillators", pane: "rsi" },
   { id: "macd", label: "MACD (12, 26, 9)", group: "Oscillators", pane: "macd" },
 ];

@@ -14,12 +14,21 @@ export interface Candle {
   c: number;
 }
 
+// 3m/45m/2H/4H added per tester report — all fit within the existing 24h
+// candle retention window (TerminalShell's MAX_CANDLES), same as H1 already
+// does, just with fewer bars at the coarser end (4H = 6 bars max). 1D/1W/1M
+// are NOT here: they'd need retention far beyond 24h and are tracked
+// separately in TODOS.md pending a retention/backfill investigation.
 export const CANDLE_TIMEFRAMES = [
   { key: "1m", label: "M1", minutes: 1 },
+  { key: "3m", label: "M3", minutes: 3 },
   { key: "5m", label: "M5", minutes: 5 },
   { key: "15m", label: "M15", minutes: 15 },
   { key: "30m", label: "M30", minutes: 30 },
+  { key: "45m", label: "M45", minutes: 45 },
   { key: "1h", label: "H1", minutes: 60 },
+  { key: "2h", label: "H2", minutes: 120 },
+  { key: "4h", label: "H4", minutes: 240 },
 ] as const;
 
 // Per-minute log-return stdev used only to backfill history that predates
@@ -32,6 +41,11 @@ const HISTORY_VOL: Record<string, number> = {
   eurusd: 0.0003,
   gbpusd: 0.0004,
   usdjpy: 0.0003,
+  audusd: 0.0003,
+  usdcad: 0.0003,
+  usdchf: 0.0003,
+  nzdusd: 0.0004,
+  xagusd: 0.0009,
 };
 
 function hashSeed(s: string): number {

@@ -70,6 +70,11 @@ const MOCK_BASE: Record<string, number> = {
   eurusd: 1.085,
   gbpusd: 1.265,
   usdjpy: 154.5,
+  audusd: 0.65,
+  usdcad: 1.38,
+  usdchf: 0.88,
+  nzdusd: 0.59,
+  xagusd: 31,
 };
 
 // Twelve Data symbol format differs slightly from our ids.
@@ -78,6 +83,11 @@ const TWELVE_DATA_SYMBOL: Record<string, string> = {
   eurusd: "EUR/USD",
   gbpusd: "GBP/USD",
   usdjpy: "USD/JPY",
+  audusd: "AUD/USD",
+  usdcad: "USD/CAD",
+  usdchf: "USD/CHF",
+  nzdusd: "NZD/USD",
+  xagusd: "XAG/USD",
 };
 
 function hashStr(s: string): number {
@@ -86,10 +96,11 @@ function hashStr(s: string): number {
   return h >>> 0;
 }
 
-/** xauusd/eurusd/gbpusd/usdjpy only. TWELVE_DATA_API_KEY's free tier is 800
- *  req/day — callers evaluating triggers at a high cadence across all 4
- *  assets must cache this themselves (see the cron evaluator's price_history
- *  staleness window) rather than calling this every tick. Falls back to a
+/** REST-polled classes only (gold/silver/forex — see TWELVE_DATA_SYMBOL for
+ *  the full list). TWELVE_DATA_API_KEY's free tier is 800 req/day — callers
+ *  evaluating triggers at a high cadence across all of these assets must
+ *  cache this themselves (see the cron evaluator's price_history staleness
+ *  window) rather than calling this every tick. Falls back to a
  *  deterministic seeded mock (never Math.random(), never silently presented
  *  as real — `mock: true` on the result) when no key is set or the fetch
  *  fails, same as the app has always done without a key configured. */

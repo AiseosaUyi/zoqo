@@ -2,22 +2,27 @@
 import * as React from "react";
 import {
   createChart,
+  createSeriesMarkers,
   CandlestickSeries,
   LineSeries,
   HistogramSeries,
   LineStyle,
   type IChartApi,
   type ISeriesApi,
+  type ISeriesMarkersPluginApi,
   type IPaneApi,
   type MouseEventParams,
+  type SeriesMarker,
   type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { DrawingManager, getToolRegistry, type Anchor } from "lightweight-charts-drawing";
+import { DrawingManager, getToolRegistry, type Anchor, type IDrawing, type DrawingStyle } from "lightweight-charts-drawing";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { CANDLE_TIMEFRAMES, groupCandles, type Candle } from "@/lib/candles";
 import { LiveDot, SegmentedControl, Spinner } from "@/components/ui";
 import { DrawingToolbar } from "./DrawingToolbar";
+import { DrawingStylePanel, type StylePanelPosition } from "./DrawingStylePanel";
+import { TradingSessionOverlay, type PixelSessionBand } from "./TradingSessionOverlay";
 import { IndicatorMenu } from "./IndicatorMenu";
 import { getDrawings, setDrawings } from "@/lib/drawings";
 import {
@@ -27,10 +32,12 @@ import {
   bollingerBands,
   rsi,
   macd,
+  fractal,
   type IndicatorId,
   type IndicatorPoint,
 } from "@/lib/indicators";
 import { getActiveIndicators, setActiveIndicators } from "@/lib/chartIndicators";
+import { getSessionBandsInRange } from "@/lib/tradingSessions";
 
 // Real ZOQO palette hex (tokens.ts) — canvas 2D (what lightweight-charts
 // renders through) can't resolve `var(--color-*)` the way SVG/CSS can, so
@@ -39,9 +46,14 @@ import { getActiveIndicators, setActiveIndicators } from "@/lib/chartIndicators"
 const OVERLAY_COLOR: Record<string, string> = {
   sma20: "#0047FF", // blue-500
   sma50: "#FF7300", // orange-500
-  ema20: "#601FFF", // purple-500
+  ema9: "#27AE60", // green-500
+  ema30: "#601FFF", // purple-500
   ema50: "#FEAE14", // gold-500
+  ema100: "#FF2E00", // red-500
+  ema200: "#5C584F", // gray-600
 };
+const FRACTAL_HIGH_COLOR = "#FF2E00"; // red-500
+const FRACTAL_LOW_COLOR = "#27AE60"; // green-500
 const BB_BAND_COLOR = "#B0ABA1"; // gray-400
 const BB_BASIS_COLOR = "#601FFF"; // purple-500
 const RSI_COLOR = "#601FFF"; // purple-500
@@ -98,6 +110,10 @@ export const TerminalChart = React.forwardRef<
   const rsiPaneRef = React.useRef<IPaneApi<Time> | null>(null);
   const macdPaneRef = React.useRef<IPaneApi<Time> | null>(null);
   const indicatorSeriesRef = React.useRef<Map<IndicatorId, ISeriesApi<"Line" | "Histogram">[]>>(new Map());
+  // Fractal renders as sparse point markers on the candlestick series itself
+  // (createSeriesMarkers plugin), not a Line/Histogram series — tracked
+  // separately since it doesn't fit indicatorSeriesRef's shape.
+  const fractalMarkersRef = React.useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   // Read inside the mount effect's persist() closure (set up once, at
   // manager-creation time) so it always saves against whichever asset is
   // current rather than the asset selected when the effect first ran. Kept
@@ -115,6 +131,11 @@ export const TerminalChart = React.forwardRef<
   const activeToolRef = React.useRef<string | null>(null);
   const pendingAnchorsRef = React.useRef<Anchor[]>([]);
   const [hasSelection, setHasSelection] = React.useState(false);
+  const [selectedDrawing, setSelectedDrawing] = React.useState<IDrawing | null>(null);
+  // Bumped on pan/zoom/resize/style-edit so the style panel's position and
+  // displayed style recompute without needing selectedDrawing itself (a
+  // mutable object the drawing library updates in place) to change identity.
+  const [panelVersion, setPanelVersion] = React.useState(0);
   const [hasDrawings, setHasDrawings] = React.useState(false);
   // Loaded from localStorage inside the mount effect below (client-only —
   // same reasoning as getDrawings never being called from a useState
@@ -166,8 +187,19 @@ export const TerminalChart = React.forwardRef<
     const offRemoved = manager.on("drawing:removed", persist);
     const offUpdated = manager.on("drawing:updated", persist);
     const offCleared = manager.on("drawing:cleared", persist);
-    const offSelected = manager.on("drawing:selected", () => setHasSelection(true));
-    const offDeselected = manager.on("drawing:deselected", () => setHasSelection(false));
+    const offSelected = manager.on("drawing:selected", (event) => {
+      setHasSelection(true);
+      setSelectedDrawing(event.drawing ?? manager.getSelectedDrawing());
+    });
+    const offDeselected = manager.on("drawing:deselected", () => {
+      setHasSelection(false);
+      setSelectedDrawing(null);
+    });
+    // Style panel is anchored to the shape's pixel position, which shifts on
+    // every pan/zoom — this is the one thing that changes it without a
+    // selection or style change of its own.
+    const onRangeChange = () => setPanelVersion((v) => v + 1);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setActiveTool(null);
@@ -211,13 +243,19 @@ export const TerminalChart = React.forwardRef<
       const entry = entries[0];
       if (!entry) return;
       const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0) chart.resize(width, height);
+      if (width > 0 && height > 0) {
+        chart.resize(width, height);
+        setChartHeight(height);
+        setPanelVersion((v) => v + 1);
+      }
     });
     ro.observe(containerRef.current);
+    setChartHeight(containerRef.current.clientHeight);
 
     return () => {
       ro.disconnect();
       chart.unsubscribeClick(onPlacementClick);
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
       offAdded();
       offRemoved();
       offUpdated();
@@ -233,6 +271,7 @@ export const TerminalChart = React.forwardRef<
       rsiPaneRef.current = null;
       macdPaneRef.current = null;
       indicatorSeriesRef.current = new Map();
+      fractalMarkersRef.current = null;
     };
   }, []);
 
@@ -270,6 +309,7 @@ export const TerminalChart = React.forwardRef<
     }
     setHasDrawings(saved.length > 0);
     setHasSelection(false);
+    setSelectedDrawing(null);
   }, [assetId]);
 
   React.useEffect(() => {
@@ -282,6 +322,8 @@ export const TerminalChart = React.forwardRef<
     const manager = drawingManagerRef.current;
     const selected = manager?.getSelectedDrawing();
     if (manager && selected) manager.removeDrawing(selected.id);
+    setHasSelection(false);
+    setSelectedDrawing(null);
   };
 
   const clearAllDrawings = () => {
@@ -289,6 +331,43 @@ export const TerminalChart = React.forwardRef<
     setDrawings(assetId, []);
     setHasDrawings(false);
   };
+
+  const closeStylePanel = () => {
+    drawingManagerRef.current?.deselectAll();
+    setHasSelection(false);
+    setSelectedDrawing(null);
+  };
+
+  // Bypasses the DrawingManager (updateStyle is a Drawing-instance method,
+  // not something the manager exposes a pass-through for) so the manager's
+  // own "drawing:updated" event never fires here — persistence is done
+  // manually, matching what the mount effect's persist() closure does for
+  // every other mutation path.
+  const handleStyleChange = (patch: Partial<DrawingStyle>) => {
+    const manager = drawingManagerRef.current;
+    if (!manager || !selectedDrawing) return;
+    selectedDrawing.updateStyle(patch);
+    setPanelVersion((v) => v + 1);
+    const exported = manager.exportDrawings();
+    setDrawings(assetId, exported);
+  };
+
+  // First anchor's pixel position, recomputed whenever panelVersion bumps
+  // (pan/zoom/resize/style-edit) or the selection itself changes.
+  const stylePanelPosition = React.useMemo<StylePanelPosition | null>(() => {
+    void panelVersion; // recompute trigger only, value itself unused
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    const container = containerRef.current;
+    if (!chart || !series || !container || !selectedDrawing) return null;
+    const anchor = selectedDrawing.anchors[0];
+    if (!anchor) return null;
+    const x = chart.timeScale().timeToCoordinate(anchor.time as Time);
+    const y = series.priceToCoordinate(anchor.price);
+    if (x == null || y == null) return null;
+    return { x, y, containerWidth: container.clientWidth, containerHeight: container.clientHeight };
+  }, [selectedDrawing, panelVersion]);
+  const [chartHeight, setChartHeight] = React.useState(0);
 
   // Price-axis precision follows the active asset (assets.ts's `decimals` —
   // BTC/gold are 2dp, most FX 4-5dp, JPY pairs 3dp). Re-applied whenever the
@@ -307,6 +386,37 @@ export const TerminalChart = React.forwardRef<
     () => groupCandles(candles, groupMinutes),
     [candles, groupMinutes],
   );
+
+  // Session overlay: forex/gold only (crypto has no session concept — see
+  // tradingSessions.ts), recomputed on the same pan/zoom/resize trigger the
+  // style panel uses. timeToCoordinate can return null for a time outside
+  // the chart's actual plotted bar range (common with a short, few-hours-old
+  // history against multi-hour session bands) — rather than skip those
+  // bands (which flickered the whole overlay on/off as the live tick moved
+  // the data boundary across a band edge every render), clamp to the
+  // container's screen edge instead: a band edge outside the plotted range
+  // is, by definition, off-screen in that direction, so 0/width is the
+  // correct pixel value, not an absent one.
+  const sessionBands = React.useMemo<PixelSessionBand[]>(() => {
+    void panelVersion;
+    if (!asset || asset.assetClass === "crypto" || displayCandles.length === 0) return [];
+    const chart = chartRef.current;
+    const container = containerRef.current;
+    if (!chart || !container) return [];
+    const dataFromSec = Math.floor(displayCandles[0].t / 1000);
+    const dataToSec = Math.floor(displayCandles[displayCandles.length - 1].t / 1000);
+    const containerWidth = container.clientWidth;
+    const bands = getSessionBandsInRange(dataFromSec, dataToSec);
+    const pixelBands: PixelSessionBand[] = [];
+    for (const b of bands) {
+      const rawLeft = chart.timeScale().timeToCoordinate(b.startSec as Time);
+      const rawRight = chart.timeScale().timeToCoordinate(b.endSec as Time);
+      const left = rawLeft ?? (b.startSec < dataFromSec ? 0 : containerWidth);
+      const right = rawRight ?? (b.endSec > dataToSec ? containerWidth : 0);
+      pixelBands.push({ key: b.key, label: b.label, color: b.color, left, right });
+    }
+    return pixelBands;
+  }, [asset, panelVersion, displayCandles]);
 
   // Indicator lifecycle + live recompute. RSI and MACD each get their own
   // pane, created on demand (chart.addPane()) the first time that indicator
@@ -333,6 +443,10 @@ export const TerminalChart = React.forwardRef<
       if (id === "macd" && macdPaneRef.current) {
         chart.removePane(macdPaneRef.current.paneIndex());
         macdPaneRef.current = null;
+      }
+      if (id === "fractal" && fractalMarkersRef.current) {
+        fractalMarkersRef.current.detach();
+        fractalMarkersRef.current = null;
       }
     }
 
@@ -388,6 +502,9 @@ export const TerminalChart = React.forwardRef<
           paneIndex,
         );
         map.set(id, [hist, macdLine, signalLine]);
+      } else if (id === "fractal") {
+        if (seriesRef.current) fractalMarkersRef.current = createSeriesMarkers(seriesRef.current, []);
+        map.set(id, []);
       } else {
         const line = chart.addSeries(LineSeries, {
           color: OVERLAY_COLOR[id],
@@ -401,12 +518,27 @@ export const TerminalChart = React.forwardRef<
     }
 
     for (const id of activeIndicators) {
+      if (id === "fractal") {
+        if (!fractalMarkersRef.current) continue;
+        const points = fractal(displayCandles);
+        const markers: SeriesMarker<Time>[] = points.map((p) => ({
+          time: p.time as UTCTimestamp,
+          position: p.type === "high" ? "aboveBar" : "belowBar",
+          color: p.type === "high" ? FRACTAL_HIGH_COLOR : FRACTAL_LOW_COLOR,
+          shape: p.type === "high" ? "arrowDown" : "arrowUp",
+        }));
+        fractalMarkersRef.current.setMarkers(markers);
+        continue;
+      }
       const seriesList = map.get(id);
       if (!seriesList) continue;
       if (id === "sma20") seriesList[0].setData(sma(displayCandles, 20).map(toLinePoint));
       else if (id === "sma50") seriesList[0].setData(sma(displayCandles, 50).map(toLinePoint));
-      else if (id === "ema20") seriesList[0].setData(ema(displayCandles, 20).map(toLinePoint));
+      else if (id === "ema9") seriesList[0].setData(ema(displayCandles, 9).map(toLinePoint));
+      else if (id === "ema30") seriesList[0].setData(ema(displayCandles, 30).map(toLinePoint));
       else if (id === "ema50") seriesList[0].setData(ema(displayCandles, 50).map(toLinePoint));
+      else if (id === "ema100") seriesList[0].setData(ema(displayCandles, 100).map(toLinePoint));
+      else if (id === "ema200") seriesList[0].setData(ema(displayCandles, 200).map(toLinePoint));
       else if (id === "bb20") {
         const bands = bollingerBands(displayCandles, 20, 2);
         seriesList[0].setData(bands.map((b) => ({ time: b.time as UTCTimestamp, value: b.upper })));
@@ -461,14 +593,20 @@ export const TerminalChart = React.forwardRef<
           <div className="text-[12px] font-semibold text-sub">{asset?.symbol ?? assetId}</div>
           {source != null && connected != null && <LiveDot source={source} connected={connected} />}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <IndicatorMenu active={activeIndicators} onToggle={toggleIndicator} />
-          <SegmentedControl
-            data={CANDLE_TIMEFRAMES.map((tf) => ({ value: tf.key, label: tf.label }))}
-            value={timeframe}
-            onChange={setTimeframe}
-            size="xs"
-          />
+          {/* 9 timeframes (was 5) won't always fit the panel width — scrolls
+           *  horizontally instead of SegmentedControl's own overflow-hidden
+           *  silently clipping tabs, same fix pattern as the prior terminal
+           *  toolbar overflow bug. */}
+          <div className="overflow-x-auto scroll-thin">
+            <SegmentedControl
+              data={CANDLE_TIMEFRAMES.map((tf) => ({ value: tf.key, label: tf.label }))}
+              value={timeframe}
+              onChange={setTimeframe}
+              size="xs"
+            />
+          </div>
         </div>
       </div>
       {activeIndicators.length > 0 && (
@@ -497,7 +635,17 @@ export const TerminalChart = React.forwardRef<
           onClearAll={clearAllDrawings}
         />
         <div className="relative min-h-0 flex-1">
+          <TradingSessionOverlay bands={sessionBands} height={chartHeight} />
           <div ref={containerRef} className="h-full w-full" />
+          {selectedDrawing && stylePanelPosition && (
+            <DrawingStylePanel
+              style={selectedDrawing.style}
+              position={stylePanelPosition}
+              onChange={handleStyleChange}
+              onDelete={deleteSelected}
+              onClose={closeStylePanel}
+            />
+          )}
           {candles.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-surface text-[12px] text-sub">
               <Spinner size="sm" />

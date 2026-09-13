@@ -95,6 +95,51 @@ export const ASSETS: AssetDef[] = [
     syntheticVolPerTick: 0.00002,
     bookTicks: [0.001, 0.01, 0.1],
   },
+  {
+    id: "audusd",
+    symbol: "AUD/USD",
+    label: "Australian Dollar / US Dollar",
+    assetClass: "forex",
+    decimals: 5,
+    syntheticVolPerTick: 0.00002,
+    bookTicks: [0.00001, 0.0001, 0.001],
+  },
+  {
+    id: "usdcad",
+    symbol: "USD/CAD",
+    label: "US Dollar / Canadian Dollar",
+    assetClass: "forex",
+    decimals: 5,
+    syntheticVolPerTick: 0.00002,
+    bookTicks: [0.00001, 0.0001, 0.001],
+  },
+  {
+    id: "usdchf",
+    symbol: "USD/CHF",
+    label: "US Dollar / Swiss Franc",
+    assetClass: "forex",
+    decimals: 5,
+    syntheticVolPerTick: 0.00002,
+    bookTicks: [0.00001, 0.0001, 0.001],
+  },
+  {
+    id: "nzdusd",
+    symbol: "NZD/USD",
+    label: "New Zealand Dollar / US Dollar",
+    assetClass: "forex",
+    decimals: 5,
+    syntheticVolPerTick: 0.00003,
+    bookTicks: [0.00001, 0.0001, 0.001],
+  },
+  {
+    id: "xagusd",
+    symbol: "XAG/USD",
+    label: "Silver",
+    assetClass: "gold", // "Metals" watchlist section (assetClassLabel) — see Watchlist.tsx
+    decimals: 3,
+    syntheticVolPerTick: 0.00008,
+    bookTicks: [0.001, 0.01, 0.1],
+  },
 ];
 
 export const ASSET_BY_ID: Record<string, AssetDef> = Object.fromEntries(

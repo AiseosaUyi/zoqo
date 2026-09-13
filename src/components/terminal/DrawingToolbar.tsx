@@ -4,6 +4,7 @@ import {
   TrendingUp,
   Minus,
   ArrowUpRight,
+  ArrowRightFromLine,
   Square,
   Columns3,
   Percent,
@@ -11,6 +12,9 @@ import {
   Type,
   MapPin,
   ArrowRight,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  Waypoints,
   Pencil,
   Trash2,
   X,
@@ -18,24 +22,28 @@ import {
 import { Tooltip } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
-/** A curated 12 of the plugin's 68 drawing tools — TradingView's own
+/** A curated 15 of the plugin's 68 drawing tools — TradingView's own
  *  toolbar makes the same call (a default set, "more tools" behind a
  *  submenu) because 68 flat icons is unusable, not a limitation worth
  *  apologizing for. One from most categories: lines, a channel, both
- *  Fibonacci tools traders actually reach for, a shape, and the
- *  annotation set the spec's brief specifically asked for ("put pin
- *  points, put notes"). */
+ *  Fibonacci tools traders actually reach for, a shape, the long/short
+ *  position annotations, and the annotation set the spec's brief
+ *  specifically asked for ("put pin points, put notes"). */
 export const DRAWING_TOOLS = [
   { type: "trend-line", label: "Trend Line", Icon: TrendingUp },
   { type: "horizontal-line", label: "Horizontal Line", Icon: Minus },
+  { type: "horizontal-ray", label: "Horizontal Ray (half line)", Icon: ArrowRightFromLine },
   { type: "ray", label: "Ray", Icon: ArrowUpRight },
   { type: "rectangle", label: "Rectangle", Icon: Square },
   { type: "parallel-channel", label: "Parallel Channel", Icon: Columns3 },
   { type: "fib-retracement", label: "Fib Retracement", Icon: Percent },
   { type: "fib-extension", label: "Fib Extension", Icon: Sigma },
   { type: "arrow", label: "Arrow", Icon: ArrowRight },
+  { type: "long-position", label: "Long Position", Icon: ArrowUpToLine },
+  { type: "short-position", label: "Short Position", Icon: ArrowDownToLine },
   { type: "text-annotation", label: "Text", Icon: Type },
   { type: "price-label", label: "Price Label / Pin", Icon: MapPin },
+  { type: "path", label: "Path", Icon: Waypoints },
   { type: "brush", label: "Brush", Icon: Pencil },
 ] as const;
 
