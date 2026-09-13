@@ -57,8 +57,10 @@ interface ProfileCtx {
   /** Epoch ms when "Resend code" becomes available again. */
   otpDeadline: number | null;
   /** Mock-accepts any 6-digit code: derives a handle from the email, credits
-   *  the signup bonus once, flips signedIn, and advances to "rewards". */
-  confirmOtp: (code: string) => void;
+   *  the signup bonus once, flips signedIn, and advances to "rewards".
+   *  Returns whether verification succeeded, so callers (OtpStep) can revert
+   *  their optimistic "verified" UI on failure instead of getting stuck. */
+  confirmOtp: (code: string) => Promise<boolean>;
   /** Resets the resend countdown (mocked — no email is actually re-sent). */
   resendOtp: () => void;
   /** Any non-empty code except "000000" is accepted (mirrors the invalid-code
@@ -112,6 +114,21 @@ export function useProfile() {
 
 const dayStr = (d: Date) => d.toDateString();
 const bonusFor = (streak: number) => 10 + Math.min(streak, 10) * 5; // $15 → $60
+
+/** Supabase's default mailer caps sends at 2/hour with no custom SMTP
+ *  configured — this is the actual root cause behind reports of OTP codes
+ *  never arriving. Distinguishing it lets the UI show a message that
+ *  explains WHY (and logs a distinct tag), instead of a generic error that
+ *  looks identical to a one-off network blip. */
+function isRateLimitError(error: { status?: number; code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.status === 429) return true;
+  if (error.code && /rate.?limit/i.test(error.code)) return true;
+  if (error.message && /rate limit/i.test(error.message)) return true;
+  return false;
+}
+
+const RATE_LIMIT_MESSAGE = "Too many attempts — please wait a few minutes and try again.";
 
 /** Turns an email local-part into a display handle, e.g. "j.doe_99" → "J Doe". */
 function handleFromEmail(email: string | null): string {
@@ -271,6 +288,30 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     [signedIn, p.email, stepFor],
   );
 
+  // Shared by submitEmail and resendOtp so both get identical error capture
+  // — previously only submitEmail did, so a failed resend was silent even in
+  // principle (a bare `void supabase.auth.signInWithOtp(...)`). Not awaited
+  // by callers (fire-and-forget, matching the mock's "advance immediately"
+  // shape); a send failure surfaces as an authError without blocking the
+  // step change. If the user has since typed/retyped a code and a verify
+  // error lands around the same time, whichever call resolves last wins —
+  // authError is a single field, so no extra coordination is needed.
+  const sendOtp = React.useCallback(
+    async (email: string) => {
+      if (!BACKEND_ENABLED || !supabase) return;
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (!error) return;
+      if (isRateLimitError(error)) {
+        console.error("[auth:otp-rate-limited]", error);
+        setAuthError(RATE_LIMIT_MESSAGE);
+      } else {
+        console.error("[auth:otp-send-failed]", error);
+        setAuthError(error.message);
+      }
+    },
+    [supabase],
+  );
+
   const submitEmail = React.useCallback((email: string) => {
     const clean = email.trim();
     if (!EMAIL_RE.test(clean)) {
@@ -281,27 +322,19 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     setP((prev) => ({ ...prev, email: clean, createdAt: prev.createdAt || Date.now() }));
     setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
     setAuthStep("otp");
-    // Fires the real OTP email in backend mode — not awaited (the interface
-    // is synchronous, matching the mock's own "advance immediately" shape);
-    // a send failure surfaces as an authError without blocking the step
-    // change, same as the mock never fails this step either.
-    if (BACKEND_ENABLED && supabase) {
-      supabase.auth.signInWithOtp({ email: clean }).then(({ error }) => {
-        if (error) setAuthError(error.message);
-      });
-    }
-  }, [setP, supabase]);
+    void sendOtp(clean);
+  }, [setP, sendOtp]);
 
   const resendOtp = React.useCallback(() => {
+    if (!p.email) return;
+    setAuthError(null);
     setOtpDeadline(Date.now() + OTP_COUNTDOWN_MS);
-    if (BACKEND_ENABLED && supabase && p.email) {
-      void supabase.auth.signInWithOtp({ email: p.email });
-    }
-  }, [supabase, p.email]);
+    void sendOtp(p.email);
+  }, [sendOtp, p.email]);
 
   const confirmOtp = React.useCallback(
-    (code: string) => {
-      if (!/^\d{6}$/.test(code)) return; // mock-accepts any 6 digits
+    async (code: string): Promise<boolean> => {
+      if (!/^\d{6}$/.test(code)) return false; // mock-accepts any 6 digits
 
       const proceed = () => {
         setHandle(handleFromEmail(p.email));
@@ -314,14 +347,23 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       };
 
       if (BACKEND_ENABLED && supabase) {
-        if (!p.email) return;
-        supabase.auth.verifyOtp({ email: p.email, token: code, type: "email" }).then(({ error }) => {
-          if (error) setAuthError(error.message);
-          else proceed();
-        });
-        return;
+        if (!p.email) return false;
+        const { error } = await supabase.auth.verifyOtp({ email: p.email, token: code, type: "email" });
+        if (error) {
+          if (isRateLimitError(error)) {
+            console.error("[auth:otp-rate-limited]", error);
+            setAuthError(RATE_LIMIT_MESSAGE);
+          } else {
+            console.error("[auth:otp-verify-failed]", error);
+            setAuthError(error.message);
+          }
+          return false;
+        }
+        proceed();
+        return true;
       }
       proceed();
+      return true;
     },
     [p.email, setHandle, grant, supabase],
   );

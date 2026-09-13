@@ -65,6 +65,15 @@ function HatchCorner() {
   );
 }
 
+/** Shared inline error paragraph — used by all three auth steps so error
+ *  styling/copy only needs to change in one place. OtpStep previously had no
+ *  error display at all, which is what made a failed OTP send or verify
+ *  look like nothing was happening. */
+function AuthError({ message }: { message: string | null }) {
+  if (!message) return null;
+  return <p className="mt-1.5 text-[12.5px] font-medium text-red-600">{message}</p>;
+}
+
 function EmailStep() {
   const { submitEmail, authError, setAuthError } = useProfile();
   const [email, setEmail] = React.useState("");
@@ -92,7 +101,7 @@ function EmailStep() {
         className="mt-1.5"
         autoFocus
       />
-      {authError && <p className="mt-1.5 text-[12.5px] font-medium text-red-600">{authError}</p>}
+      <AuthError message={authError} />
 
       <Button color="brand" size="lg" fullWidth className="mt-4" onClick={() => submitEmail(email)}>
         Continue
@@ -111,9 +120,10 @@ const formatMmSs = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 function OtpStep() {
-  const { email, otpDeadline, resendOtp, confirmOtp } = useProfile();
+  const { email, otpDeadline, resendOtp, confirmOtp, authError, setAuthError } = useProfile();
   const [digits, setDigits] = React.useState<string[]>(Array(6).fill(""));
   const [verified, setVerified] = React.useState(false);
+  const [checking, setChecking] = React.useState(false);
   const inputsRef = React.useRef<(HTMLInputElement | null)[]>([]);
   const now = useTicker(1000);
   const secondsLeft = now > 0 ? secondsUntil(otpDeadline, now) : 0;
@@ -123,18 +133,40 @@ function OtpStep() {
   // for the green-border style, but must not re-run/clean up this effect, or
   // the pending confirmOtp timeout gets cancelled the instant it's scheduled.
   // A ref tracks "already confirming" instead so the effect only fires once
-  // per completed code.
+  // per completed code. Critically, it MUST reset on failure — left stuck at
+  // true, retyping the identical code (or clicking "Try again") would never
+  // re-verify since neither `code` nor `confirmOtp` changed to re-trigger
+  // this effect, which is exactly how a failed verify used to dead-end.
   const confirmingRef = React.useRef(false);
+
+  const attemptConfirm = React.useCallback(
+    (c: string) => {
+      confirmingRef.current = true;
+      setChecking(true);
+      setVerified(true);
+      confirmOtp(c).then((ok) => {
+        setChecking(false);
+        confirmingRef.current = false;
+        // On failure: revert to editable, KEEP the typed code (don't force a
+        // full retype for what's often a one-digit typo or expired code),
+        // and authError is already set by confirmOtp — AuthError below
+        // renders it and the "Try again" button lets the user retry the
+        // same code (e.g. after a transient network error) or fix a digit.
+        if (!ok) setVerified(false);
+      });
+    },
+    [confirmOtp],
+  );
+
   React.useEffect(() => {
     if (code.length !== 6 || confirmingRef.current) return;
-    confirmingRef.current = true;
-    setVerified(true);
-    const t = setTimeout(() => confirmOtp(code), 550);
+    const t = setTimeout(() => attemptConfirm(code), 550);
     return () => clearTimeout(t);
-  }, [code, confirmOtp]);
+  }, [code, attemptConfirm]);
 
   const setDigitAt = (i: number, raw: string) => {
-    if (verified) return;
+    if (verified || checking) return;
+    if (authError) setAuthError(null);
     const clean = raw.replace(/\D/g, "").slice(-1);
     setDigits((prev) => {
       const next = [...prev];
@@ -146,6 +178,19 @@ function OtpStep() {
 
   const onKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !digits[i] && i > 0) inputsRef.current[i - 1]?.focus();
+  };
+
+  // A resend supersedes whatever code was being verified — reset the guard
+  // ref and any stuck verified/checking state so a fresh code isn't silently
+  // blocked by leftover state from the previous (failed) attempt.
+  const onResend = () => {
+    confirmingRef.current = false;
+    setChecking(false);
+    setVerified(false);
+    setDigits(Array(6).fill(""));
+    setAuthError(null);
+    resendOtp();
+    inputsRef.current[0]?.focus();
   };
 
   const paste = async () => {
@@ -185,7 +230,7 @@ function OtpStep() {
             onKeyDown={(e) => onKeyDown(i, e)}
             inputMode="numeric"
             maxLength={1}
-            disabled={verified}
+            disabled={verified || checking}
             aria-label={`Digit ${i + 1}`}
             className={cn(
               // Deliberately smaller on mobile (40px) than desktop (50px) —
@@ -210,13 +255,25 @@ function OtpStep() {
         </button>
       </div>
 
+      <AuthError message={authError} />
+      {!checking && !verified && code.length === 6 && authError && (
+        <div className="mt-3 flex justify-center">
+          <button
+            onClick={() => attemptConfirm(code)}
+            className="rounded-full border px-4 py-1.5 text-[12px] font-semibold text-purple-600 transition-colors hover:bg-purple-50"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       <p className="mt-4 text-center text-[12px] text-sub">
         {secondsLeft > 0 ? (
           <>Resend code in {formatMmSs(secondsLeft)}</>
         ) : (
           <>
             Didn&apos;t get it?{" "}
-            <button onClick={resendOtp} className="font-semibold text-purple-600 hover:underline">
+            <button onClick={onResend} className="font-semibold text-purple-600 hover:underline">
               Resend code
             </button>
           </>
@@ -266,7 +323,7 @@ function RewardsStep() {
         className="mt-1.5"
         autoFocus
       />
-      {authError && <p className="mt-1.5 text-[12.5px] font-medium text-red-600">{authError}</p>}
+      <AuthError message={authError} />
 
       <Button color="brand" size="lg" fullWidth className="mt-4" onClick={() => claimRewards(code)}>
         Claim Rewards
