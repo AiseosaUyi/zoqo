@@ -96,15 +96,17 @@ interface TerminalCtx {
   /** Places a resting Limit order — validated (reduce-only capping, the same
    *  MAX_POSITION_PCT sanity check `openPosition` applies) at placement time
    *  against a *hypothetical* fill at `limitPrice`, not at the live mark.
-   *  Returns false if nothing valid could be placed (e.g. reduce-only with
-   *  no opposite position to reduce). */
+   *  Returns the new order's id, or `false` if nothing valid could be placed
+   *  (e.g. reduce-only with no opposite position to reduce) — the id (not
+   *  just a boolean) lets a caller like a chart-drawn position annotation
+   *  remember which order a given drawing is now tracking. */
   placeLimitOrder: (
     assetId: string,
     side: "long" | "short",
     qty: number,
     limitPrice: number,
     opts?: { stopLoss?: number; takeProfit?: number; reduceOnly?: boolean },
-  ) => boolean;
+  ) => string | false;
   cancelOrder: (id: string) => void;
   /** Checks every resting Limit order against the latest marks and fills
    *  anything crossed, at the limit price (not the possibly-better mark) —
@@ -240,7 +242,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
       qty: number,
       limitPrice: number,
       opts?: { stopLoss?: number; takeProfit?: number; reduceOnly?: boolean },
-    ): boolean => {
+    ): string | false => {
       if (!ASSET_BY_ID[assetId] || qty <= 0 || limitPrice <= 0) return false;
       let effectiveQty = qty;
       if (opts?.reduceOnly) {
@@ -255,9 +257,10 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
       // doomed order shouldn't sit in Open Orders looking live until it
       // finally crosses and gets silently rejected.
       if (effectiveQty * limitPrice > cash * MAX_POSITION_PCT) return false;
+      const id = crypto.randomUUID();
       setOrders((prev) => [
         {
-          id: crypto.randomUUID(),
+          id,
           assetId,
           side,
           qty: effectiveQty,
@@ -269,7 +272,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
         },
         ...prev,
       ]);
-      return true;
+      return id;
     },
     [cash, positions, setOrders],
   );

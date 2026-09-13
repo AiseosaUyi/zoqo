@@ -104,7 +104,7 @@ function TerminalInner() {
   const searchParams = useSearchParams();
   const mockLessonParam = searchParams.get("mockLesson");
   const { cash } = useZoqo();
-  const { positions, orders, openPosition, markToMarket, checkStops, placeLimitOrder, checkLimitOrders } =
+  const { positions, orders, openPosition, markToMarket, checkStops, placeLimitOrder, cancelOrder, checkLimitOrders } =
     useTerminal();
   const [activeMock, setActiveMock] = React.useState<MockTradePending | null>(() =>
     resolvePendingMockTrade(mockLessonParam),
@@ -236,18 +236,18 @@ function TerminalInner() {
 
     if (opts?.orderType === "limit") {
       if (!opts.limitPrice) return false;
-      const ok = placeLimitOrder(assetId, side, qty, opts.limitPrice, {
+      const orderId = placeLimitOrder(assetId, side, qty, opts.limitPrice, {
         stopLoss: opts.stopLoss,
         takeProfit: opts.takeProfit,
         reduceOnly: opts.reduceOnly,
       });
-      if (ok) {
+      if (orderId) {
         showToast(
           `Limit order placed — ${side === "long" ? "buy" : "sell"} ${asset?.symbol ?? assetId} @ ${formatPrice(opts.limitPrice, decimals)}`,
           side === "long" ? "up" : "down",
         );
       }
-      return ok;
+      return !!orderId;
     }
 
     if (!activePrice) return false;
@@ -281,6 +281,34 @@ function TerminalInner() {
     return ok;
   };
 
+  // Lets a drawn Long/Short chart annotation become a real, capped resting
+  // order — routed through the exact same placeLimitOrder/MAX_POSITION_PCT
+  // path a human's Limit order in OrderTicket already goes through, so this
+  // is not a second, uncapped order-entry surface. Once placed, the existing
+  // per-tick checkLimitOrders/checkStops loop above tracks it live with no
+  // new evaluator code.
+  const handlePlacePositionOrder = (args: {
+    side: "long" | "short";
+    qty: number;
+    limitPrice: number;
+    stopLoss: number;
+    takeProfit: number;
+  }): string | null => {
+    const orderId = placeLimitOrder(assetId, args.side, args.qty, args.limitPrice, {
+      stopLoss: args.stopLoss,
+      takeProfit: args.takeProfit,
+    });
+    if (orderId) {
+      const asset = ASSET_BY_ID[assetId];
+      const decimals = asset?.decimals ?? 2;
+      showToast(
+        `${args.side === "long" ? "Long" : "Short"} order tracked — fills at ${formatPrice(args.limitPrice, decimals)}`,
+        args.side === "long" ? "up" : "down",
+      );
+    }
+    return orderId || null;
+  };
+
   const isDesktop = useIsDesktop();
   const { hidden, isHidden, hide, show } = useHiddenPanels();
   const { order: row1Order, moveBefore } = useRowOrder(ROW1_PANEL_IDS);
@@ -306,6 +334,10 @@ function TerminalInner() {
       candles={candlesByAsset[assetId] ?? []}
       source={prices[assetId]?.source}
       connected={prices[assetId]?.connected}
+      cash={cash}
+      orders={orders}
+      onPlacePositionOrder={handlePlacePositionOrder}
+      onCancelPositionOrder={cancelOrder}
     />
   );
   const dataTablesEl = (

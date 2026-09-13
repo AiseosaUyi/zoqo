@@ -16,12 +16,22 @@ import {
   type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { DrawingManager, getToolRegistry, type Anchor, type IDrawing, type DrawingStyle } from "lightweight-charts-drawing";
+import {
+  DrawingManager,
+  getToolRegistry,
+  LongPosition,
+  ShortPosition,
+  type Anchor,
+  type IDrawing,
+  type DrawingStyle,
+} from "lightweight-charts-drawing";
 import { ASSET_BY_ID } from "@/lib/assets";
 import { CANDLE_TIMEFRAMES, groupCandles, type Candle } from "@/lib/candles";
+import type { TerminalOrder } from "@/lib/terminalStore";
 import { LiveDot, SegmentedControl, Spinner } from "@/components/ui";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { DrawingStylePanel, type StylePanelPosition } from "./DrawingStylePanel";
+import { PositionOrderPanel } from "./PositionOrderPanel";
 import { TradingSessionOverlay, type PixelSessionBand } from "./TradingSessionOverlay";
 import { IndicatorMenu } from "./IndicatorMenu";
 import { getDrawings, setDrawings } from "@/lib/drawings";
@@ -101,8 +111,28 @@ export const TerminalChart = React.forwardRef<
      *  need to thread it through just to compile. */
     source?: string;
     connected?: boolean;
+    /** Wallet cash — only used to size/cap a drawn Long/Short position's
+     *  order-entry panel the same way OrderTicket does (MAX_POSITION_PCT). */
+    cash: number;
+    /** Resting Limit orders — used to tell whether a drawn position's linked
+     *  order is still pending or has already filled/vanished. */
+    orders: TerminalOrder[];
+    /** Places the real, capped Limit order a drawn Long/Short box now
+     *  represents (see terminalStore.tsx's placeLimitOrder). Returns the new
+     *  order's id, or null if the order was rejected. */
+    onPlacePositionOrder: (args: {
+      side: "long" | "short";
+      qty: number;
+      limitPrice: number;
+      stopLoss: number;
+      takeProfit: number;
+    }) => string | null;
+    onCancelPositionOrder: (orderId: string) => void;
   }
->(function TerminalChart({ assetId, candles, source, connected }, ref) {
+>(function TerminalChart(
+  { assetId, candles, source, connected, cash, orders, onPlacePositionOrder, onCancelPositionOrder },
+  ref,
+) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const chartRef = React.useRef<IChartApi | null>(null);
   const seriesRef = React.useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -137,6 +167,13 @@ export const TerminalChart = React.forwardRef<
   // mutable object the drawing library updates in place) to change identity.
   const [panelVersion, setPanelVersion] = React.useState(0);
   const [hasDrawings, setHasDrawings] = React.useState(false);
+  // Maps a drawn long-position/short-position drawing's id to the real
+  // TerminalOrder id it's tracking, once the trader confirms a size in
+  // PositionOrderPanel — not persisted (lost on reload, same as any other
+  // in-memory UI-only association), so a drawing survives a reload but
+  // reverts to "draft" status; the underlying order/position itself is
+  // unaffected since it lives in terminalStore's own localStorage.
+  const [drawingOrderIds, setDrawingOrderIds] = React.useState<Record<string, string>>({});
   // Loaded from localStorage inside the mount effect below (client-only —
   // same reasoning as getDrawings never being called from a useState
   // initializer, which would run during SSR where localStorage doesn't exist).
@@ -226,7 +263,15 @@ export const TerminalChart = React.forwardRef<
       if (pendingAnchorsRef.current.length < required) return;
       const drawing = getToolRegistry().createDrawing(tool, crypto.randomUUID(), pendingAnchorsRef.current);
       pendingAnchorsRef.current = [];
-      if (drawing) manager.addDrawing(drawing);
+      if (drawing) {
+        manager.addDrawing(drawing);
+        // Long/short position boxes go straight into the order-entry flow
+        // (PositionOrderPanel) rather than the plain style editor — select
+        // immediately so the trader isn't left hunting for a second click.
+        if (drawing instanceof LongPosition || drawing instanceof ShortPosition) {
+          manager.selectDrawing(drawing.id);
+        }
+      }
       setActiveTool(null);
     };
     chart.subscribeClick(onPlacementClick);
@@ -310,6 +355,7 @@ export const TerminalChart = React.forwardRef<
     setHasDrawings(saved.length > 0);
     setHasSelection(false);
     setSelectedDrawing(null);
+    setDrawingOrderIds({});
   }, [assetId]);
 
   React.useEffect(() => {
@@ -368,6 +414,49 @@ export const TerminalChart = React.forwardRef<
     return { x, y, containerWidth: container.clientWidth, containerHeight: container.clientHeight };
   }, [selectedDrawing, panelVersion]);
   const [chartHeight, setChartHeight] = React.useState(0);
+
+  // Long/short position boxes carry real entry/stop/target anchors natively
+  // (lightweight-charts-drawing's getPositionInfo()) — recomputed on
+  // panelVersion too so dragging a handle to adjust a still-draft box's
+  // levels updates the panel's numbers live.
+  const selectedPositionSide: "long" | "short" | null =
+    selectedDrawing instanceof LongPosition ? "long" : selectedDrawing instanceof ShortPosition ? "short" : null;
+  const selectedPositionInfo = React.useMemo(() => {
+    void panelVersion;
+    if (selectedDrawing instanceof LongPosition || selectedDrawing instanceof ShortPosition) {
+      return selectedDrawing.getPositionInfo();
+    }
+    return null;
+  }, [selectedDrawing, panelVersion]);
+  const selectedPositionOrderId = selectedDrawing ? drawingOrderIds[selectedDrawing.id] : undefined;
+  const selectedPositionOrderPending =
+    selectedPositionOrderId != null && orders.some((o) => o.id === selectedPositionOrderId);
+  const positionPanelStatus: "draft" | "pending" | "filled" =
+    selectedPositionOrderId == null ? "draft" : selectedPositionOrderPending ? "pending" : "filled";
+
+  const handlePlacePositionOrder = (qty: number) => {
+    if (!selectedDrawing || !selectedPositionInfo || !selectedPositionSide) return;
+    const orderId = onPlacePositionOrder({
+      side: selectedPositionSide,
+      qty,
+      limitPrice: selectedPositionInfo.entry,
+      stopLoss: selectedPositionInfo.stopLoss,
+      takeProfit: selectedPositionInfo.takeProfit,
+    });
+    if (orderId) {
+      const drawingId = selectedDrawing.id;
+      setDrawingOrderIds((prev) => ({ ...prev, [drawingId]: orderId }));
+    }
+  };
+
+  const handleCancelPositionOrder = () => {
+    if (!selectedDrawing) return;
+    const orderId = drawingOrderIds[selectedDrawing.id];
+    if (orderId) onCancelPositionOrder(orderId);
+    // A cancelled-but-still-visible box would look like it's still live —
+    // remove it along with the order, same as discarding a never-placed draft.
+    deleteSelected();
+  };
 
   // Price-axis precision follows the active asset (assets.ts's `decimals` —
   // BTC/gold are 2dp, most FX 4-5dp, JPY pairs 3dp). Re-applied whenever the
@@ -637,14 +726,32 @@ export const TerminalChart = React.forwardRef<
         <div className="relative min-h-0 flex-1">
           <TradingSessionOverlay bands={sessionBands} height={chartHeight} />
           <div ref={containerRef} className="h-full w-full" />
-          {selectedDrawing && stylePanelPosition && (
-            <DrawingStylePanel
-              style={selectedDrawing.style}
+          {selectedDrawing && stylePanelPosition && selectedPositionSide && selectedPositionInfo ? (
+            <PositionOrderPanel
+              side={selectedPositionSide}
+              entry={selectedPositionInfo.entry}
+              stopLoss={selectedPositionInfo.stopLoss}
+              takeProfit={selectedPositionInfo.takeProfit}
+              decimals={asset?.decimals ?? 2}
+              cash={cash}
               position={stylePanelPosition}
-              onChange={handleStyleChange}
-              onDelete={deleteSelected}
+              status={positionPanelStatus}
+              onPlace={handlePlacePositionOrder}
+              onCancelOrder={handleCancelPositionOrder}
+              onDiscard={deleteSelected}
               onClose={closeStylePanel}
             />
+          ) : (
+            selectedDrawing &&
+            stylePanelPosition && (
+              <DrawingStylePanel
+                style={selectedDrawing.style}
+                position={stylePanelPosition}
+                onChange={handleStyleChange}
+                onDelete={deleteSelected}
+                onClose={closeStylePanel}
+              />
+            )
           )}
           {candles.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-surface text-[12px] text-sub">
