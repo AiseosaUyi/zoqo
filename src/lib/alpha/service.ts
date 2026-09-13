@@ -1,9 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { VenueId } from "./core/venue";
+import type { VenueId, Intent, PlacedOrder } from "./core/venue";
 import type { RiskGateStrategyConfig, RiskGateVenueConfig } from "./risk";
+import { evaluateIntent } from "./risk";
 import { listStrategyTemplates as registryTemplates, getStrategyTemplate } from "./strategies";
 import { getCredentialStatus, type CredentialStatus } from "./setupStatus";
+import { createVenueAdapter } from "./venues";
+import { runFootballBacktest, type BacktestFixtureInput, type FootballBacktestOptions } from "./backtest";
 
 /** The one service layer every door (the `/api/alpha/*` route handlers for
  *  the UI, the `/api/cron/alpha-*` routes for the scheduler, and — from
@@ -628,4 +631,443 @@ export async function getRiskContext(supabase: Client, strategyRow: StrategyRow,
       lastIntentAtByMarket,
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Intent execution — the one place risk.ts's evaluateIntent, alpha_decisions,
+// alpha_orders, and recordVenueSpend meet. runner.ts's runOneStrategy calls
+// this per intent for a scheduled strategy run; placeIntent (below) calls
+// the exact same function for an MCP-driven `place_intent` call — one
+// execution path for both doors, per docs/alpha/03-architecture.md §10
+// ("no logic in route handlers") and §5's "agent-driven orders are not
+// exempt" (docs/alpha/05-mcp-spec.md's place_intent entry).
+// ---------------------------------------------------------------------------
+
+export interface ExecuteIntentOutcome {
+  decision: Record<string, unknown> | null;
+  accepted: boolean;
+  reason?: string;
+  order?: PlacedOrder;
+}
+
+export async function executeIntent(
+  supabase: Client,
+  userId: string,
+  venue: VenueId,
+  venueAdapter: { currency: PlacedOrder["currency"]; place: (intent: Intent, stake: number, ctx: { userId: string; now: number }) => Promise<PlacedOrder> },
+  intent: Intent,
+  riskCtx: RiskContext,
+  now: number,
+  runId: string | null = null,
+  onPlaceError?: (message: string) => void,
+): Promise<ExecuteIntentOutcome> {
+  const decimalOddsForSizing = intent.marketProb && intent.marketProb > 0 && intent.marketProb < 1 ? 1 / intent.marketProb : undefined;
+
+  const result = evaluateIntent({
+    intent,
+    now,
+    killSwitch: riskCtx.killSwitch,
+    strategy: riskCtx.strategy,
+    venue: riskCtx.venue,
+    decimalOddsForSizing,
+  });
+
+  const { data: decision } = await supabase
+    .from("alpha_decisions")
+    .insert({
+      user_id: userId,
+      strategy_id: intent.strategyId,
+      run_id: runId,
+      venue,
+      market_id: intent.market.marketId,
+      outcome_id: intent.market.outcomeId ?? null,
+      side: intent.side,
+      status: result.accepted ? "accepted" : "rejected",
+      reject_reason: result.accepted ? null : result.reason,
+      edge: intent.edge,
+      model_prob: intent.modelProb ?? null,
+      market_prob: intent.marketProb ?? null,
+      price_or_odds: decimalOddsForSizing ?? null,
+      stake: result.accepted ? result.stake : null,
+      currency: venueAdapter.currency,
+      rationale: intent.rationale,
+      features: (intent.features ?? null) as never,
+    })
+    .select("*")
+    .single();
+
+  if (!result.accepted || !decision) {
+    return { decision: decision ?? null, accepted: false, reason: result.accepted ? "failed to record decision" : result.reason };
+  }
+
+  let placed: PlacedOrder;
+  try {
+    placed = await venueAdapter.place(intent, result.stake, { userId, now });
+  } catch (e) {
+    const message = (e as Error).message;
+    onPlaceError?.(message);
+    return { decision, accepted: false, reason: `place() threw: ${message}` };
+  }
+  if (placed.status === "rejected" || !placed.venueOrderId) {
+    return { decision, accepted: false, reason: "venue rejected the order" };
+  }
+
+  await supabase.from("alpha_orders").insert({
+    decision_id: decision.id,
+    user_id: userId,
+    venue,
+    venue_order_id: placed.venueOrderId,
+    market_id: intent.market.marketId,
+    outcome_id: intent.market.outcomeId ?? null,
+    side: placed.side,
+    kind: intent.kind,
+    stake: placed.stake,
+    currency: placed.currency,
+    price_or_odds: placed.priceOrOdds,
+    status: placed.status,
+  });
+  await recordVenueSpend(supabase, userId, venue, placed.stake);
+
+  return { decision, accepted: true, order: placed };
+}
+
+/** One synthetic `alpha_strategies` row per (user, venue) that MCP's
+ *  `place_intent` sizes and rate-limits against — an ad hoc order still
+ *  needs *some* `RiskGateStrategyConfig` (budget/caps/cooldown/exposure
+ *  tracking) to run through the same gate a real strategy uses. Deliberately
+ *  NOT in the strategy registry (`strategy_key` matches nothing
+ *  `getStrategyTemplate` resolves) and `next_run_at` is pinned to the far
+ *  future, so `runner.ts`'s `runDueStrategies` can never pick this row up —
+ *  it exists purely as a risk-gate config holder, never actually "runs". */
+const MANUAL_STRATEGY_KEY = "mcp-manual-intent";
+const MANUAL_STRATEGY_FAR_FUTURE = "2100-01-01T00:00:00.000Z";
+const MANUAL_STRATEGY_DEFAULTS = { budget: 1000, maxStake: 250, dailyCap: 1000, dailyLossStop: 500 };
+
+export async function getOrCreateManualStrategy(supabase: Client, userId: string, venue: VenueId) {
+  const id = `${MANUAL_STRATEGY_KEY}:${userId}:${venue}`;
+  const { data: existing } = await supabase.from("alpha_strategies").select("*").eq("id", id).maybeSingle();
+  if (existing) return existing;
+
+  const { data: inserted, error } = await supabase
+    .from("alpha_strategies")
+    .insert({
+      id,
+      user_id: userId,
+      strategy_key: MANUAL_STRATEGY_KEY,
+      name: `MCP manual intents (${venue})`,
+      venue,
+      enabled: true, // risk.ts's strategy_enabled check reads this verbatim — must be true for place_intent to ever pass the gate
+      params: {},
+      schedule: { kind: "event", on: "mcp-place-intent" },
+      budget: MANUAL_STRATEGY_DEFAULTS.budget,
+      max_stake: MANUAL_STRATEGY_DEFAULTS.maxStake,
+      daily_cap: MANUAL_STRATEGY_DEFAULTS.dailyCap,
+      daily_loss_stop: MANUAL_STRATEGY_DEFAULTS.dailyLossStop,
+      kelly_fraction: 1, // suggestedStakePct already carries the caller's intended stake fraction — no further Kelly shrinkage
+      min_edge: -1, // place_intent's side is caller-chosen, not model-derived; edge is always 0 and must never fail this check
+      max_odds: null,
+      cooldown_min: 0,
+      next_run_at: MANUAL_STRATEGY_FAR_FUTURE,
+    })
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return inserted;
+}
+
+export interface PlaceIntentInput {
+  venue: string;
+  marketId: string;
+  outcomeId?: string;
+  side: Intent["side"];
+  kind: "market" | "limit";
+  limitPrice?: number;
+  stake?: number;
+  rationale: string;
+}
+
+/** MCP `place_intent` (alpha:run, docs/alpha/05-mcp-spec.md). Builds an
+ *  `Intent` from caller args and runs it through the identical
+ *  `executeIntent` path a scheduled strategy's own intents take — same risk
+ *  gate, same decision/order logging, no bypass for an agent-driven order.
+ *  One deliberate addition on top of the shared gate: because the caller
+ *  named an exact `stake`, silently downsizing it (evaluateIntent's normal
+ *  clamp-to-cap behavior) would place a different bet than the one asked
+ *  for without saying so — safer to reject outright and log why than to
+ *  silently resize someone's explicit order. */
+/** Pure predicate behind `placeIntent`'s explicit-stake pre-check — exported
+ *  and unit-tested on its own (no Supabase needed), same "extract the
+ *  decision logic, test it without I/O" discipline as `risk.ts`'s
+ *  `evaluateIntent`. `undefined`/no requested stake never exceeds anything
+ *  (sizing falls through to the normal risk gate in that case). */
+export function exceedsRequestedStake(requestedStake: number | undefined, strategyMaxStake: number, venueMaxStake: number): boolean {
+  if (requestedStake == null) return false;
+  return requestedStake > Math.min(strategyMaxStake, venueMaxStake);
+}
+
+export async function placeIntent(supabase: Client, userId: string, input: PlaceIntentInput): Promise<ExecuteIntentOutcome> {
+  const venue = input.venue as VenueId;
+  const venueAdapter = createVenueAdapter(venue, supabase, userId);
+  const manualStrategy = await getOrCreateManualStrategy(supabase, userId, venue);
+  const now = Date.now();
+  const riskCtx = await getRiskContext(supabase, manualStrategy, now);
+
+  if (exceedsRequestedStake(input.stake, riskCtx.strategy.maxStake, riskCtx.venue.maxStake)) {
+    const { data: decision } = await supabase
+      .from("alpha_decisions")
+      .insert({
+        user_id: userId,
+        strategy_id: manualStrategy.id,
+        run_id: null,
+        venue,
+        market_id: input.marketId,
+        outcome_id: input.outcomeId ?? null,
+        side: input.side,
+        status: "rejected",
+        reject_reason: "stake_exceeds_max_stake",
+        edge: 0,
+        rationale: input.rationale,
+      })
+      .select("*")
+      .single();
+    return { decision: decision ?? null, accepted: false, reason: "stake_exceeds_max_stake" };
+  }
+
+  const intent: Intent = {
+    strategyId: manualStrategy.id,
+    market: { venue, marketId: input.marketId, outcomeId: input.outcomeId },
+    side: input.side,
+    kind: input.kind,
+    limitPrice: input.limitPrice,
+    edge: 0,
+    suggestedStakePct: input.stake != null ? input.stake / manualStrategy.budget : 1,
+    rationale: input.rationale,
+  };
+
+  return executeIntent(supabase, userId, venue, venueAdapter, intent, riskCtx, now, null);
+}
+
+/** MCP `cancel_order` (alpha:run). Adapters without a `cancel()` method
+ *  (docs/alpha/03-architecture.md §2's `cancel?` is optional — most venues
+ *  here are paper/simulated with nothing resting to cancel) return a clear,
+ *  typed error rather than a throw. */
+export async function cancelOrder(supabase: Client, userId: string, orderId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data: order } = await supabase.from("alpha_orders").select("*").eq("id", orderId).eq("user_id", userId).maybeSingle();
+  if (!order) return { ok: false, error: "order not found or not owned by this user" };
+
+  const adapter = createVenueAdapter(order.venue as VenueId, supabase, userId);
+  if (!adapter.cancel) return { ok: false, error: `${order.venue} does not support cancelling an order` };
+
+  try {
+    await adapter.cancel(order.venue_order_id);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  await supabase.from("alpha_orders").update({ status: "cancelled" }).eq("id", orderId);
+  return { ok: true };
+}
+
+/** MCP `settle_now` (alpha:run) — forces a settlement pass for this user,
+ *  optionally scoped to one venue. Reuses `settleOpenOrders`'s per-(user,
+ *  venue) adapter grouping via an optional filter rather than duplicating
+ *  that grouping logic here. */
+export async function settleNow(supabase: Client, userId: string, venue?: VenueId) {
+  const { settleOpenOrders } = await import("./settle");
+  return settleOpenOrders(supabase, { userId, venue });
+}
+
+/** MCP `list_orders` (alpha:read). */
+export async function listOrders(
+  supabase: Client,
+  userId: string,
+  filters: { venue?: string; status?: string; since?: string; limit?: number } = {},
+) {
+  let q = supabase.from("alpha_orders").select("*").eq("user_id", userId).order("placed_at", { ascending: false });
+  if (filters.venue) q = q.eq("venue", filters.venue);
+  if (filters.status) q = q.eq("status", filters.status);
+  if (filters.since) q = q.gte("placed_at", filters.since);
+  const { data } = await q.limit(filters.limit ?? 50);
+  return data ?? [];
+}
+
+/** MCP `get_runs`/`get_run` (alpha:read). `alpha_runs` has no `user_id`
+ *  column (it belongs to a strategy, which belongs to a user) so ownership
+ *  is checked via an inner join on `alpha_strategies.user_id` — the same
+ *  belt-and-braces pattern `applyProposal` uses for a JSONB-sourced
+ *  strategy id, applied here to a join instead. */
+export async function getRuns(supabase: Client, userId: string, filters: { strategyId?: string; limit?: number } = {}) {
+  let q = supabase
+    .from("alpha_runs")
+    .select("*, alpha_strategies!inner(user_id)")
+    .eq("alpha_strategies.user_id", userId)
+    .order("started_at", { ascending: false });
+  if (filters.strategyId) q = q.eq("strategy_id", filters.strategyId);
+  const { data } = await q.limit(filters.limit ?? 25);
+  // The `alpha_strategies` key is the ownership-check join, not run data —
+  // strip it so callers see a plain alpha_runs row, not a nested join shape.
+  return (data ?? []).map((row) => {
+    const run = { ...row } as Partial<typeof row>;
+    delete run.alpha_strategies;
+    return run;
+  });
+}
+
+export async function getRun(supabase: Client, userId: string, runId: string) {
+  const { data } = await supabase
+    .from("alpha_runs")
+    .select("*, alpha_strategies!inner(user_id)")
+    .eq("id", runId)
+    .eq("alpha_strategies.user_id", userId)
+    .maybeSingle();
+  if (!data) return null;
+  const run = { ...data } as Partial<typeof data>;
+  delete run.alpha_strategies;
+  return run;
+}
+
+/** MCP `get_balances` (alpha:read) — every venue the user has a row for,
+ *  plus the terminal wallet (already covered by `zoqo-terminal`'s own
+ *  adapter, so no separate wallet lookup needed). Venues whose adapter
+ *  throws (no credential, e.g. Manifold with no `MANIFOLD_API_KEY`) report
+ *  `available: false` with the reason rather than failing the whole call —
+ *  one missing key shouldn't hide every other venue's balance. */
+export async function getBalances(supabase: Client, userId: string) {
+  const venues = await listVenues(supabase, userId);
+  return Promise.all(
+    venues.map(async (v) => {
+      try {
+        const adapter = createVenueAdapter(v.venue, supabase, userId);
+        const balance = await adapter.balance();
+        return { venue: v.venue, available: true as const, ...balance };
+      } catch (e) {
+        return { venue: v.venue, available: false as const, error: (e as Error).message };
+      }
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Venue credentials (docs/alpha/03-architecture.md §3) — shared by the
+// `/api/alpha/credentials` UI route and MCP's `set_venue_credentials`.
+// Section 3 (Supabase Vault) replaces this function's body with a real
+// `vault.create_secret` round trip; callers don't change.
+// ---------------------------------------------------------------------------
+
+export const CREDENTIAL_VENUES = ["manifold", "kalshi-demo", "bybit-demo", "deriv-virtual"] as const;
+export type CredentialVenue = (typeof CREDENTIAL_VENUES)[number];
+
+export async function listCredentials(supabase: Client, userId: string) {
+  const { data } = await supabase.from("broker_credentials").select("broker, scope, created_at").eq("user_id", userId).order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+/** Stores (or rotates) a venue's credential. Returns only a non-reversible
+ *  prefix — the raw secret is read once, used to compute that prefix, and
+ *  otherwise never persisted, logged, or echoed back in full. See
+ *  `secrets.ts` for the read side. */
+export async function setVenueCredentials(
+  supabase: Client,
+  userId: string,
+  input: { venue: CredentialVenue; secret: string; scope?: "read" | "trade" },
+): Promise<{ ok: true; venue: CredentialVenue; scope: string; keyPrefix: string }> {
+  const secret = input.secret.trim();
+  if (!secret || secret.length > 500) throw new Error("secret is required (max 500 chars)");
+  const scope = input.scope === "read" ? "read" : "trade";
+  const prefix = `${secret.slice(0, 4)}${"•".repeat(Math.max(0, secret.length - 4))}`;
+
+  // Phase 7 §3: no live Supabase Vault write path in this environment yet
+  // (no SUPABASE_ACCESS_TOKEN/DB credential to apply the migration that
+  // defines alpha_store_secret — see docs/alpha/STATUS.md). Placeholder ref,
+  // exactly as /api/alpha/credentials's pre-existing behavior, now shared
+  // from one function instead of duplicated in that route.
+  const secretRef = `vault:pending:${crypto.randomUUID()}`;
+
+  const { data: existing } = await supabase.from("broker_credentials").select("id").eq("user_id", userId).eq("broker", input.venue).maybeSingle();
+  if (existing) {
+    const { error } = await supabase.from("broker_credentials").update({ scope, secret_ref: secretRef }).eq("id", existing.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("broker_credentials").insert({ user_id: userId, broker: input.venue, scope, secret_ref: secretRef });
+    if (error) throw new Error(error.message);
+  }
+  return { ok: true, venue: input.venue, scope, keyPrefix: prefix };
+}
+
+/** MCP `backtest_strategy` (alpha:run). Only football strategies have a
+ *  real backtest engine (`backtest.ts`'s walk-forward Dixon-Coles/ELO/blend
+ *  models against logged fixtures+odds, per docs/alpha/07-build-plan.md
+ *  Phase 3) — every other venue's "backtest" would mean replaying quote
+ *  history no adapter here persists yet, so this returns a clear
+ *  unsupported error for those rather than fabricating a result. */
+interface OddsSnapshotLike {
+  market: string;
+  outcome: string;
+  decimal_odds: number;
+  ts: string;
+}
+
+/** Latest 1x2 snapshot per outcome at-or-before kickoff, across every book —
+ *  the "last snapshot before kickoff = closing line" convention from
+ *  docs/alpha/03-architecture.md §8. Not a cross-book consensus average
+ *  (deliberately simple for a backtest report, not a live pricing model);
+ *  returns null if any of the three outcomes never got a pre-kickoff quote,
+ *  so the caller skips the fixture rather than fabricating a line. */
+function closingOneXTwo(snapshots: OddsSnapshotLike[], kickoffAt: string): { home: number; draw: number; away: number } | null {
+  const kickoffMs = new Date(kickoffAt).getTime();
+  const latest: Partial<Record<"home" | "draw" | "away", { odds: number; ts: number }>> = {};
+  for (const s of snapshots) {
+    if (s.market !== "1x2" || (s.outcome !== "home" && s.outcome !== "draw" && s.outcome !== "away")) continue;
+    const ts = new Date(s.ts).getTime();
+    if (ts > kickoffMs) continue;
+    const cur = latest[s.outcome];
+    if (!cur || ts > cur.ts) latest[s.outcome] = { odds: s.decimal_odds, ts };
+  }
+  if (!latest.home || !latest.draw || !latest.away) return null;
+  return { home: latest.home.odds, draw: latest.draw.odds, away: latest.away.odds };
+}
+
+export async function backtestStrategy(
+  supabase: Client,
+  input: { strategyKey: string; venue: string; from: string; to: string; params?: Record<string, unknown> },
+) {
+  if (input.venue !== "zoqo-sportsbook") {
+    throw new Error(`backtest_strategy only supports the zoqo-sportsbook venue's football strategies right now (got "${input.venue}")`);
+  }
+  const template = getStrategyTemplate(input.strategyKey);
+  if (!template) throw new Error(`unknown strategy_key "${input.strategyKey}"`);
+
+  const { data: fixtures } = await supabase
+    .from("alpha_fixtures")
+    .select("*, alpha_odds_snapshots(*)")
+    .gte("kickoff_at", input.from)
+    .lte("kickoff_at", input.to)
+    .eq("status", "FT")
+    .order("kickoff_at", { ascending: true });
+  if (!fixtures || fixtures.length === 0) {
+    return { strategyKey: input.strategyKey, venue: input.venue, from: input.from, to: input.to, fixturesFound: 0, result: null, note: "no settled fixtures in this date range yet" };
+  }
+
+  const now = Date.now();
+  const backtestInput: BacktestFixtureInput[] = [];
+  for (const f of fixtures) {
+    if (f.home_goals == null || f.away_goals == null) continue; // FT status but score not recorded — skip rather than fabricate
+    const closingOdds = closingOneXTwo((f.alpha_odds_snapshots ?? []) as OddsSnapshotLike[], f.kickoff_at);
+    if (!closingOdds) continue; // no computable pre-kickoff 1x2 line for this fixture
+    backtestInput.push({
+      fixtureId: f.id,
+      date: f.kickoff_at,
+      daysAgo: Math.max(0, Math.round((now - new Date(f.kickoff_at).getTime()) / 86_400_000)),
+      homeTeam: f.home_team,
+      awayTeam: f.away_team,
+      homeGoals: f.home_goals,
+      awayGoals: f.away_goals,
+      closingOdds,
+    });
+  }
+  if (backtestInput.length === 0) {
+    return { strategyKey: input.strategyKey, venue: input.venue, from: input.from, to: input.to, fixturesFound: fixtures.length, result: null, note: "fixtures found but none had a computable closing 1x2 line" };
+  }
+
+  const result = runFootballBacktest(backtestInput, input.params as FootballBacktestOptions | undefined);
+  return { strategyKey: input.strategyKey, venue: input.venue, from: input.from, to: input.to, fixturesFound: backtestInput.length, result };
 }

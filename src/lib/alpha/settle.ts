@@ -13,11 +13,11 @@ import { recordVenuePnl } from "./service";
 
 type Client = SupabaseClient<Database>;
 
-export async function settleOpenOrders(supabase: Client) {
-  const { data: openOrders } = await supabase
-    .from("alpha_orders")
-    .select("*")
-    .in("status", ["open", "filled", "partial"]);
+export async function settleOpenOrders(supabase: Client, filter: { userId?: string; venue?: VenueId } = {}) {
+  let q = supabase.from("alpha_orders").select("*").in("status", ["open", "filled", "partial"]);
+  if (filter.userId) q = q.eq("user_id", filter.userId);
+  if (filter.venue) q = q.eq("venue", filter.venue);
+  const { data: openOrders } = await q;
   if (!openOrders || openOrders.length === 0) return { checked: 0, settled: 0 };
 
   const groups = new Map<string, { userId: string; venue: VenueId; orders: typeof openOrders }>();

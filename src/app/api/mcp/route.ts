@@ -1,9 +1,15 @@
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
+import { ResourceTemplate } from "@modelcontextprotocol/server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { z } from "zod";
 import { verifyApiKey } from "@/lib/mcp/auth";
 import * as tools from "@/lib/mcp/tools";
 import { ConditionSchema, ActionSchema } from "@/lib/mcp/tools";
 import * as alphaTools from "@/lib/mcp/alphaTools";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import * as service from "@/lib/alpha/service";
+import { predictFixture as runPredictFixture } from "@/lib/alpha/predictFixture";
 
 export const dynamic = "force-dynamic";
 
@@ -535,13 +541,357 @@ const handler = createMcpHandler((server) => {
     "get_health",
     {
       title: "Get Health",
-      description: "Scheduler last-tick per cron job, rate budgets remaining per provider, and stale-data warnings. Requires alpha:read.",
+      description: "Scheduler last-tick per cron job, rate budgets remaining per provider, adapter credential status, and stale-data warnings. Requires alpha:read.",
       inputSchema: z.object({}),
     },
     async (_args, ctx) => {
       const denied = requireScope(ctx, "alpha:read");
       if (denied) return errorContent(denied);
       return alphaTools.getHealth(userIdOf(ctx));
+    },
+  );
+
+  // ---------------------------------------------------------------------
+  // ZOQO Alpha: Phase 7 finish (docs/alpha/PROMPT-alpha-finish.md §2) —
+  // the 13 remaining spec tools.
+  // ---------------------------------------------------------------------
+
+  server.registerTool(
+    "get_balances",
+    { title: "Get Balances", description: "Cash balance per Alpha venue (unavailable venues report why, e.g. a missing API key). Requires alpha:read.", inputSchema: z.object({}) },
+    async (_args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getBalances(userIdOf(ctx));
+    },
+  );
+
+  server.registerTool(
+    "set_venue_credentials",
+    {
+      title: "Set Venue Credentials",
+      description:
+        "Stores or rotates a venue's API key in Vault (env-var fallback until Vault is wired — see docs/alpha/STATUS.md). Never returns the secret, only a short confirmation prefix. Requires alpha:credentials.",
+      inputSchema: z.object({
+        venue: z.enum(service.CREDENTIAL_VENUES),
+        secret: z.string().min(1).max(500),
+        scope: z.enum(["read", "trade"]).optional(),
+      }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:credentials");
+      if (denied) return errorContent(denied);
+      return alphaTools.setVenueCredentials(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "backtest_strategy",
+    {
+      title: "Backtest Strategy",
+      description:
+        "Walk-forward backtest over logged fixtures+odds for a zoqo-sportsbook football strategy (the one venue with a real backtest engine right now). Requires alpha:run.",
+      inputSchema: z.object({
+        strategyKey: z.string(),
+        venue: z.string(),
+        from: z.string(),
+        to: z.string(),
+        params: z.record(z.string(), z.unknown()).optional(),
+      }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:run");
+      if (denied) return errorContent(denied);
+      return alphaTools.backtestStrategy(args);
+    },
+  );
+
+  server.registerTool(
+    "get_runs",
+    {
+      title: "Get Runs",
+      description: "Recent alpha_runs rows (log lines, intent/accepted/rejected counts), optionally filtered by strategy. Requires alpha:read.",
+      inputSchema: z.object({ strategyId: z.string().optional(), limit: z.number().positive().optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getRuns(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "get_run",
+    { title: "Get Run", description: "One alpha_runs row by id, including its full log. Requires alpha:read.", inputSchema: z.object({ runId: z.string() }) },
+    async ({ runId }, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getRun(userIdOf(ctx), runId);
+    },
+  );
+
+  server.registerTool(
+    "list_orders",
+    {
+      title: "List Orders",
+      description: "Your alpha_orders rows, optionally filtered by venue/status/since. Requires alpha:read.",
+      inputSchema: z.object({ venue: z.string().optional(), status: z.string().optional(), since: z.string().optional(), limit: z.number().positive().optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.listOrders(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "place_intent",
+    {
+      title: "Place Intent",
+      description:
+        "Places an order on an Alpha venue exactly like a strategy would — goes through the same risk gate (evaluateIntent), no bypass for agent-driven orders. A stake above what the gate would allow is rejected and logged, not silently downsized. Requires alpha:run.",
+      inputSchema: z.object({
+        venue: z.string(),
+        marketId: z.string(),
+        outcomeId: z.string().optional(),
+        side: z.enum(["buy", "sell", "long", "short", "back", "lay", "yes", "no"]),
+        kind: z.enum(["market", "limit"]),
+        limitPrice: z.number().positive().optional(),
+        stake: z.number().positive().optional(),
+        rationale: z.string(),
+      }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:run");
+      if (denied) return errorContent(denied);
+      return alphaTools.placeIntent(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "cancel_order",
+    {
+      title: "Cancel Order",
+      description: "Cancels a resting order. Venues without a cancel() method (most paper/simulated venues) return a clear error. Requires alpha:run.",
+      inputSchema: z.object({ orderId: z.string() }),
+    },
+    async ({ orderId }, ctx) => {
+      const denied = requireScope(ctx, "alpha:run");
+      if (denied) return errorContent(denied);
+      return alphaTools.cancelOrder(userIdOf(ctx), orderId);
+    },
+  );
+
+  server.registerTool(
+    "settle_now",
+    { title: "Settle Now", description: "Forces a settlement pass for this account, optionally scoped to one venue. Requires alpha:run.", inputSchema: z.object({ venue: z.string().optional() }) },
+    async ({ venue }, ctx) => {
+      const denied = requireScope(ctx, "alpha:run");
+      if (denied) return errorContent(denied);
+      return alphaTools.settleNow(userIdOf(ctx), venue);
+    },
+  );
+
+  server.registerTool(
+    "get_settings",
+    { title: "Get Settings", description: "Kill switch, tracked leagues, base currency. Requires alpha:read.", inputSchema: z.object({}) },
+    async (_args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getSettings(userIdOf(ctx));
+    },
+  );
+
+  server.registerTool(
+    "set_settings",
+    {
+      title: "Set Settings",
+      description: "Edit tracked leagues and/or base currency. Requires alpha:manage.",
+      inputSchema: z.object({ leagues: z.array(z.string()).optional(), baseCurrency: z.string().optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:manage");
+      if (denied) return errorContent(denied);
+      return alphaTools.setSettings(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "get_events",
+    {
+      title: "Get Events",
+      description: "alpha_events feed (info/paused/resumed/proposal/applied/error/kill), optionally filtered by kind or since a timestamp. Requires alpha:read.",
+      inputSchema: z.object({ since: z.string().optional(), kinds: z.array(z.string()).optional(), limit: z.number().positive().optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getEvents(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "ack_event",
+    { title: "Ack Event", description: "Marks an alpha_events row acknowledged. Requires alpha:manage.", inputSchema: z.object({ id: z.string() }) },
+    async ({ id }, ctx) => {
+      const denied = requireScope(ctx, "alpha:manage");
+      if (denied) return errorContent(denied);
+      return alphaTools.ackEvent(userIdOf(ctx), id);
+    },
+  );
+
+  // ---------------------------------------------------------------------
+  // ZOQO Alpha: MCP resources (read-only, docs/alpha/05-mcp-spec.md) —
+  // every read callback re-checks alpha:read the same way a tool handler
+  // does; resources aren't a lower-trust surface than tools here.
+  // ---------------------------------------------------------------------
+
+  server.registerResource(
+    "alpha-strategy",
+    new ResourceTemplate("zoqo://alpha/strategies/{id}", { list: undefined }),
+    { title: "Alpha Strategy", description: "One strategy instance by id.", mimeType: "application/json" },
+    async (uri, variables, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return { contents: [{ uri: uri.href, text: denied }] };
+      const userId = userIdOf(ctx);
+      const supabase = createServiceRoleClient();
+      const strategyId = String(variables.id);
+      const strategies = await service.listStrategies(supabase, userId);
+      const match = strategies.find((s) => s.id === strategyId);
+      if (!match) return { contents: [{ uri: uri.href, text: `strategy ${strategyId} not found or not owned by this user` }] };
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(match, null, 2) }] };
+    },
+  );
+
+  server.registerResource(
+    "alpha-fixture",
+    new ResourceTemplate("zoqo://alpha/fixtures/{id}", { list: undefined }),
+    { title: "Alpha Fixture", description: "One football fixture plus its odds history.", mimeType: "application/json" },
+    async (uri, variables, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return { contents: [{ uri: uri.href, text: denied }] };
+      const fixtureId = String(variables.id);
+      const supabase = createServiceRoleClient();
+      const { data: fixture } = await supabase.from("alpha_fixtures").select("*").eq("id", fixtureId).maybeSingle();
+      if (!fixture) return { contents: [{ uri: uri.href, text: `fixture ${fixtureId} not found` }] };
+      const { data: odds } = await supabase.from("alpha_odds_snapshots").select("*").eq("fixture_id", fixtureId).order("ts", { ascending: false }).limit(200);
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({ fixture, odds: odds ?? [] }, null, 2) }] };
+    },
+  );
+
+  server.registerResource(
+    "alpha-leaderboard",
+    "zoqo://alpha/leaderboard",
+    { title: "Alpha Leaderboard", description: "Strategies ranked by performance.", mimeType: "application/json" },
+    async (uri, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return { contents: [{ uri: uri.href, text: denied }] };
+      const supabase = createServiceRoleClient();
+      const leaderboard = await service.getLeaderboard(supabase, userIdOf(ctx));
+      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(leaderboard, null, 2) }] };
+    },
+  );
+
+  // Serves docs/alpha/*.md read-only so an agent can read the spec it's
+  // operating under. Path-traversal guarded: `file` must resolve to a
+  // direct child of docs/alpha with a .md extension — no `..`, no
+  // subdirectories (docs/alpha/plans/*.md is intentionally out of reach;
+  // that's session working history, not the spec).
+  server.registerResource(
+    "alpha-docs",
+    new ResourceTemplate("zoqo://docs/alpha/{file}", { list: undefined }),
+    { title: "Alpha Docs", description: "Markdown files under docs/alpha/ (the spec this program operates under).", mimeType: "text/markdown" },
+    async (uri, variables) => {
+      const file = String(variables.file ?? "");
+      if (!/^[\w-]+\.md$/.test(file)) {
+        return { contents: [{ uri: uri.href, text: "file must be a bare *.md filename directly under docs/alpha/ (no paths)" }] };
+      }
+      const docsDir = path.join(process.cwd(), "docs", "alpha");
+      const filePath = path.join(docsDir, file);
+      if (path.dirname(filePath) !== docsDir) {
+        return { contents: [{ uri: uri.href, text: "invalid path" }] };
+      }
+      try {
+        const text = await readFile(filePath, "utf8");
+        return { contents: [{ uri: uri.href, mimeType: "text/markdown", text }] };
+      } catch {
+        return { contents: [{ uri: uri.href, text: `docs/alpha/${file} not found` }] };
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------------
+  // ZOQO Alpha: MCP prompts (docs/alpha/05-mcp-spec.md)
+  // ---------------------------------------------------------------------
+
+  server.registerPrompt(
+    "daily-review",
+    { title: "Daily Review", description: "Leaderboard, recent events, open proposals, and open orders assembled into a review brief." },
+    async (ctx: { http?: { authInfo?: { scopes?: string[]; extra?: Record<string, unknown> } } }) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return { messages: [{ role: "user", content: { type: "text", text: denied } }] };
+      const userId = userIdOf(ctx);
+      const supabase = createServiceRoleClient();
+      const [leaderboard, events, proposals, openOrders] = await Promise.all([
+        service.getLeaderboard(supabase, userId),
+        service.listEvents(supabase, userId, { limit: 20 }),
+        service.listProposals(supabase, userId),
+        service.listOrders(supabase, userId, { status: "open", limit: 20 }),
+      ]);
+      const text = [
+        "# ZOQO Alpha daily review",
+        "",
+        "## Leaderboard",
+        JSON.stringify(leaderboard, null, 2),
+        "",
+        "## Recent events",
+        JSON.stringify(events, null, 2),
+        "",
+        "## Open proposals",
+        JSON.stringify(proposals, null, 2),
+        "",
+        "## Open orders",
+        JSON.stringify(openOrders, null, 2),
+      ].join("\n");
+      return { messages: [{ role: "user", content: { type: "text", text } }] };
+    },
+  );
+
+  server.registerPrompt(
+    "pre-kickoff-scan",
+    {
+      title: "Pre-Kickoff Scan",
+      description: "Football fixtures in the next N hours with a model-vs-market edge above a threshold.",
+      argsSchema: z.object({ hoursAhead: z.string().optional(), minEdge: z.string().optional() }),
+    },
+    async ({ hoursAhead, minEdge }, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return { messages: [{ role: "user", content: { type: "text", text: denied } }] };
+      const hours = Number(hoursAhead ?? "24") || 24;
+      const threshold = Number(minEdge ?? "0.03") || 0.03;
+      const supabase = createServiceRoleClient();
+      const now = new Date();
+      const until = new Date(now.getTime() + hours * 60 * 60_000);
+      const { data: fixtures } = await supabase
+        .from("alpha_fixtures")
+        .select("id, home_team, away_team, kickoff_at, league_id")
+        .gte("kickoff_at", now.toISOString())
+        .lte("kickoff_at", until.toISOString())
+        .order("kickoff_at", { ascending: true })
+        .limit(50);
+
+      const scanned = [];
+      for (const f of fixtures ?? []) {
+        const prediction = await runPredictFixture(supabase, f.id, "blend");
+        if (!prediction?.edgeByOutcome) continue;
+        const maxEdge = Math.max(prediction.edgeByOutcome.home, prediction.edgeByOutcome.draw, prediction.edgeByOutcome.away);
+        if (maxEdge >= threshold) scanned.push({ fixture: f, prediction, maxEdge });
+      }
+
+      const text = `# Pre-kickoff scan (next ${hours}h, min edge ${threshold})\n\n${
+        scanned.length === 0 ? "No fixtures above the edge threshold in this window." : JSON.stringify(scanned, null, 2)
+      }`;
+      return { messages: [{ role: "user", content: { type: "text", text } }] };
     },
   );
 });

@@ -248,3 +248,94 @@ export async function getHealth(userId: string) {
   const supabase = createServiceRoleClient();
   return text(await service.getHealth(supabase, userId));
 }
+
+// ---------------------------------------------------------------------------
+// Phase 7 finish (docs/alpha/PROMPT-alpha-finish.md §2) — the 13 remaining
+// spec tools, same thin-wrapper-over-service.ts shape as every tool above.
+// ---------------------------------------------------------------------------
+
+export async function getBalances(userId: string) {
+  const supabase = createServiceRoleClient();
+  return text(await service.getBalances(supabase, userId));
+}
+
+export async function setVenueCredentials(userId: string, args: { venue: string; secret: string; scope?: "read" | "trade" }) {
+  const supabase = createServiceRoleClient();
+  if (!(service.CREDENTIAL_VENUES as readonly string[]).includes(args.venue)) {
+    return errorText(`venue must be one of ${service.CREDENTIAL_VENUES.join(", ")}`);
+  }
+  try {
+    return text(await service.setVenueCredentials(supabase, userId, { venue: args.venue as service.CredentialVenue, secret: args.secret, scope: args.scope }));
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "failed to store credential");
+  }
+}
+
+export async function backtestStrategy(args: { strategyKey: string; venue: string; from: string; to: string; params?: Record<string, unknown> }) {
+  const supabase = createServiceRoleClient();
+  try {
+    return text(await service.backtestStrategy(supabase, args));
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "backtest failed");
+  }
+}
+
+export async function getRuns(userId: string, args: { strategyId?: string; limit?: number }) {
+  const supabase = createServiceRoleClient();
+  return text(await service.getRuns(supabase, userId, args));
+}
+
+export async function getRun(userId: string, runId: string) {
+  const supabase = createServiceRoleClient();
+  const run = await service.getRun(supabase, userId, runId);
+  if (!run) return errorText(`run ${runId} not found or not owned by this user`);
+  return text(run);
+}
+
+export async function listOrders(userId: string, args: { venue?: string; status?: string; since?: string; limit?: number }) {
+  const supabase = createServiceRoleClient();
+  return text(await service.listOrders(supabase, userId, args));
+}
+
+export async function placeIntent(userId: string, args: service.PlaceIntentInput) {
+  const supabase = createServiceRoleClient();
+  try {
+    return text(await service.placeIntent(supabase, userId, args));
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "place_intent failed");
+  }
+}
+
+export async function cancelOrder(userId: string, orderId: string) {
+  const supabase = createServiceRoleClient();
+  const result = await service.cancelOrder(supabase, userId, orderId);
+  if (!result.ok) return errorText(result.error);
+  return text(result);
+}
+
+export async function settleNow(userId: string, venue?: string) {
+  const supabase = createServiceRoleClient();
+  return text(await service.settleNow(supabase, userId, venue as never));
+}
+
+export async function getSettings(userId: string) {
+  const supabase = createServiceRoleClient();
+  return text(await service.getSettings(supabase, userId));
+}
+
+export async function setSettings(userId: string, patch: { leagues?: string[]; baseCurrency?: string }) {
+  const supabase = createServiceRoleClient();
+  await service.setSettings(supabase, userId, patch);
+  return text({ ok: true });
+}
+
+export async function getEvents(userId: string, args: { since?: string; kinds?: string[]; limit?: number }) {
+  const supabase = createServiceRoleClient();
+  return text(await service.listEvents(supabase, userId, { since: args.since, kinds: args.kinds, limit: args.limit }));
+}
+
+export async function ackEvent(userId: string, id: string) {
+  const supabase = createServiceRoleClient();
+  await service.ackEvent(supabase, userId, id);
+  return text({ ok: true });
+}

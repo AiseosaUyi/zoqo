@@ -2,14 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { VenueId } from "./core/venue";
 import type { FeatureProvider, StrategyCtx } from "./core/strategy";
-import { evaluateIntent } from "./risk";
 import { getStrategyTemplate } from "./strategies";
 import { createVenueAdapter } from "./venues";
 import { createPriceFeatureProvider } from "./features/priceFeatures";
 import { createMarketFeatureProvider } from "./features/marketFeatures";
 import { createFixtureFeatureProvider } from "./features/fixtureFeatures";
 import { getVenueSecret } from "./secrets";
-import { getRiskContext, recordVenueSpend } from "./service";
+import { getRiskContext, executeIntent } from "./service";
 
 /** The runner (docs/alpha/03-architecture.md §6). One function,
  *  `runDueStrategies`, is the single caller of `Strategy.evaluate()` in the
@@ -128,75 +127,19 @@ async function runOneStrategy(
   let rejected = 0;
   for (const intent of intents) {
     intent.strategyId = strategyRow.id;
-    const decimalOddsForSizing = intent.marketProb && intent.marketProb > 0 && intent.marketProb < 1 ? 1 / intent.marketProb : undefined;
-
-    const result = evaluateIntent({
+    const outcome = await executeIntent(
+      supabase,
+      strategyRow.user_id,
+      strategyRow.venue as VenueId,
+      venue,
       intent,
+      riskCtx,
       now,
-      killSwitch: riskCtx.killSwitch,
-      strategy: riskCtx.strategy,
-      venue: riskCtx.venue,
-      decimalOddsForSizing,
-    });
-
-    const { data: decision } = await supabase
-      .from("alpha_decisions")
-      .insert({
-        user_id: strategyRow.user_id,
-        strategy_id: strategyRow.id,
-        run_id: run.id,
-        venue: strategyRow.venue,
-        market_id: intent.market.marketId,
-        outcome_id: intent.market.outcomeId ?? null,
-        side: intent.side,
-        status: result.accepted ? "accepted" : "rejected",
-        reject_reason: result.accepted ? null : result.reason,
-        edge: intent.edge,
-        model_prob: intent.modelProb ?? null,
-        market_prob: intent.marketProb ?? null,
-        price_or_odds: decimalOddsForSizing ?? null,
-        stake: result.accepted ? result.stake : null,
-        currency: venue.currency,
-        rationale: intent.rationale,
-        features: (intent.features ?? null) as never,
-      })
-      .select("*")
-      .single();
-
-    if (!result.accepted || !decision) {
-      rejected++;
-      continue;
-    }
-
-    let placed;
-    try {
-      placed = await venue.place(intent, result.stake, { userId: strategyRow.user_id, now });
-    } catch (e) {
-      logFn("place() threw", { error: (e as Error).message });
-      rejected++;
-      continue;
-    }
-    if (placed.status === "rejected" || !placed.venueOrderId) {
-      rejected++;
-      continue;
-    }
-    accepted++;
-
-    await supabase.from("alpha_orders").insert({
-      decision_id: decision.id,
-      user_id: strategyRow.user_id,
-      venue: strategyRow.venue,
-      venue_order_id: placed.venueOrderId,
-      market_id: intent.market.marketId,
-      outcome_id: intent.market.outcomeId ?? null,
-      side: placed.side,
-      kind: intent.kind,
-      stake: placed.stake,
-      currency: placed.currency,
-      price_or_odds: placed.priceOrOdds,
-      status: placed.status,
-    });
-    await recordVenueSpend(supabase, strategyRow.user_id, strategyRow.venue as VenueId, placed.stake);
+      run.id,
+      (message) => logFn("place() threw", { error: message }),
+    );
+    if (outcome.accepted) accepted++;
+    else rejected++;
   }
 
   await finishRun(supabase, run.id, { intents: intents.length, accepted, rejected, log });
