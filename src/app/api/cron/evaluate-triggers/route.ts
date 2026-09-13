@@ -3,7 +3,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { getCryptoPrice, getQuotePrice } from "@/lib/serverPriceFeed";
 import { openTerminalPosition } from "@/lib/server/terminalExecution";
 import { ASSET_BY_ID } from "@/lib/assets";
-import type { AutomationCondition, AutomationAction } from "@/lib/automationRules";
+import type { AutomationCondition, AutomationAction, PriceCondition, AutomationOrderAction } from "@/lib/automationRules";
+import * as alphaService from "@/lib/alpha/service";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,12 @@ type SupabaseServiceClient = ReturnType<typeof createServiceRoleClient>;
 // budget. Crypto (Bitstamp/CoinGecko) has no such ceiling and refreshes
 // every tick.
 const FOREX_GOLD_STALE_MS = 10 * 60 * 1000;
-const PRICE_HISTORY_RETENTION_MS = 24 * 60 * 60 * 1000;
+// Raised from 24h to 30 days for ZOQO Alpha (docs/alpha/03-architecture.md
+// §4) — feature windows longer than a day (e.g. Alpha's momentum strategies)
+// need history to exist. Rows older than 48h are downsampled to one per
+// 5-minute bucket per asset (see downsample_price_history() in the phase-0
+// migration) so 30 days of retention doesn't unbounded-grow the table.
+const PRICE_HISTORY_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const DAILY_CAP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /** Fetches (or reuses a fresh cached) price for one asset and appends it to
@@ -81,7 +87,7 @@ function average(points: PricePoint[]): number {
  *  condition type detects an actual crossing/threshold event between the
  *  previous and current sample, not "is currently past X," so a trigger
  *  fires once per crossing rather than every tick it stays past threshold. */
-function evaluateCondition(condition: AutomationCondition, series: PricePoint[]): { fired: boolean; reason?: string } {
+function evaluateCondition(condition: PriceCondition, series: PricePoint[]): { fired: boolean; reason?: string } {
   if (series.length < 2) return { fired: false, reason: "not enough price history yet" };
   const curr = series[series.length - 1].price;
   const prev = series[series.length - 2].price;
@@ -116,7 +122,7 @@ function evaluateCondition(condition: AutomationCondition, series: PricePoint[])
   return { fired };
 }
 
-function orderNotional(action: AutomationAction, cash: number): number {
+function orderNotional(action: AutomationOrderAction, cash: number): number {
   return action.sizeType === "fixed" ? action.sizeValue : cash * (action.sizeValue / 100);
 }
 
@@ -135,16 +141,17 @@ interface TriggerState {
   spent_today: number;
   spent_today_reset_at: string;
   executions_count: number;
+  last_triggered_at: string | null;
 }
 
 async function readTriggerState(supabase: SupabaseServiceClient, automationId: string): Promise<TriggerState> {
   const { data } = await supabase
     .from("automation_triggers")
-    .select("spent_today, spent_today_reset_at, executions_count")
+    .select("spent_today, spent_today_reset_at, executions_count, last_triggered_at")
     .eq("automation_id", automationId)
     .maybeSingle();
   if (data) return data;
-  const fresh = { spent_today: 0, spent_today_reset_at: new Date().toISOString(), executions_count: 0 };
+  const fresh = { spent_today: 0, spent_today_reset_at: new Date().toISOString(), executions_count: 0, last_triggered_at: null };
   await supabase.from("automation_triggers").insert({ automation_id: automationId, ...fresh });
   return fresh;
 }
@@ -185,8 +192,63 @@ async function handle(req: NextRequest) {
   }
 
   for (const automation of rows) {
-    if (!automation.symbol || !automation.condition || !automation.action) {
-      results.push({ automationId: automation.id, outcome: "skipped: missing symbol/condition/action" });
+    if (!automation.condition || !automation.action) {
+      results.push({ automationId: automation.id, outcome: "skipped: missing condition/action" });
+      continue;
+    }
+    const condition = automation.condition as AutomationCondition;
+    const action = automation.action as AutomationAction;
+
+    // ZOQO Alpha bridge (docs/alpha/03-architecture.md §2, 07-build-plan.md
+    // Phase 1): a `schedule` condition paired with a `run-strategy` action
+    // fires on its own wall-clock interval rather than a price event, and
+    // executes through service.runStrategyNow instead of
+    // terminalExecution.ts — no symbol, no price series, no order-size caps
+    // involved, so this branches out before any of that machinery. Gated
+    // the same way every other condition type gates re-firing —
+    // automation_triggers.last_triggered_at — just measured as elapsed
+    // wall-clock time instead of a crossing detection (a schedule condition
+    // has no "state" to cross, only "has enough time passed").
+    if (condition.type === "schedule" || action.type === "run-strategy") {
+      if (condition.type !== "schedule" || action.type !== "run-strategy") {
+        results.push({
+          automationId: automation.id,
+          outcome: "skipped: a schedule condition requires a run-strategy action (and vice versa)",
+        });
+        continue;
+      }
+      if (!("everyMin" in condition)) {
+        results.push({ automationId: automation.id, outcome: "skipped: schedule cron expressions aren't evaluated yet" });
+        continue;
+      }
+
+      const state = await readTriggerState(supabase, automation.id);
+      await supabase
+        .from("automation_triggers")
+        .upsert({ automation_id: automation.id, last_evaluated_at: new Date().toISOString() }, { onConflict: "automation_id" });
+
+      const dueMs = condition.everyMin * 60_000;
+      const elapsedMs = state.last_triggered_at ? Date.now() - new Date(state.last_triggered_at).getTime() : null;
+      if (elapsedMs != null && elapsedMs < dueMs) {
+        results.push({ automationId: automation.id, outcome: "not fired: schedule interval not elapsed" });
+        continue;
+      }
+
+      try {
+        await alphaService.runStrategyNow(supabase, automation.user_id, action.strategyId);
+        await supabase
+          .from("automation_triggers")
+          .update({ last_triggered_at: new Date().toISOString(), executions_count: state.executions_count + 1 })
+          .eq("automation_id", automation.id);
+        results.push({ automationId: automation.id, outcome: "executed: run-strategy" });
+      } catch (err) {
+        results.push({ automationId: automation.id, outcome: `execution failed: ${err instanceof Error ? err.message : "unknown error"}` });
+      }
+      continue;
+    }
+
+    if (!automation.symbol) {
+      results.push({ automationId: automation.id, outcome: "skipped: missing symbol" });
       continue;
     }
     const series = seriesBySymbol.get(automation.symbol);
@@ -195,8 +257,6 @@ async function handle(req: NextRequest) {
       continue;
     }
 
-    const condition = automation.condition as AutomationCondition;
-    const action = automation.action as AutomationAction;
     const evalResult = evaluateCondition(condition, series);
     await supabase
       .from("automation_triggers")
@@ -259,6 +319,7 @@ async function handle(req: NextRequest) {
   }
 
   await supabase.from("price_history").delete().lt("ts", new Date(Date.now() - PRICE_HISTORY_RETENTION_MS).toISOString());
+  await supabase.rpc("downsample_price_history");
 
   return NextResponse.json({ ok: true, evaluated: rows.length, results } satisfies {
     ok: true;

@@ -1,0 +1,10 @@
+# alpha-worker (Phase 6 scaffold) — pinned once real training code lands.
+# penaltyblog: Dixon-Coles/Poisson/Elo ratings (MIT) — docs/alpha/02-market-landscape.md §5
+# soccerdata: Understat/FBref/ClubElo/Football-Data.co.uk scraping (Apache-2.0)
+# catboost, scikit-learn: challenger model + isotonic calibration
+# supabase: read fixtures/odds/results, write alpha_team_ratings + alpha_events
+penaltyblog
+soccerdata
+catboost
+scikit-learn
+supabase

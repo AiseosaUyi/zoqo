@@ -3,10 +3,16 @@ import * as React from "react";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { BACKEND_ENABLED, getDataStore } from "./getDataStore";
 import { useProfile } from "./profile";
-import { describeAutomation, type AutomationCondition, type AutomationAction } from "./automationRules";
+import {
+  describeAutomation,
+  type AutomationCondition,
+  type AutomationAction,
+  type AutomationOrderAction,
+  type AutomationRunStrategyAction,
+} from "./automationRules";
 
 export { describeAutomation };
-export type { AutomationCondition, AutomationAction };
+export type { AutomationCondition, AutomationAction, AutomationOrderAction, AutomationRunStrategyAction };
 
 const KEY = "zoqo-automations-v1";
 

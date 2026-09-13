@@ -1,5 +1,5 @@
 import { Activity, LineChart, TrendingUp, type LucideIcon } from "lucide-react";
-import type { AutomationAction, AutomationCondition } from "@/lib/automations";
+import type { AutomationCondition, AutomationOrderAction } from "@/lib/automations";
 import { DEFAULT_ASSET_ID } from "@/lib/assets";
 
 /** Static "Popular Automation Templates" catalogue. Previously these four
@@ -32,7 +32,7 @@ export interface AutomationTemplate {
   description: string;
   symbol: string;
   condition: AutomationCondition;
-  action: AutomationAction;
+  action: AutomationOrderAction;
   /** Which of `condition`'s/`action`'s numeric fields the user can edit,
    *  and under what key on the merged condition+action+cap value bag. */
   params: AutomationParam[];

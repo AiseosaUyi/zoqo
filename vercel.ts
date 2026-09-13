@@ -11,11 +11,21 @@ import type { VercelConfig } from "@vercel/config/v1";
  *  `* * * * *` schedule needs at least a Pro plan to actually run at that
  *  cadence. If this project is on Hobby, either upgrade or reduce
  *  evaluate-triggers to a daily schedule (accepting a much coarser
- *  trigger-evaluation cadence) before relying on this in production. */
+ *  trigger-evaluation cadence) before relying on this in production.
+ *
+ *  ZOQO Alpha (docs/alpha/03-architecture.md §6) entries below are a
+ *  fallback, not primary — Supabase pg_cron + pg_net (see
+ *  supabase/alpha-cron-apply.sql.example) is the real scheduler, because
+ *  it isn't gated by the Vercel plan tier at all. Kept here so Alpha still
+ *  ticks (at whatever cadence Vercel Cron actually grants) if pg_cron is
+ *  ever unavailable. */
 export const config: VercelConfig = {
   framework: "nextjs",
   crons: [
     { path: "/api/cron/evaluate-triggers", schedule: "* * * * *" },
     { path: "/api/cron/daily-digest", schedule: "0 8 * * *" },
+    { path: "/api/cron/alpha-run", schedule: "* * * * *" },
+    { path: "/api/cron/alpha-settle", schedule: "*/5 * * * *" },
+    { path: "/api/cron/alpha-evaluate", schedule: "15 2 * * *" },
   ],
 };

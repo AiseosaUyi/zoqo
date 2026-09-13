@@ -1,0 +1,30 @@
+name: alpha-worker (Phase 6 — scaffold, disabled)
+
+# Weekly Dixon-Coles refit + CatBoost challenger training, per
+# docs/alpha/03-architecture.md §7 Level 5 and alpha-worker/README.md's gate:
+# do not enable this until Phase 3 has 4+ weeks of real logged fixture/odds
+# data. `if: false` below keeps this workflow file present (so the CI
+# structure exists and is reviewable) without it ever actually running —
+# flip it once the gate is satisfied and alpha-worker/ has real training
+# code, not just this scaffold.
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Monday 03:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  train:
+    if: false # see gate note above — do not remove without reading it
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r alpha-worker/requirements.txt
+      - name: Run weekly refit + challenger training
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python alpha-worker/train.py # does not exist yet — scaffold only

@@ -4,9 +4,9 @@ import { createPortal } from "react-dom";
 import { Bot, Check, X } from "lucide-react";
 import { Button, Input, Select, SegmentedControl, Tag } from "@/components/ui";
 import { useProfile } from "@/lib/profile";
-import { describeAutomation, type Automation, type AutomationCondition } from "@/lib/automations";
+import { describeAutomation, type Automation, type AutomationCondition, type AutomationAction } from "@/lib/automations";
 import { ASSETS } from "@/lib/assets";
-import { AUTOMATION_TEMPLATES, DEFAULT_MAX_ORDER_SIZE, DEFAULT_DAILY_CAP, type AutomationTemplate } from "./data";
+import { AUTOMATION_TEMPLATES, DEFAULT_MAX_ORDER_SIZE, DEFAULT_DAILY_CAP, type AutomationTemplate, type AutomationParam } from "./data";
 
 const BLANK_TEMPLATE: AutomationTemplate = {
   ...AUTOMATION_TEMPLATES[0],
@@ -15,6 +15,13 @@ const BLANK_TEMPLATE: AutomationTemplate = {
   title: "Custom Automation",
   description: "Define your own condition, asset, and order size.",
 };
+
+// `schedule` (ZOQO Alpha bridge, docs/alpha/03-architecture.md §2) has no
+// matching AUTOMATION_TEMPLATES card — it's Custom-only — so its one param
+// is declared here rather than folded into data.ts's template catalogue.
+const SCHEDULE_PARAMS: AutomationParam[] = [
+  { key: "everyMin", label: "Every", default: 60, suffix: " min", min: 1, max: 1440, step: 1 },
+];
 
 function defaultValues(params: AutomationTemplate["params"]): Record<string, number> {
   return Object.fromEntries(params.map((p) => [p.key, p.default]));
@@ -30,6 +37,9 @@ function conditionFromForm(
   }
   if (type === "pct-change") {
     return { type, direction: direction as "up" | "down", pct: values.pct ?? 0, windowMin: values.windowMin ?? 5 };
+  }
+  if (type === "schedule") {
+    return { type, everyMin: values.everyMin ?? 60 };
   }
   return { type, fastMin: values.fastMin ?? 5, slowMin: values.slowMin ?? 20 };
 }
@@ -68,6 +78,25 @@ export function CreateAutomationModal({
   const [created, setCreated] = React.useState(false);
   const [pending, setPending] = React.useState(false);
 
+  // ZOQO Alpha bridge (docs/alpha/03-architecture.md §2) — Custom-only:
+  // "run-strategy" runs an existing alpha_strategies row instead of placing
+  // a terminal order, so it needs the caller's own strategy list rather
+  // than a fixed asset picker.
+  const [actionType, setActionType] = React.useState<"order" | "run-strategy">("order");
+  const [strategyId, setStrategyId] = React.useState("");
+  const [alphaStrategies, setAlphaStrategies] = React.useState<{ id: string; name: string }[]>([]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    fetch("/api/alpha/strategies")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: unknown) => {
+        if (!Array.isArray(rows)) return setAlphaStrategies([]);
+        setAlphaStrategies(rows.map((r) => ({ id: r.id as string, name: r.name as string })));
+      })
+      .catch(() => setAlphaStrategies([]));
+  }, [open]);
+
   // Reset the form each time the modal is (re)opened for a template — own
   // local state, so this uses React's "adjust state during render" pattern
   // instead of an effect, gated on a ref of the last (open, template) pair
@@ -86,6 +115,8 @@ export function CreateAutomationModal({
     setValues(defaultValues(source.params));
     setMaxOrderSize(DEFAULT_MAX_ORDER_SIZE);
     setDailyCap(DEFAULT_DAILY_CAP);
+    setActionType("order");
+    setStrategyId("");
     setCreated(false);
   } else if (!open && resetFor?.open) {
     setResetFor({ open, template });
@@ -94,17 +125,30 @@ export function CreateAutomationModal({
   // Switching condition type on the Custom path swaps in that type's own
   // param defaults (each of the three real condition types has exactly one
   // matching entry in AUTOMATION_TEMPLATES) — direction/values follow it.
+  // `schedule` has no template match (Custom-only, see SCHEDULE_PARAMS).
   function selectConditionType(type: AutomationCondition["type"]) {
-    const match = AUTOMATION_TEMPLATES.find((t) => t.condition.type === type) ?? BLANK_TEMPLATE;
     setConditionType(type);
+    if (type === "schedule") {
+      setValues(defaultValues(SCHEDULE_PARAMS));
+      return;
+    }
+    const match = AUTOMATION_TEMPLATES.find((t) => t.condition.type === type) ?? BLANK_TEMPLATE;
     setDirection(match.condition.type === "price-cross" || match.condition.type === "pct-change" ? match.condition.direction : "above");
     setValues(defaultValues(match.params));
   }
 
-  const params = (AUTOMATION_TEMPLATES.find((t) => t.condition.type === conditionType) ?? BLANK_TEMPLATE).params;
+  const params =
+    conditionType === "schedule"
+      ? SCHEDULE_PARAMS
+      : (AUTOMATION_TEMPLATES.find((t) => t.condition.type === conditionType) ?? BLANK_TEMPLATE).params;
   const condition = conditionFromForm(conditionType, values, direction);
   const sizeValue = values.sizeValue ?? 25;
-  const previewRule = describeAutomation(symbol, condition, { side, sizeType, sizeValue });
+  const action: AutomationAction = React.useMemo(
+    () => (actionType === "run-strategy" ? { type: "run-strategy", strategyId } : { side, sizeType, sizeValue }),
+    [actionType, strategyId, side, sizeType, sizeValue],
+  );
+  const previewRule = describeAutomation(symbol, condition, action);
+  const canSubmit = actionType !== "run-strategy" || Boolean(strategyId);
 
   const submit = React.useCallback(() => {
     onCreate({
@@ -113,13 +157,13 @@ export function CreateAutomationModal({
       category: source.category,
       symbol,
       condition,
-      action: { side, sizeType, sizeValue },
+      action,
       maxOrderSize,
       dailyCap,
       rule: previewRule,
     });
     setCreated(true);
-  }, [name, onCreate, source, symbol, condition, side, sizeType, sizeValue, maxOrderSize, dailyCap, previewRule]);
+  }, [name, onCreate, source, symbol, condition, action, maxOrderSize, dailyCap, previewRule]);
 
   React.useEffect(() => {
     // submit() calls onCreate(), which writes to the automations list owned
@@ -136,6 +180,7 @@ export function CreateAutomationModal({
   if (!open || typeof document === "undefined") return null;
 
   function handleCreate() {
+    if (!canSubmit) return;
     if (!requireAuth(() => setPending(true))) return;
     submit();
   }
@@ -214,6 +259,23 @@ export function CreateAutomationModal({
                       { value: "price-cross", label: "Price Cross" },
                       { value: "pct-change", label: "% Move" },
                       { value: "ma-cross", label: "MA Crossover" },
+                      { value: "schedule", label: "Schedule" },
+                    ]}
+                  />
+                </div>
+              )}
+              {isCustom && (
+                <div className="col-span-2">
+                  <label className="block text-[12px] font-semibold text-sub">Action</label>
+                  <SegmentedControl
+                    className="mt-1.5"
+                    size="md"
+                    fullWidth
+                    value={actionType}
+                    onChange={(v) => setActionType(v as "order" | "run-strategy")}
+                    data={[
+                      { value: "order", label: "Place order" },
+                      { value: "run-strategy", label: "Run Alpha strategy" },
                     ]}
                   />
                 </div>
@@ -260,55 +322,71 @@ export function CreateAutomationModal({
               </div>
             )}
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[12px] font-semibold text-sub">Side</label>
-                <SegmentedControl
+            {actionType === "run-strategy" ? (
+              <div className="mt-4">
+                <label className="block text-[12px] font-semibold text-sub">Alpha strategy</label>
+                <Select
                   className="mt-1.5"
-                  size="md"
-                  fullWidth
-                  value={side}
-                  onChange={(v) => setSide(v as "long" | "short")}
-                  data={[{ value: "long", label: "Long" }, { value: "short", label: "Short" }]}
+                  size="lg"
+                  value={strategyId}
+                  onChange={setStrategyId}
+                  placeholder={alphaStrategies.length === 0 ? "No strategies yet — create one on /alpha" : "Choose a strategy"}
+                  data={alphaStrategies.map((s) => ({ value: s.id, label: s.name }))}
                 />
               </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-sub">Size type</label>
-                <SegmentedControl
-                  className="mt-1.5"
-                  size="md"
-                  fullWidth
-                  value={sizeType}
-                  onChange={(v) => setSizeType(v as "fixed" | "pct-buying-power")}
-                  data={[{ value: "fixed", label: "$ Fixed" }, { value: "pct-buying-power", label: "% Buying power" }]}
-                />
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-semibold text-sub">Side</label>
+                    <SegmentedControl
+                      className="mt-1.5"
+                      size="md"
+                      fullWidth
+                      value={side}
+                      onChange={(v) => setSide(v as "long" | "short")}
+                      data={[{ value: "long", label: "Long" }, { value: "short", label: "Short" }]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-semibold text-sub">Size type</label>
+                    <SegmentedControl
+                      className="mt-1.5"
+                      size="md"
+                      fullWidth
+                      value={sizeType}
+                      onChange={(v) => setSizeType(v as "fixed" | "pct-buying-power")}
+                      data={[{ value: "fixed", label: "$ Fixed" }, { value: "pct-buying-power", label: "% Buying power" }]}
+                    />
+                  </div>
+                </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[12px] font-semibold text-sub">Max order size</label>
-                <Input
-                  type="number"
-                  value={maxOrderSize}
-                  onChange={(e) => setMaxOrderSize(e.target.value === "" ? 0 : Number(e.target.value))}
-                  leftSection="$"
-                  min={1}
-                  className="mt-1.5"
-                />
-              </div>
-              <div>
-                <label className="block text-[12px] font-semibold text-sub">Daily cap</label>
-                <Input
-                  type="number"
-                  value={dailyCap}
-                  onChange={(e) => setDailyCap(e.target.value === "" ? 0 : Number(e.target.value))}
-                  leftSection="$"
-                  min={1}
-                  className="mt-1.5"
-                />
-              </div>
-            </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-semibold text-sub">Max order size</label>
+                    <Input
+                      type="number"
+                      value={maxOrderSize}
+                      onChange={(e) => setMaxOrderSize(e.target.value === "" ? 0 : Number(e.target.value))}
+                      leftSection="$"
+                      min={1}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-semibold text-sub">Daily cap</label>
+                    <Input
+                      type="number"
+                      value={dailyCap}
+                      onChange={(e) => setDailyCap(e.target.value === "" ? 0 : Number(e.target.value))}
+                      leftSection="$"
+                      min={1}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="mt-4 rounded-[12px] border bg-muted px-4 py-3">
               <p className="text-[11.5px] italic leading-snug text-sub">{previewRule}</p>
@@ -332,7 +410,7 @@ export function CreateAutomationModal({
               enforced server-side regardless of what this form asks for.
             </p>
 
-            <Button color="brand" fullWidth size="lg" onClick={handleCreate} className="mt-4">
+            <Button color="brand" fullWidth size="lg" onClick={handleCreate} disabled={!canSubmit} className="mt-4">
               Create Automation
             </Button>
           </div>
