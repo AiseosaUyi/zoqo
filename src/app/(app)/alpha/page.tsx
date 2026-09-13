@@ -11,6 +11,7 @@ import { StrategiesSection } from "@/components/alpha/StrategiesSection";
 import { DecisionsFeed } from "@/components/alpha/DecisionsFeed";
 import { EventsFeed } from "@/components/alpha/EventsFeed";
 import { FixturesSection } from "@/components/alpha/FixturesSection";
+import { CredentialsSection, type AlphaCredentialDto } from "@/components/alpha/CredentialsSection";
 import type { CreateStrategyInput } from "@/components/alpha/CreateStrategyModal";
 import type {
   AlphaSettingsDto,
@@ -56,13 +57,14 @@ export default function AlphaPage() {
   const [decisions, setDecisions] = React.useState<AlphaDecisionDto[]>([]);
   const [events, setEvents] = React.useState<AlphaEventDto[]>([]);
   const [fixtures, setFixtures] = React.useState<AlphaFixtureDto[]>([]);
+  const [credentials, setCredentials] = React.useState<AlphaCredentialDto[]>([]);
   const [slipResult, setSlipResult] = React.useState<AlphaSlipResultDto | null>(null);
   const [slipLoading, setSlipLoading] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
 
   const loadAll = React.useCallback(async () => {
-    const [s, v, st, tpl, dec, ev, fx] = await Promise.all([
+    const [s, v, st, tpl, dec, ev, fx, cred] = await Promise.all([
       fetchJson<AlphaSettingsDto>("/api/alpha/settings"),
       fetchJson<AlphaVenueDto[]>("/api/alpha/venues"),
       fetchJson<AlphaStrategyDto[]>("/api/alpha/strategies"),
@@ -70,8 +72,9 @@ export default function AlphaPage() {
       fetchJson<AlphaDecisionDto[]>("/api/alpha/decisions?limit=25"),
       fetchJson<AlphaEventDto[]>("/api/alpha/events?limit=25"),
       fetchJson<AlphaFixtureDto[]>("/api/alpha/fixtures?limit=20"),
+      fetchJson<AlphaCredentialDto[]>("/api/alpha/credentials"),
     ]);
-    if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || fx == null) {
+    if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || fx == null || cred == null) {
       setLoadFailed(true);
       setLoaded(true);
       return;
@@ -83,6 +86,7 @@ export default function AlphaPage() {
     setDecisions(dec);
     setEvents(ev);
     setFixtures(fx);
+    setCredentials(cred);
     setLoadFailed(false);
     setLoaded(true);
   }, []);
@@ -218,6 +222,7 @@ export default function AlphaPage() {
           <div className="mt-6 flex flex-col gap-8">
             <KillSwitchCard settings={settings} onToggle={setKillSwitch} />
             <VenuesSection venues={venues} onSave={saveVenue} />
+            <CredentialsSection credentials={credentials} />
             <StrategiesSection
               templates={templates}
               strategies={strategies}

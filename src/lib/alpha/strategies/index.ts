@@ -8,6 +8,10 @@ import { footballValue1x2 } from "./footballValue1x2";
 import { footballValueOu25 } from "./footballValueOu25";
 import { footballLineMove } from "./footballLineMove";
 import { footballMarketOnlyControl } from "./footballMarketOnlyControl";
+import { kalshiCrossVenueDivergence } from "./kalshiCrossVenueDivergence";
+import { bybitHourlyMomentum } from "./bybitHourlyMomentum";
+import { derivSyntheticMeanrev } from "./derivSyntheticMeanrev";
+import { polymarketSimLongshotFade } from "./polymarketSimLongshotFade";
 
 /** Strategy registry — `alpha_strategies.strategy_key` looks up into this
  *  map. Add a new strategy by writing a module and registering it here;
@@ -22,6 +26,10 @@ export const STRATEGY_REGISTRY: Record<string, Strategy> = {
   [footballValueOu25.key]: footballValueOu25,
   [footballLineMove.key]: footballLineMove,
   [footballMarketOnlyControl.key]: footballMarketOnlyControl,
+  [kalshiCrossVenueDivergence.key]: kalshiCrossVenueDivergence,
+  [bybitHourlyMomentum.key]: bybitHourlyMomentum,
+  [derivSyntheticMeanrev.key]: derivSyntheticMeanrev,
+  [polymarketSimLongshotFade.key]: polymarketSimLongshotFade,
 };
 
 export function getStrategyTemplate(strategyKey: string): Strategy | null {

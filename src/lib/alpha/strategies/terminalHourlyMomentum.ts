@@ -1,11 +1,18 @@
 import type { Strategy } from "../core/strategy";
+import { computeMomentumSignal } from "./lib/momentum";
 
 /** The user's literal example from docs/alpha/03-architecture.md's build
  *  prompt: "trade every hour." Every 60 minutes (default), goes long or
  *  short by the sign of the trailing 4h return, with an ATR-derived stop —
  *  no take-profit (momentum strategies are typically stopped out or ridden,
  *  not target-exited). Deliberately simple: this is the proof-of-loop
- *  strategy, not the one expected to carry the leaderboard. */
+ *  strategy, not the one expected to carry the leaderboard.
+ *
+ *  The window/ATR-stop math itself lives in `./lib/momentum.ts`, factored
+ *  out here in Phase 4 when `bybitHourlyMomentum.ts` became a second
+ *  consumer of the exact same logic (see that file, and the phase-4 plan's
+ *  own DRY note) — this module now only wires price features in and an
+ *  Intent out. */
 
 interface Params extends Record<string, unknown> {
   assetId: string;
@@ -47,20 +54,19 @@ export const terminalHourlyMomentum: Strategy = {
       return [];
     }
 
-    const side = return4h > 0 ? ("long" as const) : ("short" as const);
-    const stopDistance = Number.isFinite(atr) && atr > 0 ? atr * params.atrMultiple : price * 0.02;
-    const stopLoss = side === "long" ? price - stopDistance : price + stopDistance;
+    const signal = computeMomentumSignal({ price, atr, returnOverWindow: return4h, atrMultiple: params.atrMultiple, minReturnAbs: params.minReturnAbs });
+    if (!signal) return []; // below-threshold check above already covers the common case; this also catches bad price/atr inputs
 
     return [
       {
         strategyId: "",
         market: { venue: "zoqo-terminal", marketId: params.assetId },
-        side,
+        side: signal.side,
         kind: "market",
-        edge: Math.abs(return4h),
+        edge: signal.edge,
         suggestedStakePct: params.stakePct,
-        stopLoss,
-        rationale: `Hourly momentum: 4h return ${(return4h * 100).toFixed(2)}%, ATR stop at ${stopLoss.toFixed(2)}`,
+        stopLoss: signal.stopLoss,
+        rationale: `Hourly momentum: 4h return ${(return4h * 100).toFixed(2)}%, ATR stop at ${signal.stopLoss.toFixed(2)}`,
         features: { price, atr, return4h },
       },
     ];
