@@ -2,6 +2,10 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import * as service from "@/lib/alpha/service";
 import { createVenueAdapter } from "@/lib/alpha/venues";
 import type { VenueId } from "@/lib/alpha/core/venue";
+import { createFixtureFeatureProvider } from "@/lib/alpha/features/fixtureFeatures";
+import { predictFixture as runPredictFixture } from "@/lib/alpha/predictFixture";
+import { buildSlip as runBuildSlip, type BuildSlipInput } from "@/lib/alpha/slip";
+import type { FootballModelKey } from "@/lib/alpha/football/models";
 
 /** ZOQO Alpha MCP tools (docs/alpha/05-mcp-spec.md) — every function here is
  *  a thin wrapper over src/lib/alpha/service.ts, registered in
@@ -122,6 +126,66 @@ export async function runStrategyNow(userId: string, id: string) {
   } catch (err) {
     return errorText(err instanceof Error ? err.message : "run failed");
   }
+}
+
+// ---------------------------------------------------------------------------
+// Football (docs/alpha/05-mcp-spec.md's football section)
+// ---------------------------------------------------------------------------
+
+export async function listFixtures(args: { league?: string; from?: string; to?: string; status?: string; limit?: number }) {
+  const supabase = createServiceRoleClient();
+  let q = supabase.from("alpha_fixtures").select("*").order("kickoff_at", { ascending: true });
+  if (args.league) q = q.eq("league_id", args.league);
+  if (args.from) q = q.gte("kickoff_at", args.from);
+  if (args.to) q = q.lte("kickoff_at", args.to);
+  if (args.status) q = q.eq("status", args.status);
+  const { data } = await q.limit(args.limit ?? 100);
+  return text(data ?? []);
+}
+
+export async function getFixture(fixtureId: string) {
+  const supabase = createServiceRoleClient();
+  const { data: fixture } = await supabase.from("alpha_fixtures").select("*").eq("id", fixtureId).maybeSingle();
+  if (!fixture) return errorText(`fixture ${fixtureId} not found`);
+  const { data: odds } = await supabase
+    .from("alpha_odds_snapshots")
+    .select("*")
+    .eq("fixture_id", fixtureId)
+    .order("ts", { ascending: false })
+    .limit(200);
+  return text({ fixture, odds: odds ?? [] });
+}
+
+export async function getFixtureFeatures(fixtureId: string) {
+  const supabase = createServiceRoleClient();
+  const provider = createFixtureFeatureProvider(supabase, Date.now());
+  const features = await provider.getFixtureFeatures!(fixtureId);
+  if (!features) return errorText(`no computable features for fixture ${fixtureId} (fixture may not exist, or has no odds/ratings data yet)`);
+  return text(features);
+}
+
+export async function predictFixture(args: { fixtureId: string; model?: string }) {
+  const supabase = createServiceRoleClient();
+  const model = (args.model ?? "blend") as FootballModelKey;
+  const result = await runPredictFixture(supabase, args.fixtureId, model);
+  if (!result) return errorText(`fixture ${args.fixtureId} not found, or model "${model}" has no data to run on`);
+  return text(result);
+}
+
+export async function getOddsHistory(args: { fixtureId: string; book?: string; market?: string; limit?: number }) {
+  const supabase = createServiceRoleClient();
+  let q = supabase.from("alpha_odds_snapshots").select("*").eq("fixture_id", args.fixtureId).order("ts", { ascending: true });
+  if (args.book) q = q.eq("book", args.book);
+  if (args.market) q = q.eq("market", args.market);
+  const { data } = await q.limit(args.limit ?? 500);
+  return text(data ?? []);
+}
+
+export async function buildSlip(userId: string, input: BuildSlipInput) {
+  const supabase = createServiceRoleClient();
+  const result = await runBuildSlip(supabase, userId, input);
+  if ("error" in result) return errorText(result.error);
+  return text(result);
 }
 
 // ---------------------------------------------------------------------------

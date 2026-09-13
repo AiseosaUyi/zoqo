@@ -1,0 +1,4502 @@
+[
+  {
+    "fixtureId": "synthetic-0",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.56,
+      "draw": 4.85,
+      "away": 1.77
+    }
+  },
+  {
+    "fixtureId": "synthetic-1",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.88,
+      "draw": 4.76,
+      "away": 3.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-150",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.55,
+      "away": 2.09
+    }
+  },
+  {
+    "fixtureId": "synthetic-151",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 3,
+    "awayGoals": 6,
+    "closingOdds": {
+      "home": 1.45,
+      "draw": 5.61,
+      "away": 5.56
+    }
+  },
+  {
+    "fixtureId": "synthetic-152",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.7,
+      "draw": 4.63,
+      "away": 2.16
+    }
+  },
+  {
+    "fixtureId": "synthetic-153",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.14,
+      "draw": 4.59,
+      "away": 2.68
+    }
+  },
+  {
+    "fixtureId": "synthetic-154",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.84,
+      "draw": 4.79,
+      "away": 3.36
+    }
+  },
+  {
+    "fixtureId": "synthetic-2",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.62,
+      "draw": 5.04,
+      "away": 4.15
+    }
+  },
+  {
+    "fixtureId": "synthetic-3",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.85,
+      "draw": 4.69,
+      "away": 3.2
+    }
+  },
+  {
+    "fixtureId": "synthetic-4",
+    "date": "2026-05-20",
+    "daysAgo": 116,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Northgate City",
+    "homeGoals": 6,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.94,
+      "draw": 4.64,
+      "away": 3.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-155",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.91,
+      "draw": 4.78,
+      "away": 3.22
+    }
+  },
+  {
+    "fixtureId": "synthetic-156",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.19,
+      "draw": 4.57,
+      "away": 2.59
+    }
+  },
+  {
+    "fixtureId": "synthetic-157",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.36,
+      "draw": 4.53,
+      "away": 2.36
+    }
+  },
+  {
+    "fixtureId": "synthetic-158",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.62,
+      "away": 2.16
+    }
+  },
+  {
+    "fixtureId": "synthetic-159",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.13,
+      "draw": 4.57,
+      "away": 2.66
+    }
+  },
+  {
+    "fixtureId": "synthetic-5",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.16,
+      "draw": 4.64,
+      "away": 2.7
+    }
+  },
+  {
+    "fixtureId": "synthetic-6",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 4.06,
+      "draw": 5.05,
+      "away": 1.66
+    }
+  },
+  {
+    "fixtureId": "synthetic-7",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Northgate City",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.89,
+      "draw": 4.79,
+      "away": 3.27
+    }
+  },
+  {
+    "fixtureId": "synthetic-8",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.88,
+      "draw": 4.78,
+      "away": 3.26
+    }
+  },
+  {
+    "fixtureId": "synthetic-9",
+    "date": "2026-05-24",
+    "daysAgo": 112,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 4,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 2.28,
+      "draw": 4.62,
+      "away": 2.55
+    }
+  },
+  {
+    "fixtureId": "synthetic-10",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Harbor United",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.25,
+      "draw": 4.56,
+      "away": 2.52
+    }
+  },
+  {
+    "fixtureId": "synthetic-11",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.95,
+      "draw": 4.68,
+      "away": 3.03
+    }
+  },
+  {
+    "fixtureId": "synthetic-12",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Northgate City",
+    "homeGoals": 6,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 1.85,
+      "draw": 4.7,
+      "away": 3.21
+    }
+  },
+  {
+    "fixtureId": "synthetic-13",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 3.35,
+      "draw": 4.78,
+      "away": 1.84
+    }
+  },
+  {
+    "fixtureId": "synthetic-14",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.61,
+      "away": 2.15
+    }
+  },
+  {
+    "fixtureId": "synthetic-160",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.13,
+      "draw": 4.57,
+      "away": 2.66
+    }
+  },
+  {
+    "fixtureId": "synthetic-161",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.68,
+      "draw": 5.04,
+      "away": 4.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-162",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.61,
+      "draw": 5.02,
+      "away": 4.13
+    }
+  },
+  {
+    "fixtureId": "synthetic-163",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 5,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.84,
+      "draw": 4.79,
+      "away": 3.36
+    }
+  },
+  {
+    "fixtureId": "synthetic-164",
+    "date": "2026-05-28",
+    "daysAgo": 108,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 3.22,
+      "draw": 4.72,
+      "away": 1.86
+    }
+  },
+  {
+    "fixtureId": "synthetic-15",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.61,
+      "draw": 5.16,
+      "away": 4.33
+    }
+  },
+  {
+    "fixtureId": "synthetic-16",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 4,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.79,
+      "draw": 4.79,
+      "away": 3.43
+    }
+  },
+  {
+    "fixtureId": "synthetic-165",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 3.96,
+      "draw": 5.03,
+      "away": 1.7
+    }
+  },
+  {
+    "fixtureId": "synthetic-166",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.86,
+      "draw": 4.71,
+      "away": 3.21
+    }
+  },
+  {
+    "fixtureId": "synthetic-167",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.93,
+      "draw": 4.62,
+      "away": 3
+    }
+  },
+  {
+    "fixtureId": "synthetic-168",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 3.08,
+      "draw": 4.68,
+      "away": 1.92
+    }
+  },
+  {
+    "fixtureId": "synthetic-169",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.77,
+      "draw": 4.87,
+      "away": 3.58
+    }
+  },
+  {
+    "fixtureId": "synthetic-17",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 2,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 1.96,
+      "draw": 4.69,
+      "away": 3.05
+    }
+  },
+  {
+    "fixtureId": "synthetic-18",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Northgate City",
+    "homeGoals": 4,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.53,
+      "draw": 5.13,
+      "away": 4.49
+    }
+  },
+  {
+    "fixtureId": "synthetic-19",
+    "date": "2026-06-01",
+    "daysAgo": 104,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.93,
+      "draw": 4.77,
+      "away": 3.17
+    }
+  },
+  {
+    "fixtureId": "synthetic-170",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.16,
+      "draw": 4.63,
+      "away": 2.7
+    }
+  },
+  {
+    "fixtureId": "synthetic-171",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 4,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.42,
+      "draw": 5.51,
+      "away": 5.45
+    }
+  },
+  {
+    "fixtureId": "synthetic-172",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.97,
+      "draw": 4.72,
+      "away": 3.06
+    }
+  },
+  {
+    "fixtureId": "synthetic-173",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.92,
+      "draw": 4.72,
+      "away": 3.15
+    }
+  },
+  {
+    "fixtureId": "synthetic-174",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.51,
+      "draw": 5.23,
+      "away": 4.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-20",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 7,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.42,
+      "draw": 5.6,
+      "away": 5.63
+    }
+  },
+  {
+    "fixtureId": "synthetic-21",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.51,
+      "draw": 4.55,
+      "away": 2.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-22",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.43,
+      "draw": 4.52,
+      "away": 2.3
+    }
+  },
+  {
+    "fixtureId": "synthetic-23",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Harbor United",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 3.14,
+      "draw": 4.71,
+      "away": 1.91
+    }
+  },
+  {
+    "fixtureId": "synthetic-24",
+    "date": "2026-06-05",
+    "daysAgo": 100,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.81,
+      "draw": 4.83,
+      "away": 3.47
+    }
+  },
+  {
+    "fixtureId": "synthetic-175",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 4,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 1.95,
+      "draw": 4.68,
+      "away": 3.03
+    }
+  },
+  {
+    "fixtureId": "synthetic-176",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.24,
+      "draw": 4.54,
+      "away": 2.5
+    }
+  },
+  {
+    "fixtureId": "synthetic-177",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.62,
+      "away": 2.16
+    }
+  },
+  {
+    "fixtureId": "synthetic-178",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 3.47,
+      "draw": 4.78,
+      "away": 1.76
+    }
+  },
+  {
+    "fixtureId": "synthetic-179",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.78,
+      "draw": 4.64,
+      "away": 2.1
+    }
+  },
+  {
+    "fixtureId": "synthetic-25",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.5,
+      "draw": 5.26,
+      "away": 4.79
+    }
+  },
+  {
+    "fixtureId": "synthetic-26",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.93,
+      "draw": 4.64,
+      "away": 3.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-27",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.86,
+      "draw": 4.72,
+      "away": 3.23
+    }
+  },
+  {
+    "fixtureId": "synthetic-28",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Northgate City",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.51,
+      "draw": 4.55,
+      "away": 2.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-29",
+    "date": "2026-06-09",
+    "daysAgo": 96,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.98,
+      "draw": 4.74,
+      "away": 3.08
+    }
+  },
+  {
+    "fixtureId": "synthetic-180",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.27,
+      "draw": 4.61,
+      "away": 2.54
+    }
+  },
+  {
+    "fixtureId": "synthetic-181",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 1.9,
+      "draw": 4.75,
+      "away": 3.2
+    }
+  },
+  {
+    "fixtureId": "synthetic-182",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.41,
+      "draw": 4.62,
+      "away": 2.41
+    }
+  },
+  {
+    "fixtureId": "synthetic-183",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.89,
+      "draw": 4.69,
+      "away": 2.07
+    }
+  },
+  {
+    "fixtureId": "synthetic-184",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 5,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.17,
+      "draw": 4.65,
+      "away": 2.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-30",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 4.07,
+      "draw": 5.05,
+      "away": 1.66
+    }
+  },
+  {
+    "fixtureId": "synthetic-31",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 0,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.75,
+      "draw": 4.6,
+      "away": 2.08
+    }
+  },
+  {
+    "fixtureId": "synthetic-32",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.78,
+      "draw": 4.76,
+      "away": 3.42
+    }
+  },
+  {
+    "fixtureId": "synthetic-33",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.27,
+      "draw": 4.59,
+      "away": 2.54
+    }
+  },
+  {
+    "fixtureId": "synthetic-34",
+    "date": "2026-06-13",
+    "daysAgo": 92,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Harbor United",
+    "homeGoals": 6,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.46,
+      "draw": 4.58,
+      "away": 2.33
+    }
+  },
+  {
+    "fixtureId": "synthetic-185",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.54,
+      "draw": 5.33,
+      "away": 4.8
+    }
+  },
+  {
+    "fixtureId": "synthetic-186",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.85,
+      "draw": 4.7,
+      "away": 3.21
+    }
+  },
+  {
+    "fixtureId": "synthetic-187",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 3.1,
+      "draw": 4.65,
+      "away": 1.89
+    }
+  },
+  {
+    "fixtureId": "synthetic-188",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.54,
+      "draw": 5.28,
+      "away": 4.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-189",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 2,
+    "awayGoals": 6,
+    "closingOdds": {
+      "home": 2.38,
+      "draw": 4.56,
+      "away": 2.38
+    }
+  },
+  {
+    "fixtureId": "synthetic-35",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.69,
+      "draw": 4.88,
+      "away": 3.76
+    }
+  },
+  {
+    "fixtureId": "synthetic-36",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 2,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.37,
+      "draw": 4.81,
+      "away": 1.85
+    }
+  },
+  {
+    "fixtureId": "synthetic-37",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 0,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.47,
+      "draw": 4.61,
+      "away": 2.34
+    }
+  },
+  {
+    "fixtureId": "synthetic-38",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.97,
+      "draw": 4.72,
+      "away": 3.06
+    }
+  },
+  {
+    "fixtureId": "synthetic-39",
+    "date": "2026-06-17",
+    "daysAgo": 88,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.64,
+      "draw": 5.11,
+      "away": 4.21
+    }
+  },
+  {
+    "fixtureId": "synthetic-190",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.84,
+      "draw": 4.79,
+      "away": 3.35
+    }
+  },
+  {
+    "fixtureId": "synthetic-191",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.9,
+      "draw": 4.8,
+      "away": 3.28
+    }
+  },
+  {
+    "fixtureId": "synthetic-192",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.45,
+      "draw": 4.63,
+      "away": 2.38
+    }
+  },
+  {
+    "fixtureId": "synthetic-193",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.94,
+      "draw": 4.64,
+      "away": 3.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-194",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 3.2,
+      "draw": 4.69,
+      "away": 1.85
+    }
+  },
+  {
+    "fixtureId": "synthetic-40",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.68,
+      "draw": 4.97,
+      "away": 3.92
+    }
+  },
+  {
+    "fixtureId": "synthetic-41",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.72,
+      "draw": 4.99,
+      "away": 3.84
+    }
+  },
+  {
+    "fixtureId": "synthetic-42",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Northgate City",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.57,
+      "draw": 4.65,
+      "away": 2.29
+    }
+  },
+  {
+    "fixtureId": "synthetic-43",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.13,
+      "draw": 4.57,
+      "away": 2.66
+    }
+  },
+  {
+    "fixtureId": "synthetic-44",
+    "date": "2026-06-21",
+    "daysAgo": 84,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.55,
+      "draw": 4.63,
+      "away": 2.28
+    }
+  },
+  {
+    "fixtureId": "synthetic-195",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.65,
+      "draw": 4.91,
+      "away": 3.86
+    }
+  },
+  {
+    "fixtureId": "synthetic-196",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.95,
+      "draw": 4.67,
+      "away": 3.03
+    }
+  },
+  {
+    "fixtureId": "synthetic-197",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.31,
+      "draw": 4.55,
+      "away": 2.44
+    }
+  },
+  {
+    "fixtureId": "synthetic-198",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.88,
+      "draw": 4.93,
+      "away": 1.66
+    }
+  },
+  {
+    "fixtureId": "synthetic-199",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.58,
+      "draw": 5.22,
+      "away": 4.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-45",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Harbor United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 3.14,
+      "draw": 4.71,
+      "away": 1.91
+    }
+  },
+  {
+    "fixtureId": "synthetic-46",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.59,
+      "draw": 5.09,
+      "away": 4.28
+    }
+  },
+  {
+    "fixtureId": "synthetic-47",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 3,
+    "awayGoals": 6,
+    "closingOdds": {
+      "home": 2.14,
+      "draw": 4.59,
+      "away": 2.68
+    }
+  },
+  {
+    "fixtureId": "synthetic-48",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.96,
+      "draw": 4.7,
+      "away": 3.05
+    }
+  },
+  {
+    "fixtureId": "synthetic-49",
+    "date": "2026-06-25",
+    "daysAgo": 80,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 4.01,
+      "draw": 4.97,
+      "away": 1.63
+    }
+  },
+  {
+    "fixtureId": "synthetic-200",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 3.31,
+      "draw": 4.79,
+      "away": 1.87
+    }
+  },
+  {
+    "fixtureId": "synthetic-201",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 2,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.62,
+      "away": 2.15
+    }
+  },
+  {
+    "fixtureId": "synthetic-202",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.78,
+      "draw": 4.64,
+      "away": 2.11
+    }
+  },
+  {
+    "fixtureId": "synthetic-203",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.56,
+      "draw": 5.32,
+      "away": 4.75
+    }
+  },
+  {
+    "fixtureId": "synthetic-204",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 5,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.24,
+      "draw": 4.55,
+      "away": 2.51
+    }
+  },
+  {
+    "fixtureId": "synthetic-50",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.46,
+      "draw": 4.57,
+      "away": 2.32
+    }
+  },
+  {
+    "fixtureId": "synthetic-51",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.46,
+      "draw": 5.54,
+      "away": 5.4
+    }
+  },
+  {
+    "fixtureId": "synthetic-52",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.77,
+      "draw": 4.86,
+      "away": 3.58
+    }
+  },
+  {
+    "fixtureId": "synthetic-53",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.87,
+      "draw": 4.73,
+      "away": 3.23
+    }
+  },
+  {
+    "fixtureId": "synthetic-54",
+    "date": "2026-06-29",
+    "daysAgo": 76,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.28,
+      "draw": 4.63,
+      "away": 2.55
+    }
+  },
+  {
+    "fixtureId": "synthetic-205",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.95,
+      "draw": 4.67,
+      "away": 3.03
+    }
+  },
+  {
+    "fixtureId": "synthetic-206",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.42,
+      "draw": 4.63,
+      "away": 2.42
+    }
+  },
+  {
+    "fixtureId": "synthetic-207",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.79,
+      "draw": 4.9,
+      "away": 3.6
+    }
+  },
+  {
+    "fixtureId": "synthetic-208",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.53,
+      "draw": 5.29,
+      "away": 4.76
+    }
+  },
+  {
+    "fixtureId": "synthetic-209",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.87,
+      "draw": 4.75,
+      "away": 3.24
+    }
+  },
+  {
+    "fixtureId": "synthetic-55",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.81,
+      "draw": 4.83,
+      "away": 3.46
+    }
+  },
+  {
+    "fixtureId": "synthetic-56",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.98,
+      "draw": 4.72,
+      "away": 2.02
+    }
+  },
+  {
+    "fixtureId": "synthetic-57",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 3,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 2.52,
+      "draw": 4.57,
+      "away": 2.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-58",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Northgate City",
+    "homeGoals": 6,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.74,
+      "draw": 4.78,
+      "away": 3.52
+    }
+  },
+  {
+    "fixtureId": "synthetic-59",
+    "date": "2026-07-03",
+    "daysAgo": 72,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 0,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.52,
+      "draw": 5.32,
+      "away": 4.84
+    }
+  },
+  {
+    "fixtureId": "synthetic-210",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.46,
+      "draw": 5.65,
+      "away": 5.59
+    }
+  },
+  {
+    "fixtureId": "synthetic-211",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 7,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.14,
+      "draw": 4.59,
+      "away": 2.68
+    }
+  },
+  {
+    "fixtureId": "synthetic-212",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.23,
+      "draw": 4.53,
+      "away": 2.5
+    }
+  },
+  {
+    "fixtureId": "synthetic-213",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.89,
+      "draw": 4.78,
+      "away": 3.26
+    }
+  },
+  {
+    "fixtureId": "synthetic-214",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.9,
+      "draw": 4.75,
+      "away": 3.2
+    }
+  },
+  {
+    "fixtureId": "synthetic-60",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.95,
+      "draw": 4.66,
+      "away": 2
+    }
+  },
+  {
+    "fixtureId": "synthetic-61",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Northgate City",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.56,
+      "draw": 4.64,
+      "away": 2.29
+    }
+  },
+  {
+    "fixtureId": "synthetic-62",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.42,
+      "draw": 4.63,
+      "away": 2.42
+    }
+  },
+  {
+    "fixtureId": "synthetic-63",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.8,
+      "draw": 4.68,
+      "away": 2.12
+    }
+  },
+  {
+    "fixtureId": "synthetic-64",
+    "date": "2026-07-07",
+    "daysAgo": 68,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Harbor United",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.95,
+      "draw": 4.66,
+      "away": 2
+    }
+  },
+  {
+    "fixtureId": "synthetic-215",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.15,
+      "draw": 4.61,
+      "away": 2.69
+    }
+  },
+  {
+    "fixtureId": "synthetic-216",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 3.69,
+      "draw": 4.9,
+      "away": 1.74
+    }
+  },
+  {
+    "fixtureId": "synthetic-217",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 0,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.77,
+      "draw": 4.62,
+      "away": 2.09
+    }
+  },
+  {
+    "fixtureId": "synthetic-218",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.15,
+      "draw": 4.6,
+      "away": 2.68
+    }
+  },
+  {
+    "fixtureId": "synthetic-219",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.47,
+      "draw": 5.31,
+      "away": 4.96
+    }
+  },
+  {
+    "fixtureId": "synthetic-65",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.82,
+      "draw": 4.96,
+      "away": 1.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-66",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.25,
+      "draw": 4.55,
+      "away": 2.51
+    }
+  },
+  {
+    "fixtureId": "synthetic-67",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.96,
+      "draw": 4.7,
+      "away": 3.05
+    }
+  },
+  {
+    "fixtureId": "synthetic-68",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Harbor United",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.96,
+      "draw": 4.68,
+      "away": 2.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-69",
+    "date": "2026-07-11",
+    "daysAgo": 64,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Northgate City",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.75,
+      "draw": 4.81,
+      "away": 3.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-220",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.17,
+      "draw": 4.66,
+      "away": 2.72
+    }
+  },
+  {
+    "fixtureId": "synthetic-221",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 0,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.55,
+      "draw": 5.2,
+      "away": 4.55
+    }
+  },
+  {
+    "fixtureId": "synthetic-222",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 3.19,
+      "draw": 4.68,
+      "away": 1.85
+    }
+  },
+  {
+    "fixtureId": "synthetic-223",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.23,
+      "draw": 4.53,
+      "away": 2.5
+    }
+  },
+  {
+    "fixtureId": "synthetic-224",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 3.27,
+      "draw": 4.72,
+      "away": 1.84
+    }
+  },
+  {
+    "fixtureId": "synthetic-70",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Northgate City",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.54,
+      "draw": 5.16,
+      "away": 4.52
+    }
+  },
+  {
+    "fixtureId": "synthetic-71",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.17,
+      "draw": 4.65,
+      "away": 2.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-72",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.17,
+      "draw": 4.65,
+      "away": 2.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-73",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.57,
+      "draw": 4.54,
+      "away": 2.18
+    }
+  },
+  {
+    "fixtureId": "synthetic-74",
+    "date": "2026-07-15",
+    "daysAgo": 60,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Harbor United",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.55,
+      "draw": 4.83,
+      "away": 1.76
+    }
+  },
+  {
+    "fixtureId": "synthetic-225",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.95,
+      "draw": 4.67,
+      "away": 2
+    }
+  },
+  {
+    "fixtureId": "synthetic-226",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.62,
+      "draw": 5.12,
+      "away": 4.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-227",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.36,
+      "draw": 4.52,
+      "away": 2.36
+    }
+  },
+  {
+    "fixtureId": "synthetic-228",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.66,
+      "draw": 4.93,
+      "away": 3.88
+    }
+  },
+  {
+    "fixtureId": "synthetic-229",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.72,
+      "draw": 4.85,
+      "away": 3.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-75",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.82,
+      "draw": 4.87,
+      "away": 3.49
+    }
+  },
+  {
+    "fixtureId": "synthetic-76",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Northgate City",
+    "homeGoals": 6,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.56,
+      "draw": 5.21,
+      "away": 4.56
+    }
+  },
+  {
+    "fixtureId": "synthetic-77",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.96,
+      "draw": 4.69,
+      "away": 2.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-78",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.71,
+      "draw": 4.64,
+      "away": 2.17
+    }
+  },
+  {
+    "fixtureId": "synthetic-79",
+    "date": "2026-07-19",
+    "daysAgo": 56,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.55,
+      "draw": 5.18,
+      "away": 4.54
+    }
+  },
+  {
+    "fixtureId": "synthetic-230",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.81,
+      "draw": 4.84,
+      "away": 3.47
+    }
+  },
+  {
+    "fixtureId": "synthetic-231",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 7,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.49,
+      "draw": 5.38,
+      "away": 5.02
+    }
+  },
+  {
+    "fixtureId": "synthetic-232",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.41,
+      "draw": 4.61,
+      "away": 2.41
+    }
+  },
+  {
+    "fixtureId": "synthetic-233",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.33,
+      "draw": 4.58,
+      "away": 2.46
+    }
+  },
+  {
+    "fixtureId": "synthetic-234",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.52,
+      "draw": 5.43,
+      "away": 5.02
+    }
+  },
+  {
+    "fixtureId": "synthetic-80",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Northgate City",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.25,
+      "draw": 4.56,
+      "away": 2.51
+    }
+  },
+  {
+    "fixtureId": "synthetic-81",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 4,
+    "awayGoals": 6,
+    "closingOdds": {
+      "home": 1.88,
+      "draw": 4.75,
+      "away": 3.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-82",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.66,
+      "draw": 5.06,
+      "away": 4.07
+    }
+  },
+  {
+    "fixtureId": "synthetic-83",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 3,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 2.99,
+      "draw": 4.72,
+      "away": 2.03
+    }
+  },
+  {
+    "fixtureId": "synthetic-84",
+    "date": "2026-07-23",
+    "daysAgo": 52,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.48,
+      "draw": 5.4,
+      "away": 5.09
+    }
+  },
+  {
+    "fixtureId": "synthetic-235",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.26,
+      "draw": 4.58,
+      "away": 2.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-236",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.9,
+      "draw": 4.64,
+      "away": 2.02
+    }
+  },
+  {
+    "fixtureId": "synthetic-237",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.14,
+      "draw": 4.59,
+      "away": 2.68
+    }
+  },
+  {
+    "fixtureId": "synthetic-238",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.64,
+      "draw": 5.1,
+      "away": 4.2
+    }
+  },
+  {
+    "fixtureId": "synthetic-239",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 2,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 1.93,
+      "draw": 4.76,
+      "away": 3.17
+    }
+  },
+  {
+    "fixtureId": "synthetic-85",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.62,
+      "away": 2.15
+    }
+  },
+  {
+    "fixtureId": "synthetic-86",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.53,
+      "draw": 5.36,
+      "away": 4.88
+    }
+  },
+  {
+    "fixtureId": "synthetic-87",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.96,
+      "draw": 4.68,
+      "away": 2.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-88",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.85,
+      "draw": 4.68,
+      "away": 3.2
+    }
+  },
+  {
+    "fixtureId": "synthetic-89",
+    "date": "2026-07-27",
+    "daysAgo": 48,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Harbor United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.45,
+      "draw": 4.56,
+      "away": 2.32
+    }
+  },
+  {
+    "fixtureId": "synthetic-240",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.74,
+      "draw": 4.9,
+      "away": 3.69
+    }
+  },
+  {
+    "fixtureId": "synthetic-241",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.66,
+      "draw": 4.57,
+      "away": 2.13
+    }
+  },
+  {
+    "fixtureId": "synthetic-242",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.51,
+      "draw": 4.54,
+      "away": 2.24
+    }
+  },
+  {
+    "fixtureId": "synthetic-243",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.9,
+      "draw": 4.76,
+      "away": 3.21
+    }
+  },
+  {
+    "fixtureId": "synthetic-244",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.18,
+      "draw": 4.67,
+      "away": 2.72
+    }
+  },
+  {
+    "fixtureId": "synthetic-90",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.5,
+      "draw": 4.52,
+      "away": 2.23
+    }
+  },
+  {
+    "fixtureId": "synthetic-91",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.71,
+      "draw": 4.82,
+      "away": 3.63
+    }
+  },
+  {
+    "fixtureId": "synthetic-92",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 4,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.47,
+      "draw": 5.37,
+      "away": 5.06
+    }
+  },
+  {
+    "fixtureId": "synthetic-93",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 2,
+    "awayGoals": 7,
+    "closingOdds": {
+      "home": 2.42,
+      "draw": 4.63,
+      "away": 2.42
+    }
+  },
+  {
+    "fixtureId": "synthetic-94",
+    "date": "2026-07-31",
+    "daysAgo": 44,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Harbor United",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.28,
+      "draw": 4.61,
+      "away": 2.55
+    }
+  },
+  {
+    "fixtureId": "synthetic-245",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.49,
+      "draw": 5.54,
+      "away": 5.31
+    }
+  },
+  {
+    "fixtureId": "synthetic-246",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.82,
+      "draw": 4.87,
+      "away": 3.5
+    }
+  },
+  {
+    "fixtureId": "synthetic-247",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.75,
+      "draw": 4.8,
+      "away": 3.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-248",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 2,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 2.66,
+      "draw": 4.57,
+      "away": 2.13
+    }
+  },
+  {
+    "fixtureId": "synthetic-249",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.58,
+      "draw": 5.21,
+      "away": 4.52
+    }
+  },
+  {
+    "fixtureId": "synthetic-95",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.45,
+      "draw": 4.56,
+      "away": 2.32
+    }
+  },
+  {
+    "fixtureId": "synthetic-96",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.66,
+      "draw": 5.04,
+      "away": 4.06
+    }
+  },
+  {
+    "fixtureId": "synthetic-97",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.12,
+      "draw": 4.54,
+      "away": 2.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-98",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.7,
+      "draw": 4.91,
+      "away": 3.79
+    }
+  },
+  {
+    "fixtureId": "synthetic-99",
+    "date": "2026-08-04",
+    "daysAgo": 40,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.38,
+      "draw": 4.55,
+      "away": 2.38
+    }
+  },
+  {
+    "fixtureId": "synthetic-100",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.71,
+      "draw": 4.82,
+      "away": 3.63
+    }
+  },
+  {
+    "fixtureId": "synthetic-101",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.51,
+      "draw": 5.3,
+      "away": 4.82
+    }
+  },
+  {
+    "fixtureId": "synthetic-102",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 0,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 1.89,
+      "draw": 4.67,
+      "away": 3.11
+    }
+  },
+  {
+    "fixtureId": "synthetic-103",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 3,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 3.32,
+      "draw": 4.74,
+      "away": 1.82
+    }
+  },
+  {
+    "fixtureId": "synthetic-104",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 4,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.4,
+      "draw": 4.59,
+      "away": 2.4
+    }
+  },
+  {
+    "fixtureId": "synthetic-250",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.71,
+      "draw": 4.83,
+      "away": 3.64
+    }
+  },
+  {
+    "fixtureId": "synthetic-251",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 1.73,
+      "draw": 4.99,
+      "away": 3.84
+    }
+  },
+  {
+    "fixtureId": "synthetic-252",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.73,
+      "draw": 4.93,
+      "away": 3.75
+    }
+  },
+  {
+    "fixtureId": "synthetic-253",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.52,
+      "draw": 4.56,
+      "away": 2.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-254",
+    "date": "2026-08-08",
+    "daysAgo": 36,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 6,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.45,
+      "draw": 5.41,
+      "away": 5.19
+    }
+  },
+  {
+    "fixtureId": "synthetic-105",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 3.12,
+      "draw": 4.69,
+      "away": 1.9
+    }
+  },
+  {
+    "fixtureId": "synthetic-106",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 5,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.66,
+      "draw": 4.93,
+      "away": 3.88
+    }
+  },
+  {
+    "fixtureId": "synthetic-107",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.54,
+      "draw": 5.17,
+      "away": 4.52
+    }
+  },
+  {
+    "fixtureId": "synthetic-108",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.14,
+      "draw": 4.59,
+      "away": 2.67
+    }
+  },
+  {
+    "fixtureId": "synthetic-109",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Harbor United",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.57,
+      "draw": 4.54,
+      "away": 2.18
+    }
+  },
+  {
+    "fixtureId": "synthetic-255",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.43,
+      "draw": 4.78,
+      "away": 1.79
+    }
+  },
+  {
+    "fixtureId": "synthetic-256",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.29,
+      "draw": 4.63,
+      "away": 2.56
+    }
+  },
+  {
+    "fixtureId": "synthetic-257",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.15,
+      "draw": 4.61,
+      "away": 2.69
+    }
+  },
+  {
+    "fixtureId": "synthetic-258",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.47,
+      "draw": 4.6,
+      "away": 2.34
+    }
+  },
+  {
+    "fixtureId": "synthetic-259",
+    "date": "2026-08-12",
+    "daysAgo": 32,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.78,
+      "draw": 4.82,
+      "away": 3.5
+    }
+  },
+  {
+    "fixtureId": "synthetic-110",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Harbor United",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.97,
+      "draw": 4.7,
+      "away": 2.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-111",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.69,
+      "draw": 4.62,
+      "away": 2.15
+    }
+  },
+  {
+    "fixtureId": "synthetic-112",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.12,
+      "draw": 4.55,
+      "away": 2.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-113",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.73,
+      "draw": 4.56,
+      "away": 2.07
+    }
+  },
+  {
+    "fixtureId": "synthetic-114",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.49,
+      "draw": 4.63,
+      "away": 2.35
+    }
+  },
+  {
+    "fixtureId": "synthetic-260",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.36,
+      "draw": 4.52,
+      "away": 2.36
+    }
+  },
+  {
+    "fixtureId": "synthetic-261",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.26,
+      "draw": 4.59,
+      "away": 2.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-262",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.47,
+      "draw": 5.48,
+      "away": 5.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-263",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.25,
+      "draw": 4.63,
+      "away": 2.59
+    }
+  },
+  {
+    "fixtureId": "synthetic-264",
+    "date": "2026-08-16",
+    "daysAgo": 28,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.67,
+      "draw": 4.94,
+      "away": 3.9
+    }
+  },
+  {
+    "fixtureId": "synthetic-115",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.91,
+      "draw": 4.71,
+      "away": 3.13
+    }
+  },
+  {
+    "fixtureId": "synthetic-116",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.88,
+      "draw": 4.77,
+      "away": 3.26
+    }
+  },
+  {
+    "fixtureId": "synthetic-117",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 0,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.85,
+      "draw": 4.68,
+      "away": 3.19
+    }
+  },
+  {
+    "fixtureId": "synthetic-118",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 1,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 4.04,
+      "draw": 5.02,
+      "away": 1.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-119",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Harbor United",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.62,
+      "draw": 4.61,
+      "away": 2.21
+    }
+  },
+  {
+    "fixtureId": "synthetic-265",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.26,
+      "draw": 4.57,
+      "away": 2.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-266",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 5,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.48,
+      "draw": 5.5,
+      "away": 5.27
+    }
+  },
+  {
+    "fixtureId": "synthetic-267",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 0,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.57,
+      "draw": 4.53,
+      "away": 2.17
+    }
+  },
+  {
+    "fixtureId": "synthetic-268",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.71,
+      "draw": 4.88,
+      "away": 3.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-269",
+    "date": "2026-08-20",
+    "daysAgo": 24,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 0,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.89,
+      "draw": 4.69,
+      "away": 2.07
+    }
+  },
+  {
+    "fixtureId": "synthetic-120",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 0,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.63,
+      "draw": 5.08,
+      "away": 4.18
+    }
+  },
+  {
+    "fixtureId": "synthetic-121",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Northgate City",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.41,
+      "draw": 4.62,
+      "away": 2.41
+    }
+  },
+  {
+    "fixtureId": "synthetic-122",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Harbor United",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.63,
+      "draw": 4.64,
+      "away": 2.23
+    }
+  },
+  {
+    "fixtureId": "synthetic-123",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.52,
+      "draw": 5.31,
+      "away": 4.82
+    }
+  },
+  {
+    "fixtureId": "synthetic-124",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Meridian League",
+    "homeTeam": "Falcon Town",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 7,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.63,
+      "draw": 4.95,
+      "away": 3.99
+    }
+  },
+  {
+    "fixtureId": "synthetic-270",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.49,
+      "draw": 4.63,
+      "away": 2.35
+    }
+  },
+  {
+    "fixtureId": "synthetic-271",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.26,
+      "draw": 4.65,
+      "away": 2.6
+    }
+  },
+  {
+    "fixtureId": "synthetic-272",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.51,
+      "draw": 4.55,
+      "away": 2.25
+    }
+  },
+  {
+    "fixtureId": "synthetic-273",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 6,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.75,
+      "draw": 4.95,
+      "away": 3.72
+    }
+  },
+  {
+    "fixtureId": "synthetic-274",
+    "date": "2026-08-24",
+    "daysAgo": 20,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.37,
+      "draw": 4.54,
+      "away": 2.37
+    }
+  },
+  {
+    "fixtureId": "synthetic-125",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Harbor United",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.96,
+      "draw": 4.69,
+      "away": 2.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-126",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.12,
+      "draw": 4.54,
+      "away": 2.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-127",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.56,
+      "draw": 4.64,
+      "away": 2.29
+    }
+  },
+  {
+    "fixtureId": "synthetic-128",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Copperfield Town",
+    "homeGoals": 1,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 1.95,
+      "draw": 4.67,
+      "away": 3.03
+    }
+  },
+  {
+    "fixtureId": "synthetic-129",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.72,
+      "draw": 4.84,
+      "away": 3.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-275",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.5,
+      "draw": 4.53,
+      "away": 2.23
+    }
+  },
+  {
+    "fixtureId": "synthetic-276",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.28,
+      "draw": 4.61,
+      "away": 2.55
+    }
+  },
+  {
+    "fixtureId": "synthetic-277",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 1,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 2.49,
+      "draw": 4.64,
+      "away": 2.36
+    }
+  },
+  {
+    "fixtureId": "synthetic-278",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 0,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.26,
+      "draw": 4.59,
+      "away": 2.53
+    }
+  },
+  {
+    "fixtureId": "synthetic-279",
+    "date": "2026-08-28",
+    "daysAgo": 16,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.61,
+      "draw": 5.07,
+      "away": 4.22
+    }
+  },
+  {
+    "fixtureId": "synthetic-130",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.56,
+      "draw": 4.63,
+      "away": 2.29
+    }
+  },
+  {
+    "fixtureId": "synthetic-131",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.6,
+      "draw": 4.58,
+      "away": 2.2
+    }
+  },
+  {
+    "fixtureId": "synthetic-132",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Meridian League",
+    "homeTeam": "Vanguard United",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 0,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 3.84,
+      "draw": 4.99,
+      "away": 1.72
+    }
+  },
+  {
+    "fixtureId": "synthetic-133",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Northgate City",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.56,
+      "draw": 4.63,
+      "away": 2.29
+    }
+  },
+  {
+    "fixtureId": "synthetic-134",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Crimson Rovers",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.7,
+      "draw": 4.93,
+      "away": 3.79
+    }
+  },
+  {
+    "fixtureId": "synthetic-280",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Goldenvale Rovers",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.93,
+      "draw": 4.62,
+      "away": 3
+    }
+  },
+  {
+    "fixtureId": "synthetic-281",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.17,
+      "draw": 4.65,
+      "away": 2.71
+    }
+  },
+  {
+    "fixtureId": "synthetic-282",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 0,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 3.05,
+      "draw": 4.7,
+      "away": 1.96
+    }
+  },
+  {
+    "fixtureId": "synthetic-283",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.89,
+      "draw": 4.73,
+      "away": 3.19
+    }
+  },
+  {
+    "fixtureId": "synthetic-284",
+    "date": "2026-09-01",
+    "daysAgo": 12,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 5,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.14,
+      "draw": 4.59,
+      "away": 2.68
+    }
+  },
+  {
+    "fixtureId": "synthetic-135",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.81,
+      "draw": 4.84,
+      "away": 3.47
+    }
+  },
+  {
+    "fixtureId": "synthetic-136",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 3.17,
+      "draw": 4.76,
+      "away": 1.93
+    }
+  },
+  {
+    "fixtureId": "synthetic-137",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.43,
+      "draw": 5.45,
+      "away": 5.31
+    }
+  },
+  {
+    "fixtureId": "synthetic-138",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Northgate City",
+    "homeGoals": 3,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.15,
+      "draw": 4.61,
+      "away": 2.69
+    }
+  },
+  {
+    "fixtureId": "synthetic-139",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 1,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 1.78,
+      "draw": 4.9,
+      "away": 3.6
+    }
+  },
+  {
+    "fixtureId": "synthetic-285",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Solstice League",
+    "homeTeam": "Thistledown United",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.28,
+      "draw": 4.61,
+      "away": 2.54
+    }
+  },
+  {
+    "fixtureId": "synthetic-286",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Solstice League",
+    "homeTeam": "Marbleton Rangers",
+    "awayTeam": "Cobalt Harbour",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.12,
+      "draw": 4.55,
+      "away": 2.65
+    }
+  },
+  {
+    "fixtureId": "synthetic-287",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.89,
+      "draw": 4.69,
+      "away": 2.07
+    }
+  },
+  {
+    "fixtureId": "synthetic-288",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 2.93,
+      "draw": 4.7,
+      "away": 2.05
+    }
+  },
+  {
+    "fixtureId": "synthetic-289",
+    "date": "2026-09-05",
+    "daysAgo": 8,
+    "league": "Solstice League",
+    "homeTeam": "Ravenscroft FC",
+    "awayTeam": "Stonebridge United",
+    "homeGoals": 2,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.2,
+      "draw": 4.58,
+      "away": 2.6
+    }
+  },
+  {
+    "fixtureId": "synthetic-140",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Meridian League",
+    "homeTeam": "Silverline FC",
+    "awayTeam": "Bridgeport Athletic",
+    "homeGoals": 2,
+    "awayGoals": 0,
+    "closingOdds": {
+      "home": 2.42,
+      "draw": 4.64,
+      "away": 2.42
+    }
+  },
+  {
+    "fixtureId": "synthetic-141",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.31,
+      "draw": 4.55,
+      "away": 2.45
+    }
+  },
+  {
+    "fixtureId": "synthetic-142",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Meridian League",
+    "homeTeam": "Ironclad FC",
+    "awayTeam": "Harbor United",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.88,
+      "draw": 4.77,
+      "away": 3.26
+    }
+  },
+  {
+    "fixtureId": "synthetic-143",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.16,
+      "draw": 4.63,
+      "away": 2.7
+    }
+  },
+  {
+    "fixtureId": "synthetic-144",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Meridian League",
+    "homeTeam": "Northgate City",
+    "awayTeam": "Oakwood Rangers",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.86,
+      "draw": 4.72,
+      "away": 3.23
+    }
+  },
+  {
+    "fixtureId": "synthetic-290",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Solstice League",
+    "homeTeam": "Emberfield FC",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 0,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.49,
+      "draw": 5.33,
+      "away": 4.93
+    }
+  },
+  {
+    "fixtureId": "synthetic-291",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Amber Coast FC",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.89,
+      "draw": 4.79,
+      "away": 3.27
+    }
+  },
+  {
+    "fixtureId": "synthetic-292",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Solstice League",
+    "homeTeam": "Westbrook Athletic",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 8,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.76,
+      "draw": 4.78,
+      "away": 3.47
+    }
+  },
+  {
+    "fixtureId": "synthetic-293",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Pinehill City",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.37,
+      "draw": 4.55,
+      "away": 2.37
+    }
+  },
+  {
+    "fixtureId": "synthetic-294",
+    "date": "2026-09-09",
+    "daysAgo": 4,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 1,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.56,
+      "draw": 5.24,
+      "away": 4.58
+    }
+  },
+  {
+    "fixtureId": "synthetic-145",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Meridian League",
+    "homeTeam": "Oakwood Rangers",
+    "awayTeam": "Vanguard United",
+    "homeGoals": 3,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 1.93,
+      "draw": 4.62,
+      "away": 3
+    }
+  },
+  {
+    "fixtureId": "synthetic-146",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Meridian League",
+    "homeTeam": "Copperfield Town",
+    "awayTeam": "Falcon Town",
+    "homeGoals": 0,
+    "awayGoals": 4,
+    "closingOdds": {
+      "home": 3.1,
+      "draw": 4.65,
+      "away": 1.89
+    }
+  },
+  {
+    "fixtureId": "synthetic-147",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Meridian League",
+    "homeTeam": "Bridgeport Athletic",
+    "awayTeam": "Silverline FC",
+    "homeGoals": 1,
+    "awayGoals": 5,
+    "closingOdds": {
+      "home": 1.81,
+      "draw": 4.83,
+      "away": 3.47
+    }
+  },
+  {
+    "fixtureId": "synthetic-148",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Meridian League",
+    "homeTeam": "Harbor United",
+    "awayTeam": "Northgate City",
+    "homeGoals": 1,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.63,
+      "draw": 4.97,
+      "away": 4.01
+    }
+  },
+  {
+    "fixtureId": "synthetic-149",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Meridian League",
+    "homeTeam": "Crimson Rovers",
+    "awayTeam": "Ironclad FC",
+    "homeGoals": 2,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 2.94,
+      "draw": 4.65,
+      "away": 2
+    }
+  },
+  {
+    "fixtureId": "synthetic-295",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Solstice League",
+    "homeTeam": "Stonebridge United",
+    "awayTeam": "Ravenscroft FC",
+    "homeGoals": 5,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 1.89,
+      "draw": 4.65,
+      "away": 3.1
+    }
+  },
+  {
+    "fixtureId": "synthetic-296",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Solstice League",
+    "homeTeam": "Goldenvale Rovers",
+    "awayTeam": "Thistledown United",
+    "homeGoals": 3,
+    "awayGoals": 3,
+    "closingOdds": {
+      "home": 1.81,
+      "draw": 4.83,
+      "away": 3.47
+    }
+  },
+  {
+    "fixtureId": "synthetic-297",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Solstice League",
+    "homeTeam": "Amber Coast FC",
+    "awayTeam": "Westbrook Athletic",
+    "homeGoals": 3,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 2.92,
+      "draw": 4.69,
+      "away": 2.04
+    }
+  },
+  {
+    "fixtureId": "synthetic-298",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Solstice League",
+    "homeTeam": "Pinehill City",
+    "awayTeam": "Marbleton Rangers",
+    "homeGoals": 4,
+    "awayGoals": 2,
+    "closingOdds": {
+      "home": 1.73,
+      "draw": 4.88,
+      "away": 3.67
+    }
+  },
+  {
+    "fixtureId": "synthetic-299",
+    "date": "2026-09-13",
+    "daysAgo": 0,
+    "league": "Solstice League",
+    "homeTeam": "Cobalt Harbour",
+    "awayTeam": "Emberfield FC",
+    "homeGoals": 4,
+    "awayGoals": 1,
+    "closingOdds": {
+      "home": 3.67,
+      "draw": 4.88,
+      "away": 1.73
+    }
+  }
+]

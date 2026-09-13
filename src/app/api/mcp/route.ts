@@ -379,6 +379,114 @@ const handler = createMcpHandler((server) => {
       return alphaTools.killSwitch(userIdOf(ctx), on, reason);
     },
   );
+
+  // ---------------------------------------------------------------------
+  // ZOQO Alpha: football (docs/alpha/05-mcp-spec.md's football section)
+  // ---------------------------------------------------------------------
+
+  server.registerTool(
+    "list_fixtures",
+    {
+      title: "List Fixtures",
+      description: "Upcoming/past football fixtures, optionally filtered by league/date range/status. Requires alpha:read.",
+      inputSchema: z.object({
+        league: z.string().optional(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+        status: z.string().optional(),
+        limit: z.number().positive().optional(),
+      }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.listFixtures(args);
+    },
+  );
+
+  server.registerTool(
+    "get_fixture",
+    {
+      title: "Get Fixture",
+      description: "One fixture plus every odds snapshot on record for it. Requires alpha:read.",
+      inputSchema: z.object({ fixtureId: z.string() }),
+    },
+    async ({ fixtureId }, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getFixture(fixtureId);
+    },
+  );
+
+  server.registerTool(
+    "get_fixture_features",
+    {
+      title: "Get Fixture Features",
+      description: "The full pre-kickoff feature vector for a fixture (market, ELO, Dixon-Coles, form, situational). Requires alpha:read.",
+      inputSchema: z.object({ fixtureId: z.string() }),
+    },
+    async ({ fixtureId }, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getFixtureFeatures(fixtureId);
+    },
+  );
+
+  server.registerTool(
+    "predict_fixture",
+    {
+      title: "Predict Fixture",
+      description: "1X2 probabilities from a named model (market/dixon-coles/elo/blend, default blend), plus market consensus and edge per outcome. Requires alpha:read.",
+      inputSchema: z.object({ fixtureId: z.string(), model: z.enum(["market", "dixon-coles", "elo", "blend"]).optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.predictFixture(args);
+    },
+  );
+
+  server.registerTool(
+    "get_odds_history",
+    {
+      title: "Get Odds History",
+      description: "Odds snapshots for a fixture over time, optionally filtered by book/market. Requires alpha:read.",
+      inputSchema: z.object({ fixtureId: z.string(), book: z.string().optional(), market: z.string().optional(), limit: z.number().positive().optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getOddsHistory(args);
+    },
+  );
+
+  const SlipSelectionSchema = z.object({
+    fixtureId: z.string(),
+    market: z.enum(["1x2", "ou25", "btts", "dc"]),
+    outcome: z.enum(["home", "draw", "away", "over", "under", "yes", "no", "hd", "da", "ha"]),
+    book: z.string().optional(),
+  });
+
+  server.registerTool(
+    "build_slip",
+    {
+      title: "Build Slip",
+      description:
+        "Given selections, returns odds/implied-probs/model-probs/Kelly stakes, combined odds, and a plain-text version for a human to key into a bookmaker app. Set place:true (single selection only) to place it as a real zoqo-sportsbook paper bet. Requires alpha:run.",
+      inputSchema: z.object({
+        selections: z.array(SlipSelectionSchema).min(1),
+        stakeTotal: z.number().positive().optional(),
+        strategyId: z.string().optional(),
+        place: z.boolean().optional(),
+        kellyFraction: z.number().positive().optional(),
+      }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:run");
+      if (denied) return errorContent(denied);
+      return alphaTools.buildSlip(userIdOf(ctx), args);
+    },
+  );
 });
 
 const authHandler = withMcpAuth(

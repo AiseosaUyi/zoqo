@@ -76,3 +76,58 @@ export interface AlphaEventDto {
   acknowledged: boolean;
   created_at: string;
 }
+
+// --- Football (Phase 3) ---
+
+export interface AlphaFixturePredictionDto {
+  home: number;
+  draw: number;
+  away: number;
+  over25?: number;
+  btts?: number;
+}
+
+export interface AlphaFixtureDto {
+  id: string;
+  league_id: string;
+  season: number;
+  kickoff_at: string;
+  home_team: string;
+  away_team: string;
+  status: string;
+  prediction: AlphaFixturePredictionDto | null;
+  marketConsensus: AlphaFixturePredictionDto | null;
+  edgeByOutcome: { home: number; draw: number; away: number } | null;
+  booksUsed: number;
+}
+
+export type AlphaSlipOutcome = "home" | "draw" | "away";
+
+export interface AlphaSlipSelection {
+  fixtureId: string;
+  market: "1x2";
+  outcome: AlphaSlipOutcome;
+}
+
+export interface AlphaSlipSelectionResultDto {
+  fixtureId: string;
+  fixtureLabel: string;
+  market: string;
+  outcome: string;
+  book: string;
+  decimalOdds: number;
+  impliedProb: number;
+  marketProbRemoved: number | null;
+  modelProb: number | null;
+  edge: number | null;
+  kellyStakeFraction: number | null;
+}
+
+export interface AlphaSlipResultDto {
+  selections: AlphaSlipSelectionResultDto[];
+  combinedOdds: number;
+  suggestedStake: number | null;
+  plainText: string;
+  placed?: { decisionId: string; orderId: string | null; status: string };
+  error?: string;
+}

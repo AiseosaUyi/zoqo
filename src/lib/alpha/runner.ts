@@ -7,6 +7,7 @@ import { getStrategyTemplate } from "./strategies";
 import { createVenueAdapter } from "./venues";
 import { createPriceFeatureProvider } from "./features/priceFeatures";
 import { createMarketFeatureProvider } from "./features/marketFeatures";
+import { createFixtureFeatureProvider } from "./features/fixtureFeatures";
 import { getVenueSecret } from "./secrets";
 import { getRiskContext, recordVenueSpend } from "./service";
 
@@ -86,17 +87,20 @@ async function runOneStrategy(
   }
 
   // Price features are always available; market features (Manifold's
-  // probability/liquidity/close-time shape) are layered in only for
-  // venues that have them, keyed off the same getVenueSecret() path the
-  // adapter itself uses (see manifold.ts's header for why this stays a
-  // per-call lookup instead of threading an async key through more of the
-  // call chain).
+  // probability/liquidity/close-time shape) and fixture features (football,
+  // Phase 3) are layered in only for venues that have them, keyed off the
+  // same getVenueSecret() path the adapter itself uses (see manifold.ts's
+  // header for why this stays a per-call lookup instead of threading an
+  // async key through more of the call chain).
   const priceFeatures = createPriceFeatureProvider(supabase, now);
   let features: FeatureProvider = priceFeatures;
   if (strategyRow.venue === "manifold") {
     const apiKey = await getVenueSecret(strategyRow.user_id, "manifold");
     const marketFeatures = createMarketFeatureProvider(apiKey, now);
     features = { ...priceFeatures, getMarketFeatures: marketFeatures.getMarketFeatures };
+  } else if (strategyRow.venue === "zoqo-sportsbook") {
+    const fixtureFeatures = createFixtureFeatureProvider(supabase, now);
+    features = { ...priceFeatures, getFixtureFeatures: fixtureFeatures.getFixtureFeatures };
   }
   const ctx: StrategyCtx = {
     userId: strategyRow.user_id,

@@ -48,7 +48,7 @@ Betting rule per outcome per book: `edge = p_model - p_book_implied_with_margin`
 
 - RPS (ranked probability score) for 1X2, Brier for binaries. Lower is better. Compare every model to `market` on the same fixtures.
 - Calibration table per decile of predicted probability.
-- CLV per bet: `taken_implied / closing_implied - 1` using the same book's closing line. Positive mean CLV with n ≥ 200 is the first real evidence of edge. ROI alone is noise at these sample sizes; the report says so on the page.
+- CLV per bet: `closing_implied / taken_implied - 1` using the same book's closing line (positive = beat the closing line, i.e. took a lower implied probability / better price than the market settled on — corrected 2026-09-13 from an earlier draft of this line that had the ratio inverted; `03-architecture.md` §7 already stated the correct direction). Positive mean CLV with n ≥ 200 is the first real evidence of edge. ROI alone is noise at these sample sizes; the report says so on the page.
 - ROI with a bootstrap 95% CI, hit rate, drawdown, longest losing run.
 - Per league, per market, per book, per model breakdowns.
 

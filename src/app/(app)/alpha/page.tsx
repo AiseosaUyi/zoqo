@@ -10,6 +10,7 @@ import { VenuesSection } from "@/components/alpha/VenuesSection";
 import { StrategiesSection } from "@/components/alpha/StrategiesSection";
 import { DecisionsFeed } from "@/components/alpha/DecisionsFeed";
 import { EventsFeed } from "@/components/alpha/EventsFeed";
+import { FixturesSection } from "@/components/alpha/FixturesSection";
 import type { CreateStrategyInput } from "@/components/alpha/CreateStrategyModal";
 import type {
   AlphaSettingsDto,
@@ -18,6 +19,9 @@ import type {
   AlphaTemplateDto,
   AlphaDecisionDto,
   AlphaEventDto,
+  AlphaFixtureDto,
+  AlphaSlipSelection,
+  AlphaSlipResultDto,
 } from "@/components/alpha/types";
 
 /** ZOQO Alpha's dashboard (docs/alpha/03-architecture.md §9, scoped down to
@@ -51,19 +55,23 @@ export default function AlphaPage() {
   const [templates, setTemplates] = React.useState<AlphaTemplateDto[]>([]);
   const [decisions, setDecisions] = React.useState<AlphaDecisionDto[]>([]);
   const [events, setEvents] = React.useState<AlphaEventDto[]>([]);
+  const [fixtures, setFixtures] = React.useState<AlphaFixtureDto[]>([]);
+  const [slipResult, setSlipResult] = React.useState<AlphaSlipResultDto | null>(null);
+  const [slipLoading, setSlipLoading] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
 
   const loadAll = React.useCallback(async () => {
-    const [s, v, st, tpl, dec, ev] = await Promise.all([
+    const [s, v, st, tpl, dec, ev, fx] = await Promise.all([
       fetchJson<AlphaSettingsDto>("/api/alpha/settings"),
       fetchJson<AlphaVenueDto[]>("/api/alpha/venues"),
       fetchJson<AlphaStrategyDto[]>("/api/alpha/strategies"),
       fetchJson<AlphaTemplateDto[]>("/api/alpha/strategy-templates"),
       fetchJson<AlphaDecisionDto[]>("/api/alpha/decisions?limit=25"),
       fetchJson<AlphaEventDto[]>("/api/alpha/events?limit=25"),
+      fetchJson<AlphaFixtureDto[]>("/api/alpha/fixtures?limit=20"),
     ]);
-    if (s == null || v == null || st == null || tpl == null || dec == null || ev == null) {
+    if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || fx == null) {
       setLoadFailed(true);
       setLoaded(true);
       return;
@@ -74,6 +82,7 @@ export default function AlphaPage() {
     setTemplates(tpl);
     setDecisions(dec);
     setEvents(ev);
+    setFixtures(fx);
     setLoadFailed(false);
     setLoaded(true);
   }, []);
@@ -124,6 +133,22 @@ export default function AlphaPage() {
   async function ackEvent(id: string) {
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, acknowledged: true } : e)));
     await fetch(`/api/alpha/events/${id}/ack`, { method: "POST" });
+  }
+
+  async function buildSlip(selections: AlphaSlipSelection[]) {
+    setSlipLoading(true);
+    setSlipResult(null);
+    try {
+      const res = await fetch("/api/alpha/slip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selections }),
+      });
+      const body = (await res.json().catch(() => null)) as AlphaSlipResultDto | { error: string } | null;
+      setSlipResult(body ? ("error" in body ? { selections: [], combinedOdds: 0, suggestedStake: null, plainText: "", error: body.error } : body) : { selections: [], combinedOdds: 0, suggestedStake: null, plainText: "", error: "Couldn't reach the slip builder — try again." });
+    } finally {
+      setSlipLoading(false);
+    }
   }
 
   if (!BACKEND_ENABLED) {
@@ -201,6 +226,7 @@ export default function AlphaPage() {
               onPause={pause}
               onResume={resume}
             />
+            <FixturesSection fixtures={fixtures} onBuildSlip={buildSlip} slipResult={slipResult} slipLoading={slipLoading} />
             <DecisionsFeed decisions={decisions} />
             <EventsFeed events={events} onAck={ackEvent} />
           </div>

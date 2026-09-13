@@ -26,6 +26,7 @@ export const config: VercelConfig = {
     { path: "/api/cron/daily-digest", schedule: "0 8 * * *" },
     { path: "/api/cron/alpha-run", schedule: "* * * * *" },
     { path: "/api/cron/alpha-settle", schedule: "*/5 * * * *" },
+    { path: "/api/cron/alpha-ingest", schedule: "*/15 * * * *" },
     { path: "/api/cron/alpha-evaluate", schedule: "15 2 * * *" },
   ],
 };
