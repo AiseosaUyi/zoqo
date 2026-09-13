@@ -110,6 +110,8 @@ function ToolButton({
     <Tooltip label={label} side="right">
       <button
         type="button"
+        aria-label={label}
+        aria-pressed={active}
         disabled={disabled}
         onClick={onClick}
         className={cn(
