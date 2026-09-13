@@ -975,12 +975,17 @@ export async function setVenueCredentials(
   const scope = input.scope === "read" ? "read" : "trade";
   const prefix = `${secret.slice(0, 4)}${"•".repeat(Math.max(0, secret.length - 4))}`;
 
-  // Phase 7 §3: no live Supabase Vault write path in this environment yet
-  // (no SUPABASE_ACCESS_TOKEN/DB credential to apply the migration that
-  // defines alpha_store_secret — see docs/alpha/STATUS.md). Placeholder ref,
-  // exactly as /api/alpha/credentials's pre-existing behavior, now shared
-  // from one function instead of duplicated in that route.
-  const secretRef = `vault:pending:${crypto.randomUUID()}`;
+  // Real Vault write (supabase/migrations/20260914010000_alpha_vault_secrets.sql's
+  // alpha_store_secret) is attempted first; if the function doesn't exist yet
+  // (migration not applied in this Postgres — see docs/alpha/STATUS.md, no
+  // SUPABASE_ACCESS_TOKEN/DB credential to run `supabase db push` from this
+  // environment) this falls back to the same opaque `vault:pending:<uuid>`
+  // placeholder Phase 4 shipped, so nothing else in the codebase needs to
+  // change the moment the migration lands live. `secretRef` is never logged.
+  const vaultName = `alpha:${userId}:${input.venue}`;
+  let secretRef = `vault:pending:${crypto.randomUUID()}`;
+  const { data: vaultId, error: vaultError } = await supabase.rpc("alpha_store_secret", { name: vaultName, secret });
+  if (!vaultError && vaultId) secretRef = `vault:${vaultId}`;
 
   const { data: existing } = await supabase.from("broker_credentials").select("id").eq("user_id", userId).eq("broker", input.venue).maybeSingle();
   if (existing) {

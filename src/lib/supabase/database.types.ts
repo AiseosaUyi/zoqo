@@ -1150,6 +1150,12 @@ export type Database = {
     }
     Functions: {
       downsample_price_history: { Args: never; Returns: undefined }
+      // Hand-augmented (not yet regenerated) — see
+      // supabase/migrations/20260914010000_alpha_vault_secrets.sql. Not yet
+      // applied to the linked project (docs/alpha/STATUS.md), so this is
+      // the pre-generation convention Phase 0 also used for new tables.
+      alpha_store_secret: { Args: { name: string; secret: string }; Returns: string }
+      alpha_read_secret: { Args: { secret_id: string }; Returns: string | null }
     }
     Enums: {
       [_ in never]: never
