@@ -1,0 +1,20 @@
+-- Template, not applied by any automated step. Copy to alpha-cron-apply.sql
+-- (gitignored — see .gitignore) with the real site URL and CRON_SECRET
+-- substituted, then run it by hand against the linked project:
+--   supabase db execute -f supabase/alpha-cron-apply.sql
+--
+-- Never commit the filled-in version: cron.schedule() takes the auth header
+-- as a plain SQL string literal, so a real CRON_SECRET pasted in here and
+-- committed is a leaked secret sitting in git history forever. This file
+-- stays a template for that reason (see docs/alpha/plans/phase-0-infra.md's
+-- review report, finding 1).
+--
+-- Needs Aise: confirm the production URL (https://zoqo.vercel.app per the
+-- linked Vercel project) and the real CRON_SECRET value before filling this
+-- in — see docs/alpha/STATUS.md.
+
+select cron.schedule('alpha-run',      '* * * * *',    $$ select net.http_get(url:='https://<site>/api/cron/alpha-run',      headers:='{"Authorization":"Bearer <CRON_SECRET>"}') $$);
+select cron.schedule('alpha-settle',   '*/5 * * * *',  $$ select net.http_get(url:='https://<site>/api/cron/alpha-settle',   headers:='{"Authorization":"Bearer <CRON_SECRET>"}') $$);
+select cron.schedule('alpha-ingest',   '*/15 * * * *', $$ select net.http_get(url:='https://<site>/api/cron/alpha-ingest',   headers:='{"Authorization":"Bearer <CRON_SECRET>"}') $$);
+select cron.schedule('alpha-evaluate', '15 2 * * *',   $$ select net.http_get(url:='https://<site>/api/cron/alpha-evaluate', headers:='{"Authorization":"Bearer <CRON_SECRET>"}') $$);
+select cron.schedule('evaluate-triggers', '* * * * *', $$ select net.http_get(url:='https://<site>/api/cron/evaluate-triggers', headers:='{"Authorization":"Bearer <CRON_SECRET>"}') $$);

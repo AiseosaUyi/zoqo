@@ -69,6 +69,652 @@ export type Database = {
         }
         Relationships: []
       }
+      alpha_decisions: {
+        Row: {
+          currency: string | null
+          decided_at: string
+          edge: number | null
+          features: Json | null
+          id: string
+          market_id: string
+          market_prob: number | null
+          model_prob: number | null
+          outcome_id: string | null
+          price_or_odds: number | null
+          rationale: string
+          reject_reason: string | null
+          run_id: string | null
+          side: string
+          stake: number | null
+          status: string
+          strategy_id: string
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          currency?: string | null
+          decided_at?: string
+          edge?: number | null
+          features?: Json | null
+          id?: string
+          market_id: string
+          market_prob?: number | null
+          model_prob?: number | null
+          outcome_id?: string | null
+          price_or_odds?: number | null
+          rationale: string
+          reject_reason?: string | null
+          run_id?: string | null
+          side: string
+          stake?: number | null
+          status: string
+          strategy_id: string
+          user_id: string
+          venue: string
+        }
+        Update: {
+          currency?: string | null
+          decided_at?: string
+          edge?: number | null
+          features?: Json | null
+          id?: string
+          market_id?: string
+          market_prob?: number | null
+          model_prob?: number | null
+          outcome_id?: string | null
+          price_or_odds?: number | null
+          rationale?: string
+          reject_reason?: string | null
+          run_id?: string | null
+          side?: string
+          stake?: number | null
+          status?: string
+          strategy_id?: string
+          user_id?: string
+          venue?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_decisions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alpha_decisions_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_events: {
+        Row: {
+          acknowledged: boolean
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          strategy_id: string | null
+          user_id: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          strategy_id?: string | null
+          user_id: string
+        }
+        Update: {
+          acknowledged?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          strategy_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_events_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_fixtures: {
+        Row: {
+          away_goals: number | null
+          away_team: string
+          away_team_id: string
+          home_goals: number | null
+          home_team: string
+          home_team_id: string
+          id: string
+          injuries: Json | null
+          kickoff_at: string
+          league_id: string
+          lineups: Json | null
+          referee: string | null
+          season: number
+          status: string
+          updated_at: string
+          venue: string | null
+        }
+        Insert: {
+          away_goals?: number | null
+          away_team: string
+          away_team_id: string
+          home_goals?: number | null
+          home_team: string
+          home_team_id: string
+          id: string
+          injuries?: Json | null
+          kickoff_at: string
+          league_id: string
+          lineups?: Json | null
+          referee?: string | null
+          season: number
+          status: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Update: {
+          away_goals?: number | null
+          away_team?: string
+          away_team_id?: string
+          home_goals?: number | null
+          home_team?: string
+          home_team_id?: string
+          id?: string
+          injuries?: Json | null
+          kickoff_at?: string
+          league_id?: string
+          lineups?: Json | null
+          referee?: string | null
+          season?: number
+          status?: string
+          updated_at?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      alpha_ledger: {
+        Row: {
+          balance: number
+          currency: string
+          updated_at: string
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          balance?: number
+          currency: string
+          updated_at?: string
+          user_id: string
+          venue: string
+        }
+        Update: {
+          balance?: number
+          currency?: string
+          updated_at?: string
+          user_id?: string
+          venue?: string
+        }
+        Relationships: []
+      }
+      alpha_market_links: {
+        Row: {
+          canonical: string
+          confirmed: boolean
+          created_at: string
+          id: string
+          market_id: string
+          venue: string
+        }
+        Insert: {
+          canonical: string
+          confirmed?: boolean
+          created_at?: string
+          id?: string
+          market_id: string
+          venue: string
+        }
+        Update: {
+          canonical?: string
+          confirmed?: boolean
+          created_at?: string
+          id?: string
+          market_id?: string
+          venue?: string
+        }
+        Relationships: []
+      }
+      alpha_odds_snapshots: {
+        Row: {
+          book: string
+          decimal_odds: number
+          fixture_id: string
+          market: string
+          outcome: string
+          ts: string
+        }
+        Insert: {
+          book: string
+          decimal_odds: number
+          fixture_id: string
+          market: string
+          outcome: string
+          ts?: string
+        }
+        Update: {
+          book?: string
+          decimal_odds?: number
+          fixture_id?: string
+          market?: string
+          outcome?: string
+          ts?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_odds_snapshots_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_orders: {
+        Row: {
+          book: string | null
+          closing_price_or_odds: number | null
+          currency: string
+          decision_id: string
+          id: string
+          kind: string
+          legs: Json | null
+          market_id: string
+          outcome: string | null
+          outcome_id: string | null
+          placed_at: string
+          pnl: number | null
+          price_or_odds: number
+          settled_at: string | null
+          side: string
+          stake: number
+          status: string
+          user_id: string
+          venue: string
+          venue_order_id: string
+        }
+        Insert: {
+          book?: string | null
+          closing_price_or_odds?: number | null
+          currency: string
+          decision_id: string
+          id?: string
+          kind: string
+          legs?: Json | null
+          market_id: string
+          outcome?: string | null
+          outcome_id?: string | null
+          placed_at?: string
+          pnl?: number | null
+          price_or_odds: number
+          settled_at?: string | null
+          side: string
+          stake: number
+          status: string
+          user_id: string
+          venue: string
+          venue_order_id: string
+        }
+        Update: {
+          book?: string | null
+          closing_price_or_odds?: number | null
+          currency?: string
+          decision_id?: string
+          id?: string
+          kind?: string
+          legs?: Json | null
+          market_id?: string
+          outcome?: string | null
+          outcome_id?: string | null
+          placed_at?: string
+          pnl?: number | null
+          price_or_odds?: number
+          settled_at?: string | null
+          side?: string
+          stake?: number
+          status?: string
+          user_id?: string
+          venue?: string
+          venue_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_orders_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_rate_budget: {
+        Row: {
+          limit_per_window: number
+          provider: string
+          used: number
+          window_seconds: number
+          window_start: string
+        }
+        Insert: {
+          limit_per_window: number
+          provider: string
+          used?: number
+          window_seconds: number
+          window_start: string
+        }
+        Update: {
+          limit_per_window?: number
+          provider?: string
+          used?: number
+          window_seconds?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
+      alpha_runs: {
+        Row: {
+          accepted: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          intents: number
+          log: Json
+          rejected: number
+          started_at: string
+          strategy_id: string
+          trigger: string
+        }
+        Insert: {
+          accepted?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          intents?: number
+          log?: Json
+          rejected?: number
+          started_at?: string
+          strategy_id: string
+          trigger: string
+        }
+        Update: {
+          accepted?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          intents?: number
+          log?: Json
+          rejected?: number
+          started_at?: string
+          strategy_id?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_runs_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_settings: {
+        Row: {
+          base_currency: string
+          kill_switch: boolean
+          leagues: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_currency?: string
+          kill_switch?: boolean
+          leagues?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_currency?: string
+          kill_switch?: boolean
+          leagues?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      alpha_strategies: {
+        Row: {
+          budget: number
+          budget_floor: number
+          cooldown_min: number
+          created_at: string
+          daily_cap: number
+          daily_loss_stop: number
+          enabled: boolean
+          id: string
+          kelly_fraction: number
+          last_run_at: string | null
+          max_odds: number | null
+          max_stake: number
+          min_edge: number
+          name: string
+          next_run_at: string
+          params: Json
+          paused_reason: string | null
+          schedule: Json
+          strategy_key: string
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          budget: number
+          budget_floor?: number
+          cooldown_min?: number
+          created_at?: string
+          daily_cap: number
+          daily_loss_stop: number
+          enabled?: boolean
+          id: string
+          kelly_fraction?: number
+          last_run_at?: string | null
+          max_odds?: number | null
+          max_stake: number
+          min_edge?: number
+          name: string
+          next_run_at?: string
+          params?: Json
+          paused_reason?: string | null
+          schedule: Json
+          strategy_key: string
+          user_id: string
+          venue: string
+        }
+        Update: {
+          budget?: number
+          budget_floor?: number
+          cooldown_min?: number
+          created_at?: string
+          daily_cap?: number
+          daily_loss_stop?: number
+          enabled?: boolean
+          id?: string
+          kelly_fraction?: number
+          last_run_at?: string | null
+          max_odds?: number | null
+          max_stake?: number
+          min_edge?: number
+          name?: string
+          next_run_at?: string
+          params?: Json
+          paused_reason?: string | null
+          schedule?: Json
+          strategy_key?: string
+          user_id?: string
+          venue?: string
+        }
+        Relationships: []
+      }
+      alpha_strategy_stats: {
+        Row: {
+          brier: number | null
+          budget_after: number | null
+          clv: number | null
+          day: string
+          hit_rate: number | null
+          max_drawdown: number | null
+          n: number
+          pnl_today: number
+          pnl_total: number
+          rps: number | null
+          roi: number | null
+          roi_ci_high: number | null
+          roi_ci_low: number | null
+          sharpe: number | null
+          strategy_id: string
+        }
+        Insert: {
+          brier?: number | null
+          budget_after?: number | null
+          clv?: number | null
+          day: string
+          hit_rate?: number | null
+          max_drawdown?: number | null
+          n: number
+          pnl_today?: number
+          pnl_total?: number
+          rps?: number | null
+          roi?: number | null
+          roi_ci_high?: number | null
+          roi_ci_low?: number | null
+          sharpe?: number | null
+          strategy_id: string
+        }
+        Update: {
+          brier?: number | null
+          budget_after?: number | null
+          clv?: number | null
+          day?: string
+          hit_rate?: number | null
+          max_drawdown?: number | null
+          n?: number
+          pnl_today?: number
+          pnl_total?: number
+          rps?: number | null
+          roi?: number | null
+          roi_ci_high?: number | null
+          roi_ci_low?: number | null
+          sharpe?: number | null
+          strategy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_strategy_stats_strategy_id_fkey"
+            columns: ["strategy_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_strategies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_team_ratings: {
+        Row: {
+          as_of: string
+          attack: number | null
+          defence: number | null
+          elo: number | null
+          form_l10: number | null
+          form_l5: number | null
+          team_id: string
+          xg_against_l5: number | null
+          xg_for_l5: number | null
+        }
+        Insert: {
+          as_of: string
+          attack?: number | null
+          defence?: number | null
+          elo?: number | null
+          form_l10?: number | null
+          form_l5?: number | null
+          team_id: string
+          xg_against_l5?: number | null
+          xg_for_l5?: number | null
+        }
+        Update: {
+          as_of?: string
+          attack?: number | null
+          defence?: number | null
+          elo?: number | null
+          form_l10?: number | null
+          form_l5?: number | null
+          team_id?: string
+          xg_against_l5?: number | null
+          xg_for_l5?: number | null
+        }
+        Relationships: []
+      }
+      alpha_venues: {
+        Row: {
+          currency: string
+          daily_cap: number
+          daily_loss_stop: number
+          day_reset_at: string
+          enabled: boolean
+          max_stake: number
+          mode: string
+          pnl_today: number
+          spent_today: number
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          currency: string
+          daily_cap: number
+          daily_loss_stop: number
+          day_reset_at?: string
+          enabled?: boolean
+          max_stake: number
+          mode?: string
+          pnl_today?: number
+          spent_today?: number
+          user_id: string
+          venue: string
+        }
+        Update: {
+          currency?: string
+          daily_cap?: number
+          daily_loss_stop?: number
+          day_reset_at?: string
+          enabled?: boolean
+          max_stake?: number
+          mode?: string
+          pnl_today?: number
+          spent_today?: number
+          user_id?: string
+          venue?: string
+        }
+        Relationships: []
+      }
       automation_triggers: {
         Row: {
           automation_id: string
@@ -171,6 +817,7 @@ export type Database = {
           name: string
           revoked_at: string | null
           scope: string
+          scopes: string[] | null
           user_id: string
         }
         Insert: {
@@ -182,6 +829,7 @@ export type Database = {
           name: string
           revoked_at?: string | null
           scope: string
+          scopes?: string[] | null
           user_id: string
         }
         Update: {
@@ -193,6 +841,7 @@ export type Database = {
           name?: string
           revoked_at?: string | null
           scope?: string
+          scopes?: string[] | null
           user_id?: string
         }
         Relationships: []
@@ -500,7 +1149,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      downsample_price_history: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

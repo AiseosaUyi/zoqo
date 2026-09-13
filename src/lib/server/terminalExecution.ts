@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../supabase/database.types";
 import { computeOpenPosition, computeClosePosition } from "../orderExecution";
-import type { TerminalPosition } from "../terminalStore";
+import type { TerminalPosition, TerminalHistoryEntry } from "../terminalStore";
 
 /** Server-side order execution — the Postgres-backed counterpart to
  *  terminalStore.tsx's React-side openPosition/closePosition, sharing the
@@ -102,7 +102,7 @@ export async function closeTerminalPosition(
   positionId: string,
   price: number,
   qty?: number,
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<{ ok: true; historyEntry: TerminalHistoryEntry } | { ok: false; reason: string }> {
   const { data: row } = await supabase
     .from("positions")
     .select("*")
@@ -155,5 +155,5 @@ export async function closeTerminalPosition(
   } else {
     await supabase.from("positions").update({ qty: remainingPosition.qty }).eq("id", positionId).eq("user_id", userId);
   }
-  return { ok: true };
+  return { ok: true, historyEntry };
 }
