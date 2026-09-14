@@ -4,7 +4,7 @@ Paste everything below the line into Claude Code at the repo root.
 
 ---
 
-You are finishing **ZOQO Alpha**. Read `CLAUDE.md`, `docs/alpha/STATUS.md`, `docs/alpha/03-architecture.md`, `docs/alpha/05-mcp-spec.md`, and `docs/alpha/07-build-plan.md` (standing rules) first. Phases 0 to 5 are committed and pushed. This is the completion pass. Work through every section below in order, without stopping between sections, using the same loop as before: plan file in `docs/alpha/plans/phase-7-finish.md`, `/plan-eng-review` (and `/plan-design-review` for the nav and UI work), build, `/review`, `/qa`, `tsc`, `lint`, `test:unit`, `test:e2e`, `next build`, commit as `alpha(finish): ...`, update `docs/alpha/STATUS.md`. Push at the end of each section; I have said you may push to `main`.
+You are finishing **ZOQO Alpha**. Read `CLAUDE.md`, `docs/alpha/STATUS.md`, `docs/alpha/03-architecture.md`, `docs/alpha/05-mcp-spec.md`, `docs/alpha/08-copy-trading.md`, and `docs/alpha/07-build-plan.md` (standing rules) first. Phases 0 to 5 are committed and pushed. This is the completion pass. Work through every section below in order, without stopping between sections, using the same loop as before: plan file in `docs/alpha/plans/phase-7-finish.md`, `/plan-eng-review` (and `/plan-design-review` for the nav and UI work), build, `/review`, `/qa`, `tsc`, `lint`, `test:unit`, `test:e2e`, `next build`, commit as `alpha(finish): ...`, update `docs/alpha/STATUS.md`. Push at the end of each section; I have said you may push to `main`.
 
 ## 1. Make Alpha reachable (it is currently invisible)
 
@@ -47,7 +47,20 @@ For any key still absent, leave the test skipped and keep the exact signup URL i
 
 Confirm the latest commit is deployed on Vercel (`vercel ls` or the deploy hook; if you cannot, say so). Then hit `https://zoqo.vercel.app/api/cron/alpha-run` with `CRON_SECRET` and confirm 200. Query `cron.job_run_details` on the linked project and confirm all five `alpha-*` and `evaluate-triggers` jobs have succeeded in the last 15 minutes. Record the results in STATUS.md with timestamps.
 
-## 6. Housekeeping
+## 6. Copy trading (read `docs/alpha/08-copy-trading.md` first, it is the spec)
+
+Build it as a strategy family on the existing `polymarket-sim` and `manifold` adapters, not as a new venue:
+
+- Migration for `alpha_copy_sources`, `alpha_source_fills`, and the three new `alpha_decisions` columns, RLS own-rows, regenerate types.
+- `src/lib/alpha/copy/sources.ts`: the nightly source screen (history, skill via Brier/CLV at entry computed from our own market snapshots, copyability, stability with the two-week rule and cooldown, diversification and correlation caps). Reads Polymarket Data API leaderboards and per-wallet activity, and Manifold leaderboards and per-user bets, through the rate budget.
+- `src/lib/alpha/copy/follow.ts`: fill detection with recorded `lag_ms`, pricing at detection time against the live book, proportional sizing through the normal risk gate, the pre-follow filters, exit mirroring plus our own stops, and `slippage_bps` on every decision.
+- Strategies `polymarket-copy-sources`, `manifold-copy-sources`, `copy-random-control`, and a stub `learned-from-sources` that the weekly param search can fill once 200+ copies exist.
+- Evaluator additions: per-source and per-strategy copy gap (source return vs ours on the same trades, CLV gap, lag distribution), and the random-control comparison.
+- `/alpha` copy tab: source cards, propose/confirm flow, gap chart, and the copy strategies on the main leaderboard.
+- MCP tools from `08-copy-trading.md` §8, with `set_copy_source_status` under `alpha:manage`.
+- Vitest for the screen scoring, the sizing math, and the gap computation on a fixture of synthetic source fills. Conformance test against the live Polymarket Data API (no key needed) proving fills are detected for a real top wallet.
+
+## 7. Housekeeping
 
 - STATUS.md's "not yet pushed" line is stale; `origin/main` matches local. Fix it.
 - The `VenueMode` TS union still includes `"live"`. Keep it, but add a runtime assertion in `service.ts` that throws if any venue row or adapter reports `live`, and a test for it.
@@ -55,6 +68,6 @@ Confirm the latest commit is deployed on Vercel (`vercel ls` or the deploy hook;
 
 ## Definition of done
 
-Alpha is in the nav on desktop and mobile with a live badge; all 36 spec tools plus resources and prompts respond through `/api/mcp` with a scoped key; credentials round-trip through Vault; every adapter with a key in `.env.local` passes its conformance test un-skipped; at least one real Manifold bet was placed by the scheduler; STATUS.md and RUNBOOK.md are current; everything is committed and pushed and all checks are green.
+Alpha is in the nav on desktop and mobile with a live badge; all 36 spec tools plus the 5 copy-trading tools, resources and prompts respond through `/api/mcp` with a scoped key; credentials round-trip through Vault; every adapter with a key in `.env.local` passes its conformance test un-skipped; at least one real Manifold bet was placed by the scheduler; at least one source fill from a real Polymarket wallet was detected and copied into a simulated position with lag and slippage recorded; STATUS.md and RUNBOOK.md are current; everything is committed and pushed and all checks are green.
 
 Begin with section 1 now.
