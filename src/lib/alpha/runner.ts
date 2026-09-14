@@ -3,12 +3,11 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { VenueId } from "./core/venue";
 import type { FeatureProvider, StrategyCtx } from "./core/strategy";
 import { getStrategyTemplate } from "./strategies";
-import { createVenueAdapter } from "./venues";
 import { createPriceFeatureProvider } from "./features/priceFeatures";
 import { createMarketFeatureProvider } from "./features/marketFeatures";
 import { createFixtureFeatureProvider } from "./features/fixtureFeatures";
 import { getVenueSecret } from "./secrets";
-import { getRiskContext, executeIntent } from "./service";
+import { getRiskContext, executeIntent, getVenueAdapter } from "./service";
 
 /** The runner (docs/alpha/03-architecture.md §6). One function,
  *  `runDueStrategies`, is the single caller of `Strategy.evaluate()` in the
@@ -78,7 +77,7 @@ async function runOneStrategy(
 
   let venue;
   try {
-    venue = createVenueAdapter(strategyRow.venue as VenueId, supabase, strategyRow.user_id);
+    venue = getVenueAdapter(strategyRow.venue as VenueId, supabase, strategyRow.user_id);
   } catch (e) {
     const error = (e as Error).message;
     await finishRun(supabase, run.id, { error, log });

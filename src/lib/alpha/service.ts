@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { VenueId, Intent, PlacedOrder } from "./core/venue";
+import type { VenueId, VenueAdapter, Intent, PlacedOrder } from "./core/venue";
 import type { RiskGateStrategyConfig, RiskGateVenueConfig } from "./risk";
 import { evaluateIntent } from "./risk";
 import { runSourceScreen } from "./copy/sources";
@@ -125,6 +125,32 @@ export async function getOrCreateVenue(supabase: Client, userId: string, venue: 
   return rowToVenue(inserted ?? { ...insertRow, spent_today: 0, pnl_today: 0, day_reset_at: new Date().toISOString() }, Date.now());
 }
 
+/** Alpha never trades real money — `VenueMode` keeps `"live"` as a type
+ *  member only so Intent/order plumbing type-checks against a real venue
+ *  SDK's own mode field (see core/venue.ts's header), but no adapter
+ *  constructor is ever built with it and the `alpha_venues.mode` check
+ *  constraint physically disallows storing it. This is the runtime
+ *  backstop for "should never happen" (docs/alpha/PROMPT-alpha-finish.md
+ *  §7): every venue row this module reads and every adapter it constructs
+ *  passes through here first, so a corrupted row or a future adapter
+ *  mistake fails loudly instead of silently placing a real-money order. */
+export function assertVenueModeNotLive(mode: string, context: string): void {
+  if (mode === "live") {
+    throw new Error(`refusing "live" venue mode (${context}) — Alpha only ever trades paper/demo, see docs/alpha/03-architecture.md's non-goals`);
+  }
+}
+
+/** Every `createVenueAdapter` call in this program should go through this
+ *  wrapper, not the raw factory, so the live-mode assertion above is an
+ *  actual chokepoint (runner.ts and settle.ts import this instead of
+ *  `./venues` directly) rather than only guarding this file's own 3
+ *  call sites. */
+export function getVenueAdapter(venue: VenueId, supabase: Client, userId: string): VenueAdapter {
+  const adapter = createVenueAdapter(venue, supabase, userId);
+  assertVenueModeNotLive(adapter.mode, `adapter for venue "${venue}"`);
+  return adapter;
+}
+
 function rowToVenue(
   row: {
     venue: string;
@@ -140,6 +166,7 @@ function rowToVenue(
   },
   now: number,
 ): VenueRow {
+  assertVenueModeNotLive(row.mode, `alpha_venues row for venue "${row.venue}"`);
   const windowExpired = now - new Date(row.day_reset_at).getTime() > DAY_MS;
   return {
     venue: row.venue as VenueId,
@@ -813,7 +840,7 @@ export function exceedsRequestedStake(requestedStake: number | undefined, strate
 
 export async function placeIntent(supabase: Client, userId: string, input: PlaceIntentInput): Promise<ExecuteIntentOutcome> {
   const venue = input.venue as VenueId;
-  const venueAdapter = createVenueAdapter(venue, supabase, userId);
+  const venueAdapter = getVenueAdapter(venue, supabase, userId);
   const manualStrategy = await getOrCreateManualStrategy(supabase, userId, venue);
   const now = Date.now();
   const riskCtx = await getRiskContext(supabase, manualStrategy, now);
@@ -861,7 +888,7 @@ export async function cancelOrder(supabase: Client, userId: string, orderId: str
   const { data: order } = await supabase.from("alpha_orders").select("*").eq("id", orderId).eq("user_id", userId).maybeSingle();
   if (!order) return { ok: false, error: "order not found or not owned by this user" };
 
-  const adapter = createVenueAdapter(order.venue as VenueId, supabase, userId);
+  const adapter = getVenueAdapter(order.venue as VenueId, supabase, userId);
   if (!adapter.cancel) return { ok: false, error: `${order.venue} does not support cancelling an order` };
 
   try {
@@ -942,7 +969,7 @@ export async function getBalances(supabase: Client, userId: string) {
   return Promise.all(
     venues.map(async (v) => {
       try {
-        const adapter = createVenueAdapter(v.venue, supabase, userId);
+        const adapter = getVenueAdapter(v.venue, supabase, userId);
         const balance = await adapter.balance();
         return { venue: v.venue, available: true as const, ...balance };
       } catch (e) {

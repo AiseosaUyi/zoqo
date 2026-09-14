@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { PlacedOrder, VenueId } from "./core/venue";
-import { createVenueAdapter } from "./venues";
-import { recordVenuePnl } from "./service";
+import { recordVenuePnl, getVenueAdapter } from "./service";
 
 /** `/api/cron/alpha-settle` calls `settleOpenOrders` — the runner never
  *  settles inline (a strategy's `evaluate()` only ever produces Intents,
@@ -32,7 +31,7 @@ export async function settleOpenOrders(supabase: Client, filter: { userId?: stri
   for (const { userId, venue, orders } of groups.values()) {
     let adapter;
     try {
-      adapter = createVenueAdapter(venue, supabase, userId);
+      adapter = getVenueAdapter(venue, supabase, userId);
     } catch {
       continue; // venue not implemented yet — nothing to settle against
     }
