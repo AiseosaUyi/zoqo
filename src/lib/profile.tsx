@@ -255,20 +255,17 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const pendingAction = React.useRef<(() => void) | null>(null);
   const credited = React.useRef(false); // guards against double-granting the signup bonus
 
-  // While !signedIn, handle is always null, so the only steps a reopen can
-  // resume into are "email" (nothing submitted yet) or "otp" (email sent,
-  // not yet confirmed). "rewards" only happens live, right after confirmOtp.
-  const stepFor = React.useCallback(
-    (email: string | null): AuthStep => (email === null ? "email" : "otp"),
-    [],
-  );
-
+  // Every open starts at "email" — even if a previous, uncompleted attempt
+  // left an email cached in localStorage. Resuming straight into "otp" off
+  // that stale value meant a returning visitor could hit the OTP screen
+  // without ever entering an email *this* session (and without a fresh code
+  // actually having been sent), which read as "how does it know who I am."
   const openAuth = React.useCallback(() => {
     pendingAction.current = null;
     setAuthError(null);
-    setAuthStep(stepFor(p.email));
+    setAuthStep("email");
     setAuthOpen(true);
-  }, [p.email, stepFor]);
+  }, []);
 
   const closeAuth = React.useCallback(() => {
     setAuthOpen(false);
@@ -281,11 +278,11 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       if (signedIn) return true;
       pendingAction.current = onSuccess ?? null;
       setAuthError(null);
-      setAuthStep(stepFor(p.email));
+      setAuthStep("email");
       setAuthOpen(true);
       return false;
     },
-    [signedIn, p.email, stepFor],
+    [signedIn],
   );
 
   // Shared by submitEmail and resendOtp so both get identical error capture
