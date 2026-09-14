@@ -69,6 +69,48 @@ export type Database = {
         }
         Relationships: []
       }
+      alpha_copy_sources: {
+        Row: {
+          dropped_at: string | null
+          first_seen: string
+          followed_since: string | null
+          id: string
+          label: string | null
+          metrics: Json
+          score: number | null
+          source_ref: string
+          status: string
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          dropped_at?: string | null
+          first_seen?: string
+          followed_since?: string | null
+          id?: string
+          label?: string | null
+          metrics?: Json
+          score?: number | null
+          source_ref: string
+          status?: string
+          user_id: string
+          venue: string
+        }
+        Update: {
+          dropped_at?: string | null
+          first_seen?: string
+          followed_since?: string | null
+          id?: string
+          label?: string | null
+          metrics?: Json
+          score?: number | null
+          source_ref?: string
+          status?: string
+          user_id?: string
+          venue?: string
+        }
+        Relationships: []
+      }
       alpha_decisions: {
         Row: {
           currency: string | null
@@ -151,109 +193,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "alpha_decisions_strategy_id_fkey"
-            columns: ["strategy_id"]
-            isOneToOne: false
-            referencedRelation: "alpha_strategies"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "alpha_decisions_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "alpha_copy_sources"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      alpha_copy_sources: {
-        Row: {
-          dropped_at: string | null
-          first_seen: string
-          followed_since: string | null
-          id: string
-          label: string | null
-          metrics: Json
-          score: number | null
-          source_ref: string
-          status: string
-          user_id: string
-          venue: string
-        }
-        Insert: {
-          dropped_at?: string | null
-          first_seen?: string
-          followed_since?: string | null
-          id?: string
-          label?: string | null
-          metrics?: Json
-          score?: number | null
-          source_ref: string
-          status?: string
-          user_id: string
-          venue: string
-        }
-        Update: {
-          dropped_at?: string | null
-          first_seen?: string
-          followed_since?: string | null
-          id?: string
-          label?: string | null
-          metrics?: Json
-          score?: number | null
-          source_ref?: string
-          status?: string
-          user_id?: string
-          venue?: string
-        }
-        Relationships: []
-      }
-      alpha_source_fills: {
-        Row: {
-          detected_at: string
-          features: Json | null
-          filled_at: string
-          id: string
-          market_id: string
-          outcome_id: string | null
-          price: number
-          side: string
-          size: number
-          source_id: string
-          venue_trade_id: string
-        }
-        Insert: {
-          detected_at?: string
-          features?: Json | null
-          filled_at: string
-          id?: string
-          market_id: string
-          outcome_id?: string | null
-          price: number
-          side: string
-          size: number
-          source_id: string
-          venue_trade_id: string
-        }
-        Update: {
-          detected_at?: string
-          features?: Json | null
-          filled_at?: string
-          id?: string
-          market_id?: string
-          outcome_id?: string | null
-          price?: number
-          side?: string
-          size?: number
-          source_id?: string
-          venue_trade_id?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "alpha_source_fills_source_id_fkey"
-            columns: ["source_id"]
+            foreignKeyName: "alpha_decisions_strategy_id_fkey"
+            columns: ["strategy_id"]
             isOneToOne: false
-            referencedRelation: "alpha_copy_sources"
+            referencedRelation: "alpha_strategies"
             referencedColumns: ["id"]
           },
         ]
@@ -610,6 +560,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      alpha_source_fills: {
+        Row: {
+          detected_at: string
+          features: Json | null
+          filled_at: string
+          id: string
+          market_id: string
+          outcome_id: string | null
+          price: number
+          side: string
+          size: number
+          source_id: string
+          venue_trade_id: string
+        }
+        Insert: {
+          detected_at?: string
+          features?: Json | null
+          filled_at: string
+          id?: string
+          market_id: string
+          outcome_id?: string | null
+          price: number
+          side: string
+          size: number
+          source_id: string
+          venue_trade_id: string
+        }
+        Update: {
+          detected_at?: string
+          features?: Json | null
+          filled_at?: string
+          id?: string
+          market_id?: string
+          outcome_id?: string | null
+          price?: number
+          side?: string
+          size?: number
+          source_id?: string
+          venue_trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_source_fills_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_copy_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alpha_strategies: {
         Row: {
@@ -1257,13 +1257,12 @@ export type Database = {
       }
     }
     Functions: {
+      alpha_read_secret: { Args: { secret_id: string }; Returns: string }
+      alpha_store_secret: {
+        Args: { name: string; secret: string }
+        Returns: string
+      }
       downsample_price_history: { Args: never; Returns: undefined }
-      // Hand-augmented (not yet regenerated) — see
-      // supabase/migrations/20260914010000_alpha_vault_secrets.sql. Not yet
-      // applied to the linked project (docs/alpha/STATUS.md), so this is
-      // the pre-generation convention Phase 0 also used for new tables.
-      alpha_store_secret: { Args: { name: string; secret: string }; Returns: string }
-      alpha_read_secret: { Args: { secret_id: string }; Returns: string | null }
     }
     Enums: {
       [_ in never]: never
