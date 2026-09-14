@@ -4,12 +4,26 @@ import { createKalshiDemoAdapter, estimateSettlementPnl, intentSideToKalshiSide 
 
 /** Live-network conformance runs for real only when KALSHI_DEMO_API_KEY is
  *  present (expected format per kalshiDemo.ts's module header:
- *  "<accessKeyId>:<privateKeyPem>", newlines escaped as literal `\n`). This
- *  build environment has no such credential (docs/alpha/STATUS.md's "Needs
- *  Aise" list), so this always skips here with the reason surfaced in the
- *  test name — per the repo's standing rule, that's the correct outcome to
- *  record, not a gap to work around. Mirrors manifold.test.ts's structure
- *  exactly. */
+ *  "<accessKeyId>:<privateKeyPem>", newlines escaped as literal `\n`).
+ *  Without `.env.local` loaded (this repo's standard `npm run test:unit`
+ *  doesn't load it), this always skips here with the reason surfaced in
+ *  the test name — per the repo's standing rule. Mirrors manifold.test.ts's
+ *  structure exactly.
+ *
+ *  Caveat worth knowing: `balance returns a {cash, currency} shape` below
+ *  only checks the *shape*, not that the RSA-PSS request actually
+ *  authenticated — a silently-swallowed 401 also returns `{cash: 0,
+ *  currency: "USD"}` (see `kalshiDemo.ts`'s `balance()`), so this test
+ *  alone can't tell "real zero balance" from "signature rejected" apart.
+ *  That gap is exactly how a real bug (the signed string was missing the
+ *  `/trade-api/v2` prefix Kalshi's docs require — see `signRequest`'s
+ *  header in kalshiDemo.ts) went unnoticed until a real credential existed
+ *  to test against. Verified live 2026-09-14 with a one-off fetch-status
+ *  probe (not committed — the fix plus this credential's real 200 response
+ *  is the lasting proof): a genuine `HTTP 200` from `/portfolio/balance`
+ *  with a real (zero, fresh-account) balance payload, confirming the
+ *  signing fix and this credential both work, not just that nothing
+ *  threw. */
 const rawSecret = process.env.KALSHI_DEMO_API_KEY ?? null;
 runConformanceSuite("kalshi-demo", () => (rawSecret ? createKalshiDemoAdapter(rawSecret) : null), rawSecret ? undefined : { skipReason: "KALSHI_DEMO_API_KEY not set in this environment" });
 

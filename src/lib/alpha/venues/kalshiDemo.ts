@@ -55,6 +55,7 @@ import { getVenueSecret } from "../secrets";
  *  one env var, same spirit as bybitDemo.ts's `key:secret` choice. */
 
 const BASE = "https://demo-api.kalshi.co/trade-api/v2";
+const API_PATH_PREFIX = "/trade-api/v2";
 
 interface KalshiCredential {
   accessKeyId: string;
@@ -75,8 +76,16 @@ function parseCredential(raw: string | null): KalshiCredential | null {
   return { accessKeyId, privateKeyPem };
 }
 
-/** Signs `timestamp + method + path` per the module header's documented
- *  (unverified) scheme. Returns `null` on any failure (malformed key,
+/** Signs `timestamp + method + path` per Kalshi's documented scheme
+ *  (verified live 2026-09-14 against docs.kalshi.com/getting_started/
+ *  quick_start_authenticated_requests.md once a real credential existed to
+ *  test against: `path` here must be the full API path from the root,
+ *  INCLUDING the `/trade-api/v2` prefix — e.g. `/trade-api/v2/portfolio/
+ *  balance`, not the bare `/portfolio/balance` every caller in this file
+ *  passes around for URL construction. This function's own `path` param is
+ *  that already-prefixed string — `authHeaders` below is what prepends
+ *  `API_PATH_PREFIX` before calling this, exactly once, so callers never
+ *  have to think about it. Returns `null` on any failure (malformed key,
  *  crypto error) instead of throwing. */
 function signRequest(cred: KalshiCredential, timestampMs: string, method: string, path: string): string | null {
   try {
@@ -92,16 +101,20 @@ function signRequest(cred: KalshiCredential, timestampMs: string, method: string
   }
 }
 
-/** Builds request headers for `path` (must start with `/trade-api/v2/...`,
- *  matching what's actually signed). With no usable credential this
- *  returns plain JSON headers and no auth — see module header: the request
- *  still goes out, Kalshi answers 401, and every caller here treats a
- *  non-2xx response as "no data", not an error. */
+/** Builds request headers for `path` (the bare path every caller in this
+ *  file already uses for URL construction, e.g. `/portfolio/balance` —
+ *  NOT prefixed with `/trade-api/v2`). This function is the one place that
+ *  prepends `API_PATH_PREFIX` before signing, since Kalshi's documented
+ *  scheme signs the full path from the API root, prefix included (verified
+ *  live 2026-09-14 — see `signRequest`'s header). With no usable credential
+ *  this returns plain JSON headers and no auth — see module header: the
+ *  request still goes out, Kalshi answers 401, and every caller here
+ *  treats a non-2xx response as "no data", not an error. */
 function authHeaders(cred: KalshiCredential | null, method: string, path: string): HeadersInit {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (!cred) return headers;
   const timestampMs = String(Date.now());
-  const signature = signRequest(cred, timestampMs, method, path);
+  const signature = signRequest(cred, timestampMs, method, `${API_PATH_PREFIX}${path}`);
   if (!signature) return headers; // signing failed — degrade to unauthenticated, not a throw
   headers["KALSHI-ACCESS-KEY"] = cred.accessKeyId;
   headers["KALSHI-ACCESS-SIGNATURE"] = signature;
