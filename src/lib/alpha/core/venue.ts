@@ -71,6 +71,11 @@ export interface Intent {
    *  hard rule in docs/alpha/PROMPT-build-alpha.md. */
   features?: Record<string, number | string>;
   expiresAt?: number;
+  /** Copy-trading provenance (docs/alpha/08-copy-trading.md §3/§6) — set
+   *  only by a copy strategy (`strategies/lib/copyTrading.ts`), stored
+   *  verbatim on `alpha_decisions.source_id`/`lag_ms`/`slippage_bps` by
+   *  `service.executeIntent`. `undefined` for every non-copy intent. */
+  copyMeta?: { sourceId: string; lagMs: number; slippageBps: number | null };
 }
 
 export type PlacedOrderCurrency = "USD" | "NGN" | "MANA" | "USDT";

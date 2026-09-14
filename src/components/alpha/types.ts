@@ -168,6 +168,31 @@ export interface AlphaHealthCredentialDto {
   configured: boolean;
 }
 
+export interface AlphaCopySourceDto {
+  id: string;
+  user_id: string;
+  venue: string;
+  source_ref: string;
+  label: string | null;
+  status: "candidate" | "followed" | "dropped" | "blocked";
+  score: number | null;
+  metrics: {
+    n?: number;
+    resolvedN?: number;
+    daysActive?: number;
+    daysSinceLastFill?: number;
+    brier?: number | null;
+    clvProxy?: number | null;
+    profitFactor?: number | null;
+    consistency?: number | null;
+    copyability?: number;
+    marketConcentration?: number;
+  };
+  first_seen: string;
+  followed_since: string | null;
+  dropped_at: string | null;
+}
+
 export interface AlphaHealthDto {
   jobs: { name: string; lastTick: string | null; staleAfterMs: number; stale: boolean }[];
   rateBudgets: { provider: string; remaining: number; limitPerWindow: number; windowSeconds: number; windowStart: string }[];

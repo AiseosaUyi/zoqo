@@ -3,6 +3,9 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { VenueId, Intent, PlacedOrder } from "./core/venue";
 import type { RiskGateStrategyConfig, RiskGateVenueConfig } from "./risk";
 import { evaluateIntent } from "./risk";
+import { runSourceScreen } from "./copy/sources";
+import { detectPolymarketFills, detectManifoldFills, discoverPolymarketCandidates, discoverManifoldCandidates } from "./copy/follow";
+import { computeCopyGap, type CopyDecisionOutcome } from "./copy/gap";
 import { listStrategyTemplates as registryTemplates, getStrategyTemplate } from "./strategies";
 import { getCredentialStatus, type CredentialStatus } from "./setupStatus";
 import { createVenueAdapter } from "./venues";
@@ -692,6 +695,9 @@ export async function executeIntent(
       currency: venueAdapter.currency,
       rationale: intent.rationale,
       features: (intent.features ?? null) as never,
+      source_id: intent.copyMeta?.sourceId ?? null,
+      lag_ms: intent.copyMeta?.lagMs ?? null,
+      slippage_bps: intent.copyMeta?.slippageBps ?? null,
     })
     .select("*")
     .single();
@@ -1075,4 +1081,109 @@ export async function backtestStrategy(
 
   const result = runFootballBacktest(backtestInput, input.params as FootballBacktestOptions | undefined);
   return { strategyKey: input.strategyKey, venue: input.venue, from: input.from, to: input.to, fixturesFound: backtestInput.length, result };
+}
+
+// ---------------------------------------------------------------------------
+// Copy trading (docs/alpha/08-copy-trading.md) — service.ts wrappers over
+// copy/sources.ts's pure screen and copy/follow.ts's real detection
+// functions. Same "one function, three doors" shape as everything else:
+// the MCP tools and the nightly evaluator both call these, never a route
+// handler containing the logic itself.
+// ---------------------------------------------------------------------------
+
+const COPY_VENUES = ["polymarket-sim", "manifold"] as const;
+type CopyVenue = (typeof COPY_VENUES)[number];
+
+function isCopyVenue(v: string): v is CopyVenue {
+  return (COPY_VENUES as readonly string[]).includes(v);
+}
+
+export async function listCopySources(supabase: Client, userId: string, filters: { venue?: string; status?: string } = {}) {
+  let q = supabase.from("alpha_copy_sources").select("*").eq("user_id", userId).order("score", { ascending: false, nullsFirst: false });
+  if (filters.venue) q = q.eq("venue", filters.venue);
+  if (filters.status) q = q.eq("status", filters.status);
+  const { data } = await q;
+  return data ?? [];
+}
+
+export async function getCopySource(supabase: Client, userId: string, id: string) {
+  const { data: source } = await supabase.from("alpha_copy_sources").select("*").eq("id", id).eq("user_id", userId).maybeSingle();
+  if (!source) return null;
+  const { data: fills } = await supabase.from("alpha_source_fills").select("*").eq("source_id", id).order("filled_at", { ascending: false }).limit(50);
+  const { data: copies } = await supabase.from("alpha_decisions").select("*").eq("source_id", id).eq("user_id", userId).order("decided_at", { ascending: false }).limit(50);
+  return { source, fills: fills ?? [], copies: copies ?? [] };
+}
+
+/** MCP `propose_copy_sources` (alpha:run). Discovers candidates for a venue
+ *  (real Polymarket leaderboard; Manifold has no such public endpoint — see
+ *  `copy/follow.ts`'s `discoverManifoldCandidates`, so `candidateRefs` is
+ *  the real path there: name a known username explicitly), fetches each
+ *  candidate's real fill history, and runs the pure screen
+ *  (`copy/sources.ts`'s `scoreSource`/`runSourceScreen`), upserting
+ *  `alpha_copy_sources`. Fills fetched this way are logged as *unresolved*
+ *  (no resolution-linking to the venue's settlement feed is implemented
+ *  yet — a real gap, not hidden: it means the skill-based score components
+ *  (Brier/CLV/profit-factor/consistency) under-score every real candidate
+ *  until that's built; `copyability` and history-length still work today). */
+export async function proposeCopySources(supabase: Client, userId: string, venue: string, candidateRefs?: string[]): Promise<{ sourceRef: string; score: number; followable: boolean }[]> {
+  if (!isCopyVenue(venue)) throw new Error(`propose_copy_sources only supports ${COPY_VENUES.join(", ")}`);
+
+  const refs = candidateRefs && candidateRefs.length > 0 ? candidateRefs : venue === "polymarket-sim" ? await discoverPolymarketCandidates() : await discoverManifoldCandidates();
+  if (refs.length === 0) return [];
+
+  const fetchFillsForSource = async (sourceRef: string) => {
+    const raw = venue === "polymarket-sim" ? await detectPolymarketFills(sourceRef, 0, 500) : await detectManifoldFills(sourceRef, 0, 500);
+    return raw.map((f) => ({ filledAt: f.filledAtMs, marketId: f.marketId, side: f.side, priceAtEntry: f.price, sizeUsd: f.sizeUsd, resolved: false }));
+  };
+
+  return runSourceScreen(supabase, userId, venue, refs, fetchFillsForSource);
+}
+
+/** MCP `set_copy_source_status` (alpha:manage) — the one human-confirmation
+ *  step §2 requires ("selecting is a proposal the human confirms the first
+ *  time"). Stamps `followed_since`/`dropped_at` so the UI/leaderboard can
+ *  show how long a source has actually been followed. */
+export async function setCopySourceStatus(supabase: Client, userId: string, id: string, status: "candidate" | "followed" | "dropped" | "blocked"): Promise<void> {
+  const now = new Date().toISOString();
+  const patch: Database["public"]["Tables"]["alpha_copy_sources"]["Update"] = {
+    status,
+    ...(status === "followed" ? { followed_since: now } : {}),
+    ...(status === "dropped" || status === "blocked" ? { dropped_at: now } : {}),
+  };
+  const { error } = await supabase.from("alpha_copy_sources").update(patch).eq("id", id).eq("user_id", userId);
+  if (error) throw new Error(error.message);
+}
+
+/** MCP `get_copy_gap` (alpha:read, docs/alpha/08-copy-trading.md §4/§8) —
+ *  source return vs our return on the same copied trades, our CLV vs a
+ *  source-CLV proxy, and the lag distribution. "Source return" has no
+ *  separate ledger of the source's own realized pnl in this schema, so
+ *  it's approximated from the same resolution-vs-entry-price proxy
+ *  `copy/sources.ts`'s `scoreSource` uses for CLV — an honest
+ *  approximation, named as one, not a claim of a real source P&L feed. */
+export async function getCopyGap(supabase: Client, userId: string, strategyId: string) {
+  const { data: decisions } = await supabase
+    .from("alpha_decisions")
+    .select("*, alpha_orders(*)")
+    .eq("strategy_id", strategyId)
+    .eq("user_id", userId)
+    .not("source_id", "is", null);
+
+  const rows = decisions ?? [];
+  const outcomes: CopyDecisionOutcome[] = [];
+  for (const d of rows) {
+    const orders = (d as unknown as { alpha_orders: Database["public"]["Tables"]["alpha_orders"]["Row"][] }).alpha_orders ?? [];
+    const order = orders[0];
+    outcomes.push({
+      lagMs: d.lag_ms,
+      ourReturn: order?.pnl != null && order.stake ? order.pnl / order.stake : null,
+      ourClv: order?.pnl != null && order?.closing_price_or_odds != null && order?.price_or_odds ? order.closing_price_or_odds / order.price_or_odds - 1 : null,
+    });
+  }
+
+  return {
+    strategyId,
+    ...computeCopyGap(outcomes),
+    note: "sourceReturn/sourceClv need a real source-side settlement feed not yet built (see copy/gap.ts's own header) — only our own side is computed for now",
+  };
 }

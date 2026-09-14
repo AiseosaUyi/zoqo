@@ -12,6 +12,10 @@ import { kalshiCrossVenueDivergence } from "./kalshiCrossVenueDivergence";
 import { bybitHourlyMomentum } from "./bybitHourlyMomentum";
 import { derivSyntheticMeanrev } from "./derivSyntheticMeanrev";
 import { polymarketSimLongshotFade } from "./polymarketSimLongshotFade";
+import { polymarketCopySources } from "./polymarketCopySources";
+import { manifoldCopySources } from "./manifoldCopySources";
+import { copyRandomControl } from "./copyRandomControl";
+import { learnedFromSources } from "./learnedFromSources";
 
 /** Strategy registry — `alpha_strategies.strategy_key` looks up into this
  *  map. Add a new strategy by writing a module and registering it here;
@@ -30,6 +34,10 @@ export const STRATEGY_REGISTRY: Record<string, Strategy> = {
   [bybitHourlyMomentum.key]: bybitHourlyMomentum,
   [derivSyntheticMeanrev.key]: derivSyntheticMeanrev,
   [polymarketSimLongshotFade.key]: polymarketSimLongshotFade,
+  [polymarketCopySources.key]: polymarketCopySources,
+  [manifoldCopySources.key]: manifoldCopySources,
+  [copyRandomControl.key]: copyRandomControl,
+  [learnedFromSources.key]: learnedFromSources,
 };
 
 export function getStrategyTemplate(strategyKey: string): Strategy | null {

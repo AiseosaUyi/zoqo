@@ -14,6 +14,7 @@ import { EventsFeed } from "@/components/alpha/EventsFeed";
 import { FixturesSection } from "@/components/alpha/FixturesSection";
 import { CredentialsSection, type AlphaCredentialDto } from "@/components/alpha/CredentialsSection";
 import { ProposalsInbox } from "@/components/alpha/ProposalsInbox";
+import { CopySourcesSection } from "@/components/alpha/CopySourcesSection";
 import type { CreateStrategyInput } from "@/components/alpha/CreateStrategyModal";
 import type {
   AlphaSettingsDto,
@@ -27,6 +28,7 @@ import type {
   AlphaSlipSelection,
   AlphaSlipResultDto,
   AlphaHealthDto,
+  AlphaCopySourceDto,
 } from "@/components/alpha/types";
 
 /** ZOQO Alpha's dashboard (docs/alpha/03-architecture.md §9, scoped down to
@@ -64,13 +66,15 @@ export default function AlphaPage() {
   const [fixtures, setFixtures] = React.useState<AlphaFixtureDto[]>([]);
   const [credentials, setCredentials] = React.useState<AlphaCredentialDto[]>([]);
   const [health, setHealth] = React.useState<AlphaHealthDto | null>(null);
+  const [copySources, setCopySources] = React.useState<AlphaCopySourceDto[]>([]);
+  const [proposingCopySources, setProposingCopySources] = React.useState(false);
   const [slipResult, setSlipResult] = React.useState<AlphaSlipResultDto | null>(null);
   const [slipLoading, setSlipLoading] = React.useState(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
 
   const loadAll = React.useCallback(async () => {
-    const [s, v, st, tpl, dec, ev, prop, fx, cred, hp] = await Promise.all([
+    const [s, v, st, tpl, dec, ev, prop, fx, cred, hp, cs] = await Promise.all([
       fetchJson<AlphaSettingsDto>("/api/alpha/settings"),
       fetchJson<AlphaVenueDto[]>("/api/alpha/venues"),
       fetchJson<AlphaStrategyDto[]>("/api/alpha/strategies"),
@@ -81,6 +85,7 @@ export default function AlphaPage() {
       fetchJson<AlphaFixtureDto[]>("/api/alpha/fixtures?limit=20"),
       fetchJson<AlphaCredentialDto[]>("/api/alpha/credentials"),
       fetchJson<AlphaHealthDto>("/api/alpha/health"),
+      fetchJson<AlphaCopySourceDto[]>("/api/alpha/copy-sources"),
     ]);
     if (s == null || v == null || st == null || tpl == null || dec == null || ev == null || prop == null || fx == null || cred == null) {
       setLoadFailed(true);
@@ -97,6 +102,7 @@ export default function AlphaPage() {
     setFixtures(fx);
     setCredentials(cred);
     setHealth(hp); // best-effort — a null health fetch just hides the needs-setup panel, not a page-level failure
+    setCopySources(cs ?? []); // best-effort, same as health
     setLoadFailed(false);
     setLoaded(true);
   }, []);
@@ -158,6 +164,30 @@ export default function AlphaPage() {
   async function dismissProposal(id: string) {
     setProposals((prev) => prev.filter((p) => p.id !== id));
     await fetch(`/api/alpha/proposals/${id}/dismiss`, { method: "POST" });
+  }
+
+  async function proposeCopySources(venue: string, candidateRefs?: string[]) {
+    setProposingCopySources(true);
+    try {
+      await fetch("/api/alpha/copy-sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ venue, candidateRefs }),
+      });
+      void loadAll();
+    } finally {
+      setProposingCopySources(false);
+    }
+  }
+
+  async function setCopySourceStatus(id: string, status: AlphaCopySourceDto["status"]) {
+    setCopySources((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
+    await fetch(`/api/alpha/copy-sources/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    void loadAll();
   }
 
   async function buildSlip(selections: AlphaSlipSelection[]) {
@@ -255,6 +285,7 @@ export default function AlphaPage() {
             />
             <FixturesSection fixtures={fixtures} onBuildSlip={buildSlip} slipResult={slipResult} slipLoading={slipLoading} />
             <ProposalsInbox proposals={proposals} onApply={applyProposal} onDismiss={dismissProposal} />
+            <CopySourcesSection sources={copySources} onPropose={proposeCopySources} onSetStatus={setCopySourceStatus} proposing={proposingCopySources} />
             <DecisionsFeed decisions={decisions} />
             <EventsFeed events={events} onAck={ackEvent} />
           </div>

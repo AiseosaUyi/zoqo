@@ -894,6 +894,81 @@ const handler = createMcpHandler((server) => {
       return { messages: [{ role: "user", content: { type: "text", text } }] };
     },
   );
+
+  // ---------------------------------------------------------------------
+  // ZOQO Alpha: copy trading (docs/alpha/08-copy-trading.md §8)
+  // ---------------------------------------------------------------------
+
+  server.registerTool(
+    "list_copy_sources",
+    {
+      title: "List Copy Sources",
+      description: "Your alpha_copy_sources rows, optionally filtered by venue/status. Requires alpha:read.",
+      inputSchema: z.object({ venue: z.string().optional(), status: z.enum(["candidate", "followed", "dropped", "blocked"]).optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.listCopySources(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "get_copy_source",
+    {
+      title: "Get Copy Source",
+      description: "One source's metrics, recent detected fills, and your own copies of it (for the gap). Requires alpha:read.",
+      inputSchema: z.object({ id: z.string() }),
+    },
+    async ({ id }, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getCopySource(userIdOf(ctx), id);
+    },
+  );
+
+  server.registerTool(
+    "propose_copy_sources",
+    {
+      title: "Propose Copy Sources",
+      description:
+        "Runs the source screen now and returns/stores scored candidates. Polymarket discovers real leaderboard wallets automatically; Manifold has no public leaderboard API, so pass candidateRefs (known usernames) explicitly for it. Requires alpha:run.",
+      inputSchema: z.object({ venue: z.enum(["polymarket-sim", "manifold"]), candidateRefs: z.array(z.string()).optional() }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:run");
+      if (denied) return errorContent(denied);
+      return alphaTools.proposeCopySources(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "set_copy_source_status",
+    {
+      title: "Set Copy Source Status",
+      description: "Confirms (or drops/blocks) a candidate source — the one human-confirmation step before a source is actually followed. Requires alpha:manage.",
+      inputSchema: z.object({ id: z.string(), status: z.enum(["candidate", "followed", "dropped", "blocked"]) }),
+    },
+    async (args, ctx) => {
+      const denied = requireScope(ctx, "alpha:manage");
+      if (denied) return errorContent(denied);
+      return alphaTools.setCopySourceStatus(userIdOf(ctx), args);
+    },
+  );
+
+  server.registerTool(
+    "get_copy_gap",
+    {
+      title: "Get Copy Gap",
+      description: "Our return/CLV and lag distribution on a copy strategy's copied trades. Requires alpha:read.",
+      inputSchema: z.object({ strategyId: z.string() }),
+    },
+    async ({ strategyId }, ctx) => {
+      const denied = requireScope(ctx, "alpha:read");
+      if (denied) return errorContent(denied);
+      return alphaTools.getCopyGap(userIdOf(ctx), strategyId);
+    },
+  );
 });
 
 const authHandler = withMcpAuth(

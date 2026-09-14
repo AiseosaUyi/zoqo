@@ -76,6 +76,7 @@ export type Database = {
           edge: number | null
           features: Json | null
           id: string
+          lag_ms: number | null
           market_id: string
           market_prob: number | null
           model_prob: number | null
@@ -85,6 +86,8 @@ export type Database = {
           reject_reason: string | null
           run_id: string | null
           side: string
+          slippage_bps: number | null
+          source_id: string | null
           stake: number | null
           status: string
           strategy_id: string
@@ -97,6 +100,7 @@ export type Database = {
           edge?: number | null
           features?: Json | null
           id?: string
+          lag_ms?: number | null
           market_id: string
           market_prob?: number | null
           model_prob?: number | null
@@ -106,6 +110,8 @@ export type Database = {
           reject_reason?: string | null
           run_id?: string | null
           side: string
+          slippage_bps?: number | null
+          source_id?: string | null
           stake?: number | null
           status: string
           strategy_id: string
@@ -118,6 +124,7 @@ export type Database = {
           edge?: number | null
           features?: Json | null
           id?: string
+          lag_ms?: number | null
           market_id?: string
           market_prob?: number | null
           model_prob?: number | null
@@ -127,6 +134,8 @@ export type Database = {
           reject_reason?: string | null
           run_id?: string | null
           side?: string
+          slippage_bps?: number | null
+          source_id?: string | null
           stake?: number | null
           status?: string
           strategy_id?: string
@@ -146,6 +155,105 @@ export type Database = {
             columns: ["strategy_id"]
             isOneToOne: false
             referencedRelation: "alpha_strategies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alpha_decisions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_copy_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alpha_copy_sources: {
+        Row: {
+          dropped_at: string | null
+          first_seen: string
+          followed_since: string | null
+          id: string
+          label: string | null
+          metrics: Json
+          score: number | null
+          source_ref: string
+          status: string
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          dropped_at?: string | null
+          first_seen?: string
+          followed_since?: string | null
+          id?: string
+          label?: string | null
+          metrics?: Json
+          score?: number | null
+          source_ref: string
+          status?: string
+          user_id: string
+          venue: string
+        }
+        Update: {
+          dropped_at?: string | null
+          first_seen?: string
+          followed_since?: string | null
+          id?: string
+          label?: string | null
+          metrics?: Json
+          score?: number | null
+          source_ref?: string
+          status?: string
+          user_id?: string
+          venue?: string
+        }
+        Relationships: []
+      }
+      alpha_source_fills: {
+        Row: {
+          detected_at: string
+          features: Json | null
+          filled_at: string
+          id: string
+          market_id: string
+          outcome_id: string | null
+          price: number
+          side: string
+          size: number
+          source_id: string
+          venue_trade_id: string
+        }
+        Insert: {
+          detected_at?: string
+          features?: Json | null
+          filled_at: string
+          id?: string
+          market_id: string
+          outcome_id?: string | null
+          price: number
+          side: string
+          size: number
+          source_id: string
+          venue_trade_id: string
+        }
+        Update: {
+          detected_at?: string
+          features?: Json | null
+          filled_at?: string
+          id?: string
+          market_id?: string
+          outcome_id?: string | null
+          price?: number
+          side?: string
+          size?: number
+          source_id?: string
+          venue_trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_source_fills_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "alpha_copy_sources"
             referencedColumns: ["id"]
           },
         ]

@@ -110,6 +110,7 @@ async function runOneStrategy(
     quotes: (m) => venue.getQuote(m),
     params: (strategyRow.params ?? {}) as Record<string, unknown>,
     log: logFn,
+    supabase,
   };
 
   let intents;

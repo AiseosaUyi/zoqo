@@ -339,3 +339,43 @@ export async function ackEvent(userId: string, id: string) {
   await service.ackEvent(supabase, userId, id);
   return text({ ok: true });
 }
+
+// ---------------------------------------------------------------------------
+// Copy trading (docs/alpha/08-copy-trading.md §8)
+// ---------------------------------------------------------------------------
+
+export async function listCopySources(userId: string, args: { venue?: string; status?: string }) {
+  const supabase = createServiceRoleClient();
+  return text(await service.listCopySources(supabase, userId, args));
+}
+
+export async function getCopySource(userId: string, id: string) {
+  const supabase = createServiceRoleClient();
+  const result = await service.getCopySource(supabase, userId, id);
+  if (!result) return errorText(`copy source ${id} not found or not owned by this user`);
+  return text(result);
+}
+
+export async function proposeCopySources(userId: string, args: { venue: string; candidateRefs?: string[] }) {
+  const supabase = createServiceRoleClient();
+  try {
+    return text(await service.proposeCopySources(supabase, userId, args.venue, args.candidateRefs));
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "propose_copy_sources failed");
+  }
+}
+
+export async function setCopySourceStatus(userId: string, args: { id: string; status: "candidate" | "followed" | "dropped" | "blocked" }) {
+  const supabase = createServiceRoleClient();
+  try {
+    await service.setCopySourceStatus(supabase, userId, args.id, args.status);
+    return text({ ok: true });
+  } catch (err) {
+    return errorText(err instanceof Error ? err.message : "set_copy_source_status failed");
+  }
+}
+
+export async function getCopyGap(userId: string, strategyId: string) {
+  const supabase = createServiceRoleClient();
+  return text(await service.getCopyGap(supabase, userId, strategyId));
+}

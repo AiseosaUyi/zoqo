@@ -69,6 +69,7 @@ async function mockAlphaApi(page: Page) {
     "**/api/alpha/proposals**": [],
     "**/api/alpha/fixtures**": [],
     "**/api/alpha/credentials": [],
+    "**/api/alpha/copy-sources**": [],
   };
   for (const [pattern, body] of Object.entries(fixtures)) {
     await page.route(pattern, (route: Route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) }));

@@ -3,6 +3,8 @@
  *  *instance* of one (params, budget, enabled, venue, schedule) is a row in
  *  `alpha_strategies`. runner.ts is the only caller of `.evaluate()`. */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import type { MarketRef, Quote, VenueAdapter, Intent } from "./venue";
 
 export type StrategySchedule =
@@ -39,6 +41,14 @@ export interface StrategyCtx {
    *  validates its own params shape against `defaultParams`. */
   params: Record<string, unknown>;
   log: (msg: string, data?: unknown) => void;
+  /** Direct DB access — added for copy-trading strategies (docs/alpha/
+   *  08-copy-trading.md), which need to read their own `alpha_copy_sources`/
+   *  `alpha_source_fills` rows directly rather than through a feature
+   *  provider (no per-domain feature shape fits "which sources am I
+   *  following"). Every other strategy still only touches `venue`/
+   *  `features`/`quotes`, so this stays optional rather than forcing every
+   *  existing strategy to declare it's unused. */
+  supabase?: SupabaseClient<Database>;
 }
 
 export interface Strategy {

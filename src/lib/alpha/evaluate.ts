@@ -4,6 +4,9 @@ import { bootstrapRoiCI, hitRate, maxDrawdown, sharpeLike, clv as clvOf, rps as 
 import type { OneXTwoOutcome } from "./football/types";
 import { parseMarketId as parseSportsbookMarketId } from "./venues/zoqoSportsbook";
 import { reallocate, DEFAULT_MIN_SAMPLES, type StrategySnapshot, type ReallocationDecision } from "./budgetRule";
+import { computeCopyGap, type CopyDecisionOutcome } from "./copy/gap";
+
+const COPY_STRATEGY_KEYS = new Set(["polymarket-copy-sources", "manifold-copy-sources", "copy-random-control"]);
 
 /** Nightly evaluator (docs/alpha/03-architecture.md §7 Levels 2 and 3) —
  *  `/api/cron/alpha-evaluate` calls `evaluateStrategies` once a day. This
@@ -299,12 +302,13 @@ interface StrategyRow {
   enabled: boolean;
   budget: number;
   budget_floor: number;
+  strategy_key: string;
 }
 
 export async function evaluateStrategies(supabase: Client, now: number = Date.now()) {
   const { data: strategies } = await supabase
     .from("alpha_strategies")
-    .select("id, user_id, venue, enabled, budget, budget_floor");
+    .select("id, user_id, venue, enabled, budget, budget_floor, strategy_key");
   if (!strategies || strategies.length === 0) return { evaluated: 0, autoPaused: 0 };
 
   const day = todayDate(now);
@@ -392,6 +396,40 @@ export async function evaluateStrategies(supabase: Client, now: number = Date.no
     }
 
     evaluated++;
+  }
+
+  // Copy-trading measurement (docs/alpha/08-copy-trading.md §4, "Nightly,
+  // per source and per copy strategy") — logged to alpha_events rather than
+  // a new alpha_strategy_stats column (that table's schema is Phase 0's,
+  // not extended by this pass): the gap numbers are exactly what
+  // `get_copy_gap`/`getCopyGap` compute on demand, just also captured once
+  // a day per copy strategy for a visible history instead of only ever
+  // being query-on-request.
+  for (const strategy of strategies as StrategyRow[]) {
+    if (!COPY_STRATEGY_KEYS.has(strategy.strategy_key)) continue;
+    const { data: decisions } = await supabase
+      .from("alpha_decisions")
+      .select("*, alpha_orders(*)")
+      .eq("strategy_id", strategy.id)
+      .eq("user_id", strategy.user_id)
+      .not("source_id", "is", null);
+    const outcomes: CopyDecisionOutcome[] = (decisions ?? []).map((d) => {
+      const orders = (d as unknown as { alpha_orders: { pnl: number | null; stake: number | null; price_or_odds: number | null; closing_price_or_odds: number | null }[] }).alpha_orders ?? [];
+      const order = orders[0];
+      return {
+        lagMs: d.lag_ms,
+        ourReturn: order?.pnl != null && order.stake ? order.pnl / order.stake : null,
+        ourClv: order?.pnl != null && order?.closing_price_or_odds != null && order?.price_or_odds ? order.closing_price_or_odds / order.price_or_odds - 1 : null,
+      };
+    });
+    if (outcomes.length === 0) continue;
+    const gap = computeCopyGap(outcomes);
+    await supabase.from("alpha_events").insert({
+      user_id: strategy.user_id,
+      strategy_id: strategy.id,
+      kind: "info",
+      payload: { kind: "copy_gap", day, ...gap } as never,
+    });
   }
 
   return { evaluated, autoPaused };
