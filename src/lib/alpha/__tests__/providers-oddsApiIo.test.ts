@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { fetchOddsSnapshots, normalizeOddsEnvelope } from "../providers/oddsApiIo";
 
-describe("oddsApiIo (no ODDS_API_IO_KEY in this environment)", () => {
-  it("fetchOddsSnapshots returns [] without a key", async () => {
-    const result = await fetchOddsSnapshots(null, undefined as never, {});
-    expect(result).toEqual([]);
+describe("oddsApiIo (INACTIVE — odds-api.io's free tier is paused indefinitely, docs/alpha/PROMPT-alpha-finish.md §4)", () => {
+  it("fetchOddsSnapshots always throws — replaced by bet9jaPublic.ts/nairabetPublic.ts/apiFootballOdds.ts", async () => {
+    await expect(fetchOddsSnapshots(null, undefined as never, {})).rejects.toThrow(/inactive/);
   });
 });
 

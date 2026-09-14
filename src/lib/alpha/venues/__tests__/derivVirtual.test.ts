@@ -2,18 +2,16 @@ import { describe, expect, it } from "vitest";
 import { runConformanceSuite } from "./conformance";
 import { createDerivVirtualAdapter, intentSideToContractType } from "../derivVirtual";
 
-/** Live conformance runs for real only when DERIV_VIRTUAL_API_KEY (a
- *  Deriv virtual-account token) is present; this build environment has no
- *  such token (docs/alpha/STATUS.md's "Needs Aise" list), so this always
- *  skips here with the reason surfaced in the test name — per the repo's
- *  standing rule, that's the correct outcome to record, not a gap to work
- *  around. Deliberately conditional (not a permanent skip) so a future
- *  environment that DOES export the token gets a real run instead. */
-const token = process.env.DERIV_VIRTUAL_API_KEY;
+/** Live conformance runs for real only when DERIV_VIRTUAL_TOKEN (a Deriv
+ *  virtual-account API token — Deriv's own terminology, hence not the
+ *  generic `${VENUE}_API_KEY` name, see secrets.ts's VENUE_ENV_KEY
+ *  override) is present; deliberately conditional (not a permanent skip)
+ *  so an environment that DOES export the token gets a real run instead. */
+const token = process.env.DERIV_VIRTUAL_TOKEN;
 runConformanceSuite(
   "deriv-virtual",
   () => (token ? createDerivVirtualAdapter(token) : null),
-  token ? undefined : { skipReason: "DERIV_VIRTUAL_API_KEY not set in this environment (needs a Deriv virtual-account token)" },
+  token ? undefined : { skipReason: "DERIV_VIRTUAL_TOKEN not set in this environment (needs a Deriv virtual-account API token)" },
 );
 
 describe("intentSideToContractType", () => {

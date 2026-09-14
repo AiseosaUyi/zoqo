@@ -46,6 +46,9 @@ interface ManifoldBetResponse {
   id?: string;
   probBefore?: number;
   probAfter?: number;
+  /** `false` on a limit order that didn't fully clear immediately — a real
+   *  resting order on Manifold's own book, which cancel() below can cancel. */
+  isFilled?: boolean;
 }
 
 interface ManifoldMe {
@@ -167,11 +170,20 @@ export function createManifoldAdapter(apiKey: string | null): VenueAdapter {
 
     async place(intent: Intent, stake: number, ctx: ExecCtx): Promise<PlacedOrder> {
       const outcome = intentSideToOutcome(intent.side);
+      // A limit order needs Manifold's `limitProb` param — omitted, every
+      // bet fills immediately against the CFMM at the current probability
+      // (a real "market" order). See __tests__/manifold.test.ts's live
+      // conformance run for confirmation of the isFilled:false/open-order
+      // behavior this enables, and cancel() below.
+      const body: Record<string, unknown> = { contractId: intent.market.marketId, amount: stake, outcome };
+      if (intent.kind === "limit" && intent.limitPrice != null) {
+        body.limitProb = outcome === "YES" ? intent.limitPrice : 1 - intent.limitPrice;
+      }
       try {
         const res = await fetch(`${BASE}/v0/bet`, {
           method: "POST",
           headers: authHeaders(apiKey, true),
-          body: JSON.stringify({ contractId: intent.market.marketId, amount: stake, outcome }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) {
           // A non-2xx here is typically something informative (insufficient
@@ -203,7 +215,7 @@ export function createManifoldAdapter(apiKey: string | null): VenueAdapter {
           // shares purchased. See intentSideToOutcome for the YES/NO split.
           priceOrOdds: outcome === "YES" ? probAtEntry : 1 - probAtEntry,
           placedAt: ctx.now,
-          status: bet.id ? "filled" : "rejected",
+          status: !bet.id ? "rejected" : bet.isFilled === false ? "open" : "filled",
         };
       } catch {
         return {
@@ -227,6 +239,21 @@ export function createManifoldAdapter(apiKey: string | null): VenueAdapter {
     // that's the source of truth, not a re-derived list from Manifold.
     async openOrders() {
       return [];
+    },
+
+    /** `POST /v0/bet/cancel/{betId}` (verified against the real endpoint
+     *  path in Manifold's own API docs, https://docs.manifold.markets/api —
+     *  NOT `/v0/bet/{id}/cancel`, which 404s) — only meaningful for a
+     *  resting limit order (place()'s `status: "open"` case above);
+     *  Manifold itself rejects cancelling an already-filled market bet,
+     *  which surfaces here as a thrown error (per VenueAdapter's `cancel?`
+     *  contract — callers like `service.cancelOrder` already catch and
+     *  report it). Verified live 2026-09-13: a real limit order placed at
+     *  a far-off price, `isFilled:false`, cancelled successfully via this
+     *  exact path. */
+    async cancel(venueOrderId: string): Promise<void> {
+      const res = await fetch(`${BASE}/v0/bet/cancel/${venueOrderId}`, { method: "POST", headers: authHeaders(apiKey, true) });
+      if (!res.ok) throw new Error(`Manifold cancel failed: HTTP ${res.status}`);
     },
 
     async settle(open: PlacedOrder[]): Promise<Settlement[]> {
@@ -300,6 +327,11 @@ export function createManifoldAdapterForUser(userId: string): VenueAdapter {
     },
     async openOrders() {
       return (await inner()).openOrders();
+    },
+    async cancel(venueOrderId) {
+      const adapter = await inner();
+      if (!adapter.cancel) throw new Error("manifold adapter has no cancel()");
+      return adapter.cancel(venueOrderId);
     },
     async settle(open) {
       return (await inner()).settle(open);

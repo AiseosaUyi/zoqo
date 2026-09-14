@@ -1,10 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { checkAndConsume } from "../rateBudget";
 
-/** odds-api.io client — docs/alpha/06-football-model.md §1 item 2: Bet9ja +
- *  SportyBet odds across 1X2, O/U 2.5, BTTS, and double chance. Plain typed
- *  `fetch`, no SDK.
+/** INACTIVE as of docs/alpha/PROMPT-alpha-finish.md §4 (checked 2026-09-13):
+ *  odds-api.io's free tier is "paused indefinitely" for new keys — no
+ *  `ODDS_API_IO_KEY` will ever exist for this program. `fetchOddsSnapshots`
+ *  below now throws instead of degrading to `[]`, so a caller that's
+ *  accidentally still wired to it fails loudly in dev rather than silently
+ *  never ingesting. Replaced by `bet9jaPublic.ts`/`nairabetPublic.ts`
+ *  (keyless, public JSON) for Bet9ja/closing-line data and
+ *  `apiFootballOdds.ts` for the API-Football consensus line — see
+ *  `src/app/api/cron/alpha-ingest/route.ts`. Kept in the tree (not deleted)
+ *  because `OddsSnapshotInput`/`OddsApiMarketKey`/`OddsApiOutcomeKey` below
+ *  are still the shared normalized shape every odds provider in this
+ *  program targets — only the network call is dead, not the types.
+ *  `normalizeOddsEnvelope` stays callable (pure, no network) in case a
+ *  provider genuinely shaped like The Odds API shows up later.
+ *
+ *  Original header, kept for the historical record of the endpoint-shape
+ *  reasoning: odds-api.io client — docs/alpha/06-football-model.md §1 item
+ *  2: Bet9ja + SportyBet odds across 1X2, O/U 2.5, BTTS, and double chance.
+ *  Plain typed `fetch`, no SDK.
  *
  *  ENDPOINT SHAPE ASSUMPTION (explicitly not verified against a live key,
  *  per this task's standing rule — "implement against the documented API,
@@ -36,12 +51,6 @@ import { checkAndConsume } from "../rateBudget";
  *  schema rather than a silent gap. */
 
 type Client = SupabaseClient<Database>;
-
-const BASE = "https://odds-api.io/api/v2"; // ASSUMPTION — see module header
-const PROVIDER_HOURLY = "odds-api.io";
-const PROVIDER_DAILY = "odds-api.io-daily";
-const HOURLY_BUDGET = { limitPerWindow: 100, windowSeconds: 3_600 };
-const DAILY_BUDGET = { limitPerWindow: 500, windowSeconds: 86_400 };
 
 export type OddsApiMarketKey = "1x2" | "ou25" | "btts" | "dc";
 export type OddsApiOutcomeKey = "home" | "draw" | "away" | "over" | "under" | "yes" | "no" | "hd" | "da" | "ha";
@@ -138,45 +147,18 @@ function mapEnvelope(raw: RawEnvelope, ts: string): OddsSnapshotInput[] {
   return out;
 }
 
-/** Checks and consumes both the hourly and daily budgets. Returns `false`
- *  (deny) if either is exhausted — never makes the network call otherwise. */
-async function consumeOddsApiBudget(supabase: Client): Promise<boolean> {
-  const hourly = await checkAndConsume(supabase, PROVIDER_HOURLY, HOURLY_BUDGET);
-  if (!hourly.allowed) return false;
-  const daily = await checkAndConsume(supabase, PROVIDER_DAILY, DAILY_BUDGET);
-  return daily.allowed;
-}
-
-/** Fetches current odds for Bet9ja + SportyBet across 1X2/O-U-2.5/BTTS/
- *  double-chance for a date range (docs/alpha/06-football-model.md §1 item
- *  2). Returns `[]` (never throws) when `apiKey` is null, either budget is
- *  exhausted, or the call fails — same convention as `apiFootball.ts`. */
+/** INACTIVE — always throws. See this file's header. `apiKey`/`opts` kept
+ *  in the signature so the (now entirely unused) call shape stays visible
+ *  for the historical record without anyone needing to guess it from git
+ *  blame. */
 export async function fetchOddsSnapshots(
-  apiKey: string | null,
-  supabase: Client,
-  opts: { dateFrom?: string; dateTo?: string; fixtureId?: string; bookmakers?: string[]; markets?: OddsApiMarketKey[] } = {},
+  _apiKey: string | null,
+  _supabase: Client,
+  _opts: { dateFrom?: string; dateTo?: string; fixtureId?: string; bookmakers?: string[]; markets?: OddsApiMarketKey[] } = {},
 ): Promise<OddsSnapshotInput[]> {
-  if (!apiKey) return [];
-  const allowed = await consumeOddsApiBudget(supabase);
-  if (!allowed) return [];
-
-  const url = new URL(`${BASE}/fixtures/odds`);
-  url.searchParams.set("apiKey", apiKey);
-  url.searchParams.set("sport", "soccer");
-  url.searchParams.set("bookmakers", (opts.bookmakers ?? ["bet9ja", "sportybet"]).join(","));
-  url.searchParams.set("markets", (opts.markets ?? ["1x2", "ou25", "btts", "dc"]).join(","));
-  if (opts.fixtureId) url.searchParams.set("fixtureId", opts.fixtureId);
-  if (opts.dateFrom) url.searchParams.set("dateFrom", opts.dateFrom);
-  if (opts.dateTo) url.searchParams.set("dateTo", opts.dateTo);
-
-  try {
-    const res = await fetch(url.toString());
-    if (!res.ok) return [];
-    const raw = (await res.json()) as RawEnvelope;
-    return mapEnvelope(raw, new Date().toISOString());
-  } catch {
-    return [];
-  }
+  throw new Error(
+    "oddsApiIo.ts is inactive (odds-api.io's free tier is paused indefinitely, docs/alpha/STATUS.md) — use bet9jaPublic.ts/nairabetPublic.ts/apiFootballOdds.ts instead.",
+  );
 }
 
 /** Exported for the ingest job / tests: turns a raw envelope already in

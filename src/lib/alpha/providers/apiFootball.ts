@@ -109,7 +109,7 @@ function mapFixture(raw: RawFixtureEnvelope["response"][number]): ApiFootballFix
 /** Never throws — a network failure, a non-2xx response, or a denied rate
  *  budget all degrade to `null`, same convention as `venues/manifold.ts`'s
  *  `fetchJson`. */
-async function callApiFootball<T>(
+export async function callApiFootball<T>(
   apiKey: string,
   supabase: Client,
   path: string,
@@ -130,22 +130,54 @@ async function callApiFootball<T>(
   }
 }
 
-/** `GET /fixtures?league=&season=&from=&to=` — docs/alpha/06-football-model.md
- *  §1 item 1. Returns `[]` (never throws) when `apiKey` is null, the budget
- *  is exhausted, or the call fails. */
+/** `GET /fixtures?date=` — one calendar day, every league, filtered
+ *  client-side to `leagueId`. Verified live 2026-09-14: the documented
+ *  `GET /fixtures?league=&season=&from=&to=` combo this function used to
+ *  call returns `{"errors":{"season":"Free plans do not have access to
+ *  this season, try from 2022 to 2024."}}` on API-Football's free tier for
+ *  ANY current/upcoming season (2025, 2026 both confirmed blocked) — the
+ *  free plan is 2021-2024 historical data only, undocumented in
+ *  docs/alpha/02-market-landscape.md's "100 req/day, all endpoints, all
+ *  competitions" claim (now corrected there). `GET /fixtures?date=` has no
+ *  such restriction and returns real current fixtures (confirmed: a real
+ *  EPL fixture on 2026-09-14 this exact date-based call found, matching
+ *  bet9ja's own live data for the same match) — it is the ONLY way this
+ *  program can ingest upcoming fixtures on a free API-Football key.
+ *  One real HTTP call per calendar day in `[from, to]` (inclusive), so a
+ *  caller with N leagues configured pays date-range-length calls total,
+ *  not N × date-range-length — see `alpha-ingest`'s own gating for how it
+ *  keeps this within the 100/day shared budget. Never throws; a day whose
+ *  call fails or is budget-denied just contributes no fixtures for that day. */
 export async function fetchFixtures(
   apiKey: string | null,
   supabase: Client,
   opts: { leagueId: string; season: number; from?: string; to?: string },
 ): Promise<ApiFootballFixture[]> {
+  const all = await fetchFixturesByDateRange(apiKey, supabase, opts);
+  return all.filter((f) => f.leagueId === opts.leagueId);
+}
+
+/** The un-filtered form `fetchFixtures` wraps — one real HTTP call per
+ *  calendar day regardless of how many leagues the caller ultimately cares
+ *  about, since `GET /fixtures?date=` always returns every league at once.
+ *  `alpha-ingest`'s route calls this ONCE per tick and buckets the result
+ *  by league itself, rather than every configured league re-running (and
+ *  re-paying for) the same date loop independently. */
+export async function fetchFixturesByDateRange(
+  apiKey: string | null,
+  supabase: Client,
+  opts: { from?: string; to?: string },
+): Promise<ApiFootballFixture[]> {
   if (!apiKey) return [];
-  const raw = await callApiFootball<RawFixtureEnvelope>(apiKey, supabase, "/fixtures", {
-    league: opts.leagueId,
-    season: opts.season,
-    from: opts.from,
-    to: opts.to,
-  });
-  return (raw?.response ?? []).map(mapFixture);
+  const fromDate = opts.from ? new Date(opts.from) : new Date();
+  const toDate = opts.to ? new Date(opts.to) : fromDate;
+  const out: ApiFootballFixture[] = [];
+  for (let d = new Date(fromDate); d.getTime() <= toDate.getTime(); d.setUTCDate(d.getUTCDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10);
+    const raw = await callApiFootball<RawFixtureEnvelope>(apiKey, supabase, "/fixtures", { date: dateStr });
+    for (const entry of raw?.response ?? []) out.push(mapFixture(entry));
+  }
+  return out;
 }
 
 /** `GET /fixtures?id=` — result/status polling after kickoff

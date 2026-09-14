@@ -13,6 +13,9 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 
 const VENUE_ENV_KEY: Record<string, string> = {
   manifold: "MANIFOLD_API_KEY",
+  // Deriv's own terminology calls this an "API token", not an "API key" —
+  // named accordingly rather than the generic `${VENUE}_API_KEY` default.
+  "deriv-virtual": "DERIV_VIRTUAL_TOKEN",
 };
 
 /** Exported so `setupStatus.ts` (the "needs setup" panel on `/alpha` and the

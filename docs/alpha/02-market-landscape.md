@@ -19,11 +19,20 @@ Decision: NG bookmakers are odds-ingest only. ZOQO runs an internal Naira-denomi
 
 ## 2. Exchanges and odds APIs
 
+**Update 2026-09-13 (docs/alpha/PROMPT-alpha-finish.md §4): odds-api.io's free tier is confirmed "paused indefinitely" for new keys — checked live, not assumed. It is retired from this program** (`src/lib/alpha/providers/oddsApiIo.ts` now throws if ever called; kept in the tree only for its shared `OddsSnapshotInput` normalized types). Replaced by two keyless, public-JSON sources ported from `jayteealao/NaijaBet_Api` (MIT, commit `0ae335dc90ba390949eac0de57f3f86f537ae025` — see `src/lib/alpha/providers/{bet9jaPublic,nairabetPublic}.ts`), plus API-Football's own `/odds` endpoint (already-paid-for account, same 100/day budget as fixtures/lineups/injuries) as the consensus/closing line:
+
+- **Bet9ja** (`sports.bet9ja.com`'s desktop `PalimpsestAjax/GetEventsInGroupV2` feed) — verified LIVE from this machine 2026-09-13: real, current English Premier League fixtures with real 1X2/double-chance/O-U-2.5 decimal odds. Reading this public JSON — the same the bookmaker's own web client loads, never anything write-side — is plausibly extraction under **Bet9ja's own T&Cs clause IV(4)** (see §1 above); it is read-only, low-cadence (≤1 req/league/15min, ≤1/5min inside 2h of kickoff), never places a bet, and running it at all is **Aise's call**, not a decision baked silently into the code.
+- **Nairabet** (`sports-api.nairabet.com`'s `/v2/events` feed) — built against the same upstream library's documented shape, but **unreachable from this development sandbox** (DNS NXDOMAIN for that subdomain specifically — confirmed with `nslookup`, not a timeout; `nairabet.com` itself resolves and returns a Cloudflare-style 403). The upstream library runs a live-site CI suite against this exact endpoint and shows active maintenance as of 2026-09-13, so this is most likely a sandbox-specific DNS gap (the same class of gap CLAUDE.md already documents for Binance/Coinbase price feeds), not a dead endpoint — verify from a real deploy before trusting it in production. Same T&Cs-clause caveat applies.
+- **API-Football `/odds`** (`apiFootballOdds.ts`) — the account's existing 100/day budget, included on the free plan; prefers 1xBet/Betway/Bet365 as consensus books, gives the closing line for CLV. Unverified live in this environment (no `API_FOOTBALL_KEY` — see STATUS.md), but a real HTTP 403 (not a connection failure) confirms the host is reachable and only the key is missing.
+
 | Service | Usable from Nigeria | Free tier | Verdict |
 |---|---|---|---|
 | Betfair Exchange | No. Nigerian accounts closed; "not possible to connect from Nigeria" | Delayed key free | Out |
 | The Odds API | Yes | 500 credits/month | Backup for EU books (1xBet appears in EU region); no NG books |
-| odds-api.io | Yes | 100/hr, 500/day, 2 books | **Primary football odds feed** |
+| ~~odds-api.io~~ | Yes | ~~100/hr, 500/day, 2 books~~ | **Dead — free tier paused indefinitely, confirmed 2026-09-13. Retired.** |
+| **Bet9ja public JSON** | Yes | Unlimited, keyless (rate-limited by us, not them) | **Primary football odds feed** — verified live |
+| **Nairabet public JSON** | Yes | Unlimited, keyless | Secondary — built, unverified from this sandbox (DNS) |
+| **API-Football `/odds`** | Yes | Shares the 100/day fixtures budget | Consensus/closing line |
 | OpticOdds / OddsJam | Yes | None | Out (enterprise) |
 | BetsAPI | Yes, via RapidAPI | Trial | Backup |
 | Sportmonks odds | Yes | 2 leagues free (Danish, Scottish) | Out for odds; maybe later for referee/xG at €29/mo |
@@ -35,7 +44,7 @@ Decision: NG bookmakers are odds-ingest only. ZOQO runs an internal Naira-denomi
 
 | Source | Free tier | Gives | Verdict |
 |---|---|---|---|
-| API-Football (api-sports.io) | 100 req/day, all endpoints, all competitions | fixtures, lineups, injuries, player stats, H2H, standings, pre-match and in-play odds; no xG | **Primary fixtures + lineups + injuries + results feed.** $19/mo for 7.5k/day if needed |
+| API-Football (api-sports.io) | 100 req/day, all endpoints, all competitions, **but `league=&season=` fixture/odds queries reject any season after 2024** (confirmed live 2026-09-14: `{"errors":{"season":"Free plans do not have access to this season, try from 2022 to 2024."}}`) — worked around via date-only `GET /fixtures?date=` queries, which have no such restriction (see `providers/apiFootball.ts`'s `fetchFixturesByDateRange`) | fixtures, lineups, injuries, player stats, H2H, standings, pre-match and in-play odds; no xG | **Primary fixtures + lineups + injuries + results feed**, via the date-query workaround above. $19/mo for 7.5k/day (and, per this finding, presumably current-season access) if needed |
 | football-data.org | 12 competitions, 10 calls/min, delayed | fixtures, results, standings | Backup results feed |
 | `probberechts/soccerdata` (Python, 1.9k stars, Apache-2.0) | Free scraping | Understat xG, FBref, ClubElo ratings, Football-Data.co.uk closing odds, WhoScored ratings, Sofascore | **xG, ELO, closing-line history.** Python only |
 | StatsBomb open-data (3.3k stars) | Free, attribution | event-level history with shot xG | Offline training only |
@@ -85,7 +94,7 @@ Supreme Court, 22 Nov 2024: the National Lottery Act 2005 is unenforceable outsi
 
 ## 8. Decisions this research locks in
 
-1. Football venue = internal ZOQO paper sportsbook priced from odds-api.io (Bet9ja + SportyBet), settled from API-Football results. NGN-denominated wallet ledger.
+1. Football venue = internal ZOQO paper sportsbook priced from **Bet9ja + Nairabet public JSON and API-Football's `/odds`** (odds-api.io retired 2026-09-13 — see §2), settled from API-Football results. NGN-denominated wallet ledger.
 2. External live-fire venues, in adapter order: Manifold (play money, full API), Kalshi demo, Bybit demo, Deriv virtual, Polymarket read + simulated fills.
 3. Existing ZOQO terminal and `/trade` stay as internal venues behind the same adapter interface.
 4. Model stack phase 1 in TypeScript inside Next (implied probabilities with margin removal, time-decayed Dixon-Coles, ELO, form windows, blend against market). Phase 3 adds a Python worker (`penaltyblog`, `soccerdata`) for xG and ML.
